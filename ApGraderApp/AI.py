@@ -4,9 +4,9 @@ from PyPDF2 import PdfReader
 import openai
 from langchain.agents import Tool, initialize_agent
 from langchain.prompts import PromptTemplate
-from langchain.chat_models import ChatOpenAI
-from langchain.embeddings.openai import OpenAIEmbeddings
 from .pineconesetup import index
+from langchain_community.embeddings import OpenAIEmbeddings
+from langchain_community.chat_models import ChatOpenAI
 from openai import OpenAI
 load_dotenv()
 

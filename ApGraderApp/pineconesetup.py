@@ -1,41 +1,53 @@
+# pineconesetup.py
+
 import os
 import time
-import pinecone
-from PyPDF2 import PdfReader
-from openai import OpenAI
 from dotenv import load_dotenv
+from pinecone import Pinecone, ServerlessSpec
+from PyPDF2 import PdfReader
+import openai  # Import the OpenAI library
 
 # Load environment variables
 load_dotenv()
 
+# Get API keys from environment variables
 PINECONE_API_KEY = os.getenv('PINECONE_API_KEY')
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 
-# Initialize Pinecone
-pinecone.init(api_key=PINECONE_API_KEY, environment="us-east-1")
+# Set OpenAI API key
+openai.api_key = OPENAI_API_KEY
+
+# Create an instance of the Pinecone class
+pc = Pinecone(api_key=PINECONE_API_KEY)
 
 # Index configuration
 index_name = "apgraderindex"
 dimensions = 1536
-
-# Initialize OpenAI client
-client = OpenAI(api_key=OPENAI_API_KEY)
+spec = ServerlessSpec(cloud='aws', region='us-east-1')
 
 # Function to reset and recreate the index
 def reset_index():
-    if index_name in pinecone.list_indexes():
+    if index_name in pc.list_indexes().names():
         print(f"Deleting existing index: {index_name}")
-        pinecone.delete_index(index_name)
+        pc.delete_index(index_name)
+        # Wait until the index is deleted
+        while index_name in pc.list_indexes().names():
+            time.sleep(1)
 
     print(f"Creating index: {index_name}")
-    pinecone.create_index(name=index_name, dimension=dimensions, metric="cosine")
+    pc.create_index(
+        name=index_name,
+        dimension=dimensions,
+        metric="cosine",
+        spec=spec
+    )
     print(f"Index {index_name} created.")
 
 # Wait for the index to be ready
-def wait_for_index_ready(timeout=30):
+def wait_for_index_ready(timeout=60):
     start_time = time.time()
     while time.time() - start_time < timeout:
-        status = pinecone.describe_index(index_name).status
+        status = pc.describe_index(index_name).status
         if status.get("ready"):
             print(f"Index {index_name} is ready.")
             return
@@ -45,11 +57,12 @@ def wait_for_index_ready(timeout=30):
 # Function to ingest data into the index
 def ingest_data():
     # Connect to the Pinecone index
-    index = pinecone.Index(index_name)
+    index = pc.Index(index_name)
     
     # Read the PDF
     try:
-        reader = PdfReader("leq.pdf")
+        pdf_path = os.path.join(os.path.dirname(__file__), 'leq.pdf')
+        reader = PdfReader(pdf_path)
         texts = "".join([page.extract_text() for page in reader.pages])
     except Exception as e:
         print(f"Error reading PDF: {e}")
@@ -57,7 +70,7 @@ def ingest_data():
 
     # Create embeddings
     try:
-        response = client.embeddings.create(input=texts, model="text-embedding-ada-002")
+        response = openai.Embedding.create(input=[texts], model="text-embedding-ada-002")
         embedding = response['data'][0]['embedding']
     except Exception as e:
         print(f"Error creating embeddings: {e}")
@@ -70,9 +83,10 @@ def ingest_data():
     except Exception as e:
         print(f"Error upserting data: {e}")
 
-# Main block to control execution
-if __name__ == "__main__":
-    reset_index()
-    wait_for_index_ready()
-    ingest_data()
-    print("Setup completed successfully.")
+# Execute the initialization
+reset_index()
+wait_for_index_ready()
+ingest_data()
+
+# Export the index for use in other modules
+index = pc.Index(index_name)
