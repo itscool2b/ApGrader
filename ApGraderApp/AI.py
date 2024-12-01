@@ -1,36 +1,30 @@
 import os
 from dotenv import load_dotenv
-from PyPDF2 import PdfReader
 import openai
+from PyPDF2 import PdfReader
 from langchain.agents import Tool, initialize_agent
 from langchain.prompts import PromptTemplate
-from .pineconesetup import index
 from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain_openai.chat_models import ChatOpenAI
-from openai import OpenAI
+from langchain.chat_models import ChatOpenAI
+from .pineconesetup import index
+
 load_dotenv()
 
-#pdf reader
-#reader = PdfReader("leq.pdf")
-#texts = "".join([page.extract_text() for page in reader.pages])
-#print(texts)
-#embeddings
+# Load OpenAI API key
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY, model="text-embedding-3-large")
+openai.api_key = OPENAI_API_KEY
 
-#vector database
-#store = FAISS.from_texts([texts], embeddings)
+# Initialize OpenAI embeddings
+embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY, model="text-embedding-ada-002")
 
-#functions
-#def get_relevant_documents(query):
-   # return store.similarity_search(query, k=5)
+# Function to retrieve relevant documents
 def get_relevant_documents(query):
     response = openai.Embedding.create(input=query, model="text-embedding-ada-002")
     query_embedding = response['data'][0]['embedding']
     results = index.query(vector=query_embedding, top_k=5, include_metadata=True)
     return [result["metadata"]["text"] for result in results["matches"]]
 
-#prompt template
+# Define the prompt template
 prompt = PromptTemplate.from_template(""" You are an AP US History essay grader following the College Board's rubric. Your task is to evaluate a student's essay with the utmost accuracy, analyzing it against the provided rubric and example graded essays from the AP US History standards. Your evaluation must align precisely with the prompt provided and should reflect the specific requirements and focus outlined in the rubric.
 
 The provided rubric and example essays are included below for your reference:
@@ -61,33 +55,31 @@ Total Score (out of 6): [Score]
 Feedback Summary:
 [Provide a detailed summary of strengths, weaknesses, and specific suggestions for improvement, emphasizing alignment with the given prompt and rubric expectations.] """)
 
-#relevant_shit = get_relevant_documents(query)
-
+# Initialize the LLM
 llm = ChatOpenAI(
     openai_api_key=OPENAI_API_KEY,
     model="gpt-4"
 )
 
+# Define tools for the agent
 tools = [
     Tool(
         name="get rubric and sample essays",
-        func = lambda query: get_relevant_documents(query),
+        func=lambda query: get_relevant_documents(query),
         description="Use this tool to retrieve relevant sections of the rubric and example essays for grading."
     )
 ]
 
-
+# Initialize the agent
 agent = initialize_agent(
     llm=llm,
-    hand_parsing_errors=True,
-    max_iterations=50,
     tools=tools,
-    agent="zero-shot-react-description", 
+    agent="zero-shot-react-description",
     verbose=True
 )
 
+# Function to evaluate an essay
 def evaluate_essay(student_essay):
-    
     query = "the entire AP US History LEQ rubric and sample essays"
     relevant_docs = "\n\n".join(get_relevant_documents(query))
 
@@ -96,5 +88,4 @@ def evaluate_essay(student_essay):
         student_essay=student_essay
     )
 
-    
     return agent.run(formatted_prompt)

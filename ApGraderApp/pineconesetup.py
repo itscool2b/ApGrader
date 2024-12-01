@@ -38,8 +38,8 @@ def reset_index():
 def wait_for_index_ready(timeout=60):
     start_time = time.time()
     while time.time() - start_time < timeout:
-        status = pinecone.describe_index(index_name).status
-        if status.get("ready"):
+        index_description = pinecone.describe_index(index_name)
+        if index_description.status == 'ready':
             print(f"Index {index_name} is ready.")
             return
         time.sleep(1)
@@ -58,7 +58,7 @@ def ingest_data():
         print(f"Error reading PDF: {e}")
         return
 
-    # Create embeddings
+    # Create embeddings using OpenAI
     try:
         response = openai.Embedding.create(input=texts, model="text-embedding-ada-002")
         embedding = response['data'][0]['embedding']
@@ -66,7 +66,7 @@ def ingest_data():
         print(f"Error creating embeddings: {e}")
         return
 
-    # Upsert data
+    # Upsert data into the Pinecone index
     try:
         index.upsert([("leq_pdf", embedding, {"text": texts})])
         print("Data successfully ingested.")
