@@ -5,8 +5,8 @@ import openai
 from langchain.agents import Tool, initialize_agent
 from langchain.prompts import PromptTemplate
 from .pineconesetup import index
-from langchain_community.embeddings import OpenAIEmbeddings
-from langchain_community.chat_models import ChatOpenAI
+from langchain_openai.embeddings import OpenAIEmbeddings
+from langchain_openai.chat_models import ChatOpenAI
 from openai import OpenAI
 load_dotenv()
 

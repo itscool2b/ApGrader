@@ -68,9 +68,12 @@ def ingest_data():
         print(f"Error reading PDF: {e}")
         return
 
-    # Create embeddings
+    # Create embeddings using the new OpenAI API
     try:
-        response = openai.Embedding.create(input=[texts], model="text-embedding-ada-002")
+        response = openai.Embedding.create(
+            input=texts,
+            model="text-embedding-ada-002"
+        )
         embedding = response['data'][0]['embedding']
     except Exception as e:
         print(f"Error creating embeddings: {e}")
