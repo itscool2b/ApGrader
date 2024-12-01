@@ -1,6 +1,7 @@
 from django.urls import path
 from .views import process
 
+
 urlpatterns = [
-    path("sa/api/pdf", process, name='process')
+    path("sa/api/pdf", process, name='process'),
 ]
