@@ -4,9 +4,11 @@ from django.views.decorators.csrf import csrf_exempt
 from django.core.files.storage import FileSystemStorage
 from PyPDF2 import PdfReader
 from .AI import evaluate_essay
+from django.views.decorators.csrf import csrf_exempt
+from asgiref.sync import sync_to_async
 
-
-def process(request):
+@csrf_exempt
+async def process(request):
     if request.method == "POST":
         if 'file' not in request.FILES:
             return JsonResponse({'error':'no file provided bitch'}, status=400)
@@ -14,13 +16,13 @@ def process(request):
         pdf_file = request.FILES['file']
 
         try:
-            reader = PdfReader(pdf_file)
-            student_essay = "".join([page.extract_text() for page in reader.pages])
+            reader = await sync_to_async(PdfReader)(pdf_file)
+            student_essay = await sync_to_async(lambda:"".join([page.extract_text() for page in reader.pages]))()
         except Exception as e:
             return JsonResponse({'error': 'Failed to read PDF', 'details': str(e)}, status=500)
         
         try:
-            response = evaluate_essay(student_essay)
+            response = await sync_to_async(evaluate_essay)(student_essay)
             
         except Exception as e:
             return JsonResponse({'error': 'AI processing failed', 'details': str(e)}, status=500)
