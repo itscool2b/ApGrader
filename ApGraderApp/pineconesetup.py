@@ -1,47 +1,78 @@
 import os
 import time
-from pinecone import Pinecone, ServerlessSpec
+import pinecone
 from PyPDF2 import PdfReader
-
 from openai import OpenAI
-import os
-import time
-from pinecone import Pinecone
 from dotenv import load_dotenv
-# Load API keys
 
+# Load environment variables
 load_dotenv()
 
-api_key = os.environ.get('PINECONE_API_KEY')
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-pc = Pinecone(api_key)
+PINECONE_API_KEY = os.getenv('PINECONE_API_KEY')
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 
+# Initialize Pinecone
+pinecone.init(api_key=PINECONE_API_KEY, environment="us-east-1")
+
+# Index configuration
 index_name = "apgraderindex"
-
 dimensions = 1536
-spec = ServerlessSpec(cloud='aws',region='us-east-1')
 
-if index_name in pc.list_indexes().names():
-    pc.delete_index(index_name)
+# Initialize OpenAI client
+client = OpenAI(api_key=OPENAI_API_KEY)
 
-pc.create_index(name=index_name,
-                dimension=dimensions,
-                metric="cosine",
-                spec=spec)
+# Function to reset and recreate the index
+def reset_index():
+    if index_name in pinecone.list_indexes():
+        print(f"Deleting existing index: {index_name}")
+        pinecone.delete_index(index_name)
 
+    print(f"Creating index: {index_name}")
+    pinecone.create_index(name=index_name, dimension=dimensions, metric="cosine")
+    print(f"Index {index_name} created.")
 
+# Wait for the index to be ready
+def wait_for_index_ready(timeout=30):
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        status = pinecone.describe_index(index_name).status
+        if status.get("ready"):
+            print(f"Index {index_name} is ready.")
+            return
+        time.sleep(1)
+    raise TimeoutError(f"Index {index_name} did not become ready within {timeout} seconds.")
 
+# Function to ingest data into the index
+def ingest_data():
+    # Connect to the Pinecone index
+    index = pinecone.Index(index_name)
+    
+    # Read the PDF
+    try:
+        reader = PdfReader("leq.pdf")
+        texts = "".join([page.extract_text() for page in reader.pages])
+    except Exception as e:
+        print(f"Error reading PDF: {e}")
+        return
 
-while not pc.describe_index(index_name).status['ready']:
-    time.sleep(1)
+    # Create embeddings
+    try:
+        response = client.embeddings.create(input=texts, model="text-embedding-ada-002")
+        embedding = response['data'][0]['embedding']
+    except Exception as e:
+        print(f"Error creating embeddings: {e}")
+        return
 
-index = pc.Index(index_name)
+    # Upsert data into the index
+    try:
+        index.upsert([("leq_pdf", embedding, {"text": texts})])
+        print("Data successfully ingested into the index.")
+    except Exception as e:
+        print(f"Error upserting data: {e}")
 
-reader = PdfReader("leq.pdf")
-texts = "".join([page.extract_text() for page in reader.pages])
-
-response = client.embeddings.create(input=texts, model="text-embedding-3-small")
-embedding = response.data[0].embedding
-index.upsert([("leq_pdf", embedding, {"text": texts})])
-
-print("Succecful")
+# Main block to control execution
+if __name__ == "__main__":
+    reset_index()
+    wait_for_index_ready()
+    ingest_data()
+    print("Setup completed successfully.")
