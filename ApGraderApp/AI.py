@@ -5,7 +5,7 @@ import openai
 from langchain.agents import Tool, initialize_agent
 from langchain.prompts import PromptTemplate
 from .pineconesetup import index
-from langchain_openai.embeddings import OpenAIEmbeddings
+from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain_openai.chat_models import ChatOpenAI
 from openai import OpenAI
 load_dotenv()
@@ -17,7 +17,7 @@ load_dotenv()
 #embeddings
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY, model="text-embedding-3-large")
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
 #vector database
 #store = FAISS.from_texts([texts], embeddings)
 
@@ -25,10 +25,9 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 #def get_relevant_documents(query):
    # return store.similarity_search(query, k=5)
 def get_relevant_documents(query):
-    import openai
-    response = client.embeddings.create(query, model="text-embedding-3-small")
-    query_embedding = response.data[0].embedding
-    results = index.query(query_embedding, top_k=5, include_metadata=True)
+    response = openai.Embedding.create(input=query, model="text-embedding-ada-002")
+    query_embedding = response['data'][0]['embedding']
+    results = index.query(vector=query_embedding, top_k=5, include_metadata=True)
     return [result["metadata"]["text"] for result in results["matches"]]
 
 #prompt template
