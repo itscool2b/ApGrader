@@ -7,10 +7,10 @@ from openai import OpenAI
 import os
 import time
 from pinecone import Pinecone
-
+from dotenv import load_dotenv
 # Load API keys
 
-
+load_dotenv()
 
 api_key = os.environ.get('PINECONE_API_KEY')
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
