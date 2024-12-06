@@ -1,23 +1,23 @@
 import os
 from dotenv import load_dotenv
 import openai
-import pinecone
+from pinecone import Pinecone, ServerlessSpec
 from langchain.agents import Tool, initialize_agent
 from langchain.prompts import PromptTemplate
 from langchain.chat_models import ChatOpenAI
 from langchain.embeddings.openai import OpenAIEmbeddings
 
+from .pineconesetup import pc, index_name  # Assuming you can import pc and index_name from pineconesetup
+
 load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
-PINECONE_ENV = os.getenv("PINECONE_ENV", "us-east-1-aws")
 
 openai.api_key = OPENAI_API_KEY
-pinecone.init(api_key=PINECONE_API_KEY, environment=PINECONE_ENV)
 
-index_name = "apgraderindex"
-index = pinecone.Index(index_name)
+# Use the existing Pinecone client (pc) and index
+index = pc.Index(index_name)
 
 embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY, model="text-embedding-ada-002")
 
@@ -27,7 +27,7 @@ def get_relevant_documents(query):
     results = index.query(query_embedding, top_k=5, include_metadata=True)
     return [match["metadata"]["text"] for match in results["matches"]]
 
-prompt = PromptTemplate.from_template("""Your prompt template here...""")
+prompt = PromptTemplate.from_template("""Your Prompt Template Here""")
 
 llm = ChatOpenAI(
     openai_api_key=OPENAI_API_KEY,
