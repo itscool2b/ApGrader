@@ -26,3 +26,4 @@ urlpatterns = [
     path("ApGrader/", include('ApGraderApp.urls')),
     path("", home, name='home')
 ]
+

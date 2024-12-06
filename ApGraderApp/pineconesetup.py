@@ -1,48 +1,50 @@
 import os
 import time
-from pinecone import Pinecone, ServerlessSpec
+import pinecone
 from PyPDF2 import PdfReader
-
-from openai import OpenAI
-import os
-import time
-from pinecone import Pinecone
+import openai
 from dotenv import load_dotenv
-# Load API keys
 
 load_dotenv()
 
+# Set API keys
+pinecone_api_key = os.environ.get('PINECONE_API_KEY')
+pinecone_env = os.environ.get('PINECONE_ENV', 'us-east-1-aws')
+openai_api_key = os.environ.get('OPENAI_API_KEY')
 
-api_key = os.environ.get('PINECONE_API_KEY')
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-pc = Pinecone(api_key)
+openai.api_key = openai_api_key
+
+pinecone.init(api_key=pinecone_api_key, environment=pinecone_env)
 
 index_name = "apgraderindex"
-
 dimensions = 1536
-spec = ServerlessSpec(cloud='aws',region='us-east-1')
 
-if index_name in pc.list_indexes().names():
-    pc.delete_index(index_name)
+# Delete index if exists
+if index_name in pinecone.list_indexes():
+    pinecone.delete_index(index_name)
 
-pc.create_index(name=index_name,
-                dimension=dimensions,
-                metric="cosine",
-                spec=spec)
+# Create index
+pinecone.create_index(
+    name=index_name,
+    dimension=dimensions,
+    metric="cosine"
+)
 
-
-
-
-while not pc.describe_index(index_name).status['ready']:
+# Wait until index is ready
+while True:
+    desc = pinecone.describe_index(index_name)
+    if desc.status.get('ready', False):
+        break
     time.sleep(1)
 
-index = pc.Index(index_name)
+index = pinecone.Index(index_name)
 
 reader = PdfReader("leq.pdf")
 texts = "".join([page.extract_text() for page in reader.pages])
 
-response = client.embeddings.create(input=texts, model="text-embedding-ada-002")
-embedding = response.data[0].embedding
+response = openai.Embedding.create(input=[texts], model="text-embedding-ada-002")
+embedding = response['data'][0]['embedding']
+
 index.upsert([("leq_pdf", embedding, {"text": texts})])
 
-print("Succecful")
+print("Successful")
