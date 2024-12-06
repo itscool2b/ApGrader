@@ -2,7 +2,7 @@ import os
 import time
 from pinecone import Pinecone, ServerlessSpec
 from PyPDF2 import PdfReader
-from openai import OpenAI
+import openai
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -30,22 +30,27 @@ pc.create_index(
 )
 
 # Wait for the index to be ready
-while not pc.describe_index(index_name).status['ready']:
+while not pc.describe_index(index_name).status.get('ready', False):
     time.sleep(1)
 
 index = pc.Index(index_name)
 
-client = OpenAI(api_key=openai_api_key)
+# Set OpenAI API key
+openai.api_key = openai_api_key
+
+# Construct absolute path to leq.pdf based on this file's location
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+pdf_path = os.path.join(BASE_DIR, "leq.pdf")
 
 # Extract text from PDF
-reader = PdfReader("leq.pdf")
-texts = "".join([page.extract_text() for page in reader.pages])
+reader = PdfReader(pdf_path)
+texts = "".join(page.extract_text() for page in reader.pages)
 
 # Create embeddings
-response = client.embeddings.create(input=texts, model="text-embedding-ada-002")
-embedding = response.data[0].embedding
+response = openai.Embedding.create(input=[texts], model="text-embedding-ada-002")
+embedding = response['data'][0]['embedding']
 
 # Upsert vectors to Pinecone
 index.upsert([("leq_pdf", embedding, {"text": texts})])
 
-print("Succecful")
+print("Successful")
