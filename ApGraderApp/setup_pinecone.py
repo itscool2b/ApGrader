@@ -40,10 +40,13 @@ response = openai.Embedding.create(
     input=[texts],
     model="text-embedding-ada-002"
 )
+embedding = response["data"][0]["embedding"]
 
-embedding = response['data'][0]['embedding']
+# Upsert to Pinecone
+index.upsert([("leq_pdf", embedding, {"text": texts})])
+
 
 # Upsert vectors to Pinecone
-index.upsert([("leq_pdf", embedding, {"text": texts})])
+
 
 print("Index setup complete")
