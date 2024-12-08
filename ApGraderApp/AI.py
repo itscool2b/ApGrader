@@ -6,33 +6,32 @@ from langchain.prompts import PromptTemplate
 from langchain.chat_models import ChatOpenAI
 from langchain.embeddings.openai import OpenAIEmbeddings
 
-# Load environment variables
+
 load_dotenv()
 
-# Retrieve the OpenAI API key
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 openai.api_key = OPENAI_API_KEY
 
-# Import Pinecone setup function to get the index
+
 from .pineconesetup import get_index
 index = get_index()
 
-# Define OpenAI embeddings
+
 embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY, model="text-embedding-ada-002")
 
-# Function to fetch relevant documents from Pinecone
+
 def get_relevant_documents(query):
-    # Generate embedding for the query using OpenAI's API
+  
     response = openai.Embedding.create(input=[query], model="text-embedding-ada-002")
     query_embedding = response['data'][0]['embedding']
     
-    # Query Pinecone index for relevant matches
+    
     results = index.query(query_embedding, top_k=5, include_metadata=True)
     
-    # Extract and return text from the metadata of the results
+    
     return [match["metadata"]["text"] for match in results["matches"]]
 
-# Prompt template for evaluating essays
+
 prompt = PromptTemplate.from_template("""
 You are an AP US History essay grader following the College Board's rubric. 
 Your task is to evaluate a student's essay with the utmost accuracy, analyzing 
@@ -71,13 +70,13 @@ Output Format:
 - **Feedback Summary:** [Provide a detailed summary of strengths, weaknesses, and specific suggestions for improvement, emphasizing alignment with the given prompt and rubric expectations.]
 """)
 
-# Define the LLM for LangChain with OpenAI's GPT-4
+
 llm = ChatOpenAI(
     openai_api_key=OPENAI_API_KEY,
     model="gpt-4"
 )
 
-# Define tools for the agent
+
 tools = [
     Tool(
         name="get rubric and sample essays",
@@ -86,7 +85,7 @@ tools = [
     )
 ]
 
-# Initialize the agent
+
 agent = initialize_agent(
     llm=llm,
     tools=tools,
@@ -94,18 +93,17 @@ agent = initialize_agent(
     verbose=True
 )
 
-# Function to evaluate an essay
+
 def evaluate_essay(student_essay):
     query = "the entire AP US History LEQ rubric and sample essays"
     relevant_docs = "\n\n".join(get_relevant_documents(query))
     
-    # Format the prompt for evaluation
+   
     formatted_prompt = prompt.format(
         relevant_docs=relevant_docs,
         student_essay=student_essay
     )
     
-    # Use OpenAI's ChatCompletion API for grading
     response = openai.ChatCompletion.create(
         model="gpt-4",
         messages=[
