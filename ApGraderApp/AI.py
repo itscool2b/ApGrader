@@ -6,36 +6,43 @@ from langchain.prompts import PromptTemplate
 from langchain.chat_models import ChatOpenAI
 from langchain.embeddings.openai import OpenAIEmbeddings
 
+from .pineconesetup import get_index
 
+# Load environment variables
 load_dotenv()
 
+# Load API keys
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 openai.api_key = OPENAI_API_KEY
 
-
-from .pineconesetup import get_index
+# Initialize Pinecone index
 index = get_index()
 
-
+# Initialize embeddings
 embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY, model="text-embedding-ada-002")
 
-
 def get_relevant_documents(query):
-  
-    response = openai.Embedding.create(
-    model="text-embedding-ada-002",
-    input=query
-    )
-    query_embedding = response["data"][0]["embedding"]
+    """Retrieve relevant documents from Pinecone based on the query embedding."""
+    try:
+        # Generate embedding for the query
+        response = openai.Embedding.create(
+            model="text-embedding-ada-002",
+            input=query
+        )
+        query_embedding = response["data"][0]["embedding"]
 
-    
-    
-    results = index.query(query_embedding, top_k=5, include_metadata=True)
-    
-    
-    return [match["metadata"]["text"] for match in results["matches"]]
+        # Query Pinecone index for relevant documents
+        results = index.query(
+            vector=query_embedding,
+            top_k=5,
+            include_metadata=True
+        )
+        return [match["metadata"]["text"] for match in results["matches"]]
 
+    except Exception as e:
+        raise RuntimeError(f"Error in embedding or querying Pinecone: {e}")
 
+# Define the prompt template
 prompt = PromptTemplate.from_template("""
 You are an AP US History essay grader following the College Board's rubric. 
 Your task is to evaluate a student's essay with the utmost accuracy, analyzing 
@@ -74,13 +81,13 @@ Output Format:
 - **Feedback Summary:** [Provide a detailed summary of strengths, weaknesses, and specific suggestions for improvement, emphasizing alignment with the given prompt and rubric expectations.]
 """)
 
-
+# Initialize the LLM
 llm = ChatOpenAI(
     openai_api_key=OPENAI_API_KEY,
     model="gpt-4"
 )
 
-
+# Define tools for LangChain agent
 tools = [
     Tool(
         name="get rubric and sample essays",
@@ -89,7 +96,7 @@ tools = [
     )
 ]
 
-
+# Initialize the agent
 agent = initialize_agent(
     llm=llm,
     tools=tools,
@@ -97,21 +104,30 @@ agent = initialize_agent(
     verbose=True
 )
 
-
 def evaluate_essay(student_essay):
-    query = "the entire AP US History LEQ rubric and sample essays"
-    relevant_docs = "\n\n".join(get_relevant_documents(query))
+    """Evaluate the student's essay using the OpenAI GPT-4 model and the rubric."""
+    try:
+        # Query for relevant documents
+        query = "the entire AP US History LEQ rubric and sample essays"
+        relevant_docs = "\n\n".join(get_relevant_documents(query))
 
-    formatted_prompt = prompt.format(
-        relevant_docs=relevant_docs,
-        student_essay=student_essay
-    )
+        # Format the prompt with the rubric and essay
+        formatted_prompt = prompt.format(
+            relevant_docs=relevant_docs,
+            student_essay=student_essay
+        )
 
-    response = openai.ChatCompletion.create(
-        model="gpt-4",
-        messages=[
-            {"role": "system", "content": "You are an AP US History essay grader."},
-            {"role": "user", "content": formatted_prompt},
-        ],
-    )
-    return response['choices'][0]['message']['content']
+        # Call the OpenAI ChatCompletion API
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "You are an AP US History essay grader."},
+                {"role": "user", "content": formatted_prompt},
+            ],
+        )
+
+        # Extract and return the response content
+        return response['choices'][0]['message']['content']
+
+    except Exception as e:
+        raise RuntimeError(f"Error in evaluating essay: {e}")
