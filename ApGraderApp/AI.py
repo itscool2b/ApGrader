@@ -22,8 +22,12 @@ embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY, model="text-embeddi
 
 def get_relevant_documents(query):
   
-    response = openai.Embedding.create(input=[query], model="text-embedding-ada-002")
-    query_embedding = response['data'][0]['embedding']
+    response = openai.Embedding.create(
+    model="text-embedding-ada-002",
+    input=query
+    )
+    query_embedding = response["data"][0]["embedding"]
+
     
     
     results = index.query(query_embedding, top_k=5, include_metadata=True)
