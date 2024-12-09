@@ -28,9 +28,10 @@ def get_relevant_documents(query):
     """Retrieve relevant documents from Pinecone based on the query embedding."""
     try:
         # Generate embedding for the query using the older API format
+        
         response = openai.Embedding.create(
-            input=[query],  # Older API requires input as a list
-            model="text-embedding-ada-002"
+        model="text-embedding-ada-002",
+        input=query
         )
         query_embedding = response["data"][0]["embedding"]
 
