@@ -47,7 +47,8 @@ prompt = PromptTemplate.from_template("""
 You are an AP US History essay grader using the College Board's updated LEQ rubric from 2023. 
 Your task is to evaluate a student's Long Essay Question (LEQ) strictly based on the rubric provided. 
 All feedback, scores, and analysis must directly reference the rubric and examples retrieved from the vector database. 
-Do not introduce any criteria not explicitly included in the rubric.
+Do not introduce any criteria not explicitly included in the rubric. 
+The prompt and essay will be given yo you at the same time. Meaning it will be given to you in the same text block. So make sure to pay attention and do everything accurately.
 
 The rubric and related examples retrieved from the vector database are provided below:
 {relevant_docs}
