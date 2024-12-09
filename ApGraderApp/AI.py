@@ -127,7 +127,7 @@ def evaluate_essay(student_essay):
         )
 
         # Extract and return the response content
-        return response.choices[0].message
+        return response.choices[0].message["content"]
 
     except Exception as e:
         raise RuntimeError(f"Error in evaluating essay: {e}")
