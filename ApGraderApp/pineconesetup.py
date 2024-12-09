@@ -16,10 +16,11 @@ def setup_index():
         pc.delete_index(index_name)
     pc.create_index(
         name=index_name,
-        dimension=dimensions,
+        dimension=1536,
         metric="cosine",
-        spec=spec
+        spec=ServerlessSpec(cloud='aws', region='us-east-1')
     )
-    
+
 def get_index():
     return pc.Index(index_name)
+

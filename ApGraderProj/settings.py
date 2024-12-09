@@ -126,6 +126,4 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-CORS_ALLOWED_ORIGINS = [
-'https://apush-grader.vercel.app/Dashboard/Submission',
-]
+CORS_ORIGIN_ALLOW_ALL = True

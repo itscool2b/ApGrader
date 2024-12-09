@@ -97,13 +97,12 @@ agent = initialize_agent(
 def evaluate_essay(student_essay):
     query = "the entire AP US History LEQ rubric and sample essays"
     relevant_docs = "\n\n".join(get_relevant_documents(query))
-    
-   
+
     formatted_prompt = prompt.format(
         relevant_docs=relevant_docs,
         student_essay=student_essay
     )
-    
+
     response = openai.ChatCompletion.create(
         model="gpt-4",
         messages=[
@@ -111,6 +110,4 @@ def evaluate_essay(student_essay):
             {"role": "user", "content": formatted_prompt},
         ],
     )
-    
-    # Return the content of the response
     return response['choices'][0]['message']['content']
