@@ -19,12 +19,15 @@ openai.api_key = OPENAI_API_KEY
 index = get_index()
 
 # Initialize embeddings
-embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY, model="text-embedding-ada-002")
+embeddings = OpenAIEmbeddings(
+    openai_api_key=OPENAI_API_KEY,
+    model="text-embedding-ada-002"
+)
 
 def get_relevant_documents(query):
     """Retrieve relevant documents from Pinecone based on the query embedding."""
     try:
-        # Generate embedding for the query
+        # Generate embedding for the query using the updated API format
         response = openai.Embedding.create(
             model="text-embedding-ada-002",
             input=query
