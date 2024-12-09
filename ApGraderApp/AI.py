@@ -44,60 +44,53 @@ def get_relevant_documents(query):
 
 # Define the prompt template
 prompt = PromptTemplate.from_template("""
-You are an AP US History essay grader following the College Board's LEQ rubric. 
-Your task is to evaluate a student's Long Essay Question (LEQ) based strictly on the rubric stored in the vector database. 
-Use only the information from the provided rubric and related examples retrieved from the vector store for grading. 
-All feedback, scoring, and analysis must be grounded explicitly in the rubric criteria.
+You are an AP US History essay grader using the College Board's updated LEQ rubric from 2023. 
+Your task is to evaluate a student's Long Essay Question (LEQ) strictly based on the rubric provided. 
+All feedback, scores, and analysis must directly reference the rubric and examples retrieved from the vector database. 
+Do not introduce any criteria not explicitly included in the rubric.
 
-The retrieved rubric and sample essays are included below for reference:
+The rubric and related examples retrieved from the vector database are provided below:
 {relevant_docs}
 
 Student Essay to Grade:
 {student_essay}
 
-Grading Instructions:
-Evaluate the student's LEQ solely based on the following criteria from the rubric. Provide scores and detailed feedback for each category exactly as structured in the rubric:
+### Evaluation Criteria:
+1. **Contextualization (0-1 point):**
+   Refer to the rubric to evaluate this category.
 
-1. **Thesis (0-1 point):**
-    - Does the essay have a clear and defensible thesis that directly addresses all parts of the prompt?
-    - Does the thesis establish a line of reasoning?
-
-2. **Contextualization (0-1 point):**
-    - Does the essay situate its argument within a broader historical context relevant to the prompt?
+2. **Thesis / Claim (0-1 point):**
+   Refer to the rubric to evaluate this category.
 
 3. **Evidence (0-2 points):**
-    - **Specific Evidence (1 point):** Does the essay provide specific and relevant historical evidence?
-    - **Evidence Supporting an Argument (1 point):** Is the evidence used effectively to support the thesis or argument?
+   - Specific Evidence: Refer to the rubric to evaluate this subcategory.
+   - Evidence Supporting Argument: Refer to the rubric to evaluate this subcategory.
 
 4. **Analysis and Reasoning (0-2 points):**
-    - **Historical Reasoning (1 point):** Does the essay demonstrate the use of historical reasoning skills (causation, comparison, continuity, and change) relevant to the prompt?
-    - **Complex Understanding (1 point):** Does the essay demonstrate a complex understanding of the historical development addressed in the prompt?
+   - Historical Reasoning: Refer to the rubric to evaluate this subcategory.
+   - Complex Understanding: Refer to the rubric to evaluate this subcategory.
 
-5. **Synthesis (0-1 point):**
-    - Does the essay extend the argument by explaining connections to a different historical period, development, or context?
-
-Output Format:
-- **Thesis (0-1 point):** [Score and specific feedback]
-- **Contextualization (0-1 point):** [Score and specific feedback]
+### Output Format:
+- **Contextualization (0-1 point):** [Score with feedback]
+- **Thesis / Claim (0-1 point):** [Score with feedback]
 - **Evidence (0-2 points):**
-    - Specific Evidence: [Score and specific feedback]
-    - Evidence Supporting an Argument: [Score and specific feedback]
+    - Specific Evidence: [Score with feedback]
+    - Evidence Supporting Argument: [Score with feedback]
 - **Analysis and Reasoning (0-2 points):**
-    - Historical Reasoning: [Score and specific feedback]
-    - Complex Understanding: [Score and specific feedback]
-- **Synthesis (0-1 point):** [Score and specific feedback]
+    - Historical Reasoning: [Score with feedback]
+    - Complex Understanding: [Score with feedback]
 - **Total Score (out of 6):** [Score]
 
-**Feedback Summary:**
-Provide a detailed summary of the essay's strengths, weaknesses, and suggestions for improvement. Ensure your feedback explicitly references the rubric criteria and clearly identifies how the essay does or does not meet the rubric's expectations.
+### Feedback Summary:
+Provide a summary of the essay’s strengths, weaknesses, and areas for improvement. Feedback must directly reference the rubric criteria.
 
-Strictly adhere to the rubric criteria retrieved from the vector store for all evaluations.
+Strictly use the rubric retrieved from the vector database for all evaluations.
 """)
 
 # Initialize the LLM
 llm = ChatOpenAI(
     openai_api_key=OPENAI_API_KEY,
-    model="gpt-4"
+    model="gpt-4o-mini"
 )
 
 # Define tools for LangChain agent
@@ -120,27 +113,31 @@ agent = initialize_agent(
 def evaluate_essay(student_essay):
     """Evaluate the student's essay using the OpenAI GPT-4 model and the rubric."""
     try:
+        response = agent.run({
+            "query": "You are an AP US History essay grader.",
+            "student_essay": student_essay
+        })
+        return response
         # Query for relevant documents
-        query = "the entire AP US History LEQ rubric and sample essays"
-        relevant_docs = "\n\n".join(get_relevant_documents(query))
+        ##relevant_docs = "\n\n".join(get_relevant_documents(query))
 
         # Format the prompt with the rubric and essay
-        formatted_prompt = prompt.format(
-            relevant_docs=relevant_docs,
-            student_essay=student_essay
-        )
+        #formatted_prompt = prompt.format(
+            #relevant_docs=relevant_docs,
+            #student_essay=student_essay
+        #)
 
         # Call the OpenAI ChatCompletion API
-        response = client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": "You are an AP US History essay grader."},
-                {"role": "user", "content": formatted_prompt},
-            ],
-        )
+        #response = client.chat.completions.create(
+            #model="gpt-4o",
+            #messages=[
+                #{"role": "system", "content": "You are an AP US History essay grader."},
+                #{"role": "user", "content": formatted_prompt},
+            #],
+        #)
 
         # Extract and return the response content
-        return response.choices[0].message.content
+        #return response.choices[0].message.content
 
     except Exception as e:
         raise RuntimeError(f"Error in evaluating essay: {e}")
