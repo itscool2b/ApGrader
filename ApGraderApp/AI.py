@@ -5,7 +5,7 @@ from langchain.agents import Tool, initialize_agent
 from langchain.prompts import PromptTemplate
 from langchain.chat_models import ChatOpenAI
 from langchain.embeddings.openai import OpenAIEmbeddings
-
+from openai import OpenAI
 from .pineconesetup import get_index
 
 # Load environment variables
@@ -14,26 +14,22 @@ load_dotenv()
 # Load API keys
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 openai.api_key = OPENAI_API_KEY
-
+client = OpenAI(api_key=OPENAI_API_KEY)
 # Initialize Pinecone index
 index = get_index()
 
-# Initialize embeddings
-embeddings = OpenAIEmbeddings(
-    openai_api_key=OPENAI_API_KEY,
-    model="text-embedding-ada-002"
-)
 
 def get_relevant_documents(query):
     """Retrieve relevant documents from Pinecone based on the query embedding."""
     try:
         # Generate embedding for the query using the older API format
         
-        response = openai.Embedding.create(
-        model="text-embedding-ada-002",
-        input=query
+        response = client.embeddings.create(
+        input=query,
+        model="text-embedding-ada-002"
+        
         )
-        query_embedding = response["data"][0]["embedding"]
+        query_embedding = response.data[0].embedding
 
         # Query Pinecone index for relevant documents
         results = index.query(
