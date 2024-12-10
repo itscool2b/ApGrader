@@ -4,7 +4,6 @@ from django.views.decorators.csrf import csrf_exempt
 from PyPDF2 import PdfReader
 from .AI import evaluate_essay
 from asgiref.sync import sync_to_async
-import aiofiles
 import logging
 
 logger = logging.getLogger(__name__)
@@ -18,12 +17,11 @@ async def process(request):
 
             pdf_file = request.FILES['file']
 
-            # Read the file asynchronously as a binary stream
-            data = pdf_file.read()  # Use `read` to access InMemoryUploadedFile content
+            # Read the file content
+            data = pdf_file.read()
 
             # Ensure the file is a readable PDF
-            reader = PdfReader()
-            reader.append(data)
+            reader = PdfReader(stream=data)
 
             student_essay = "".join([page.extract_text() for page in reader.pages])
             logger.info("Completed PDF text extraction")
