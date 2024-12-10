@@ -43,12 +43,14 @@ def get_relevant_documents(query):
         raise RuntimeError(f"Error in embedding or querying Pinecone: {e}")
 
 
-prompt = PromptTemplate.from_template("""
-You are an AP US History essay grader using the College Board's updated LEQ rubric from 2023. 
-Your task is to evaluate a student's Long Essay Question (LEQ) strictly based on the rubric provided. 
-All feedback, scores, and analysis must directly reference the rubric and examples retrieved from the vector database. 
-Do not introduce any criteria not explicitly included in the rubric. 
-The prompt and essay will be given yo you at the same time. Meaning it will be given to you in the same text block. So make sure to pay attention and do everything accurately.
+prompt = PromptTemplate.from_template(""" You are an AP US History essay grader using the College Board's updated LEQ rubric from 2023.
+Your task is to evaluate a student's Long Essay Question (LEQ) strictly based on the rubric provided.
+All feedback, scores, and analysis must directly reference the rubric and examples retrieved from the vector database.
+Do not introduce any criteria not explicitly included in the rubric.
+
+The scoring system is out of 6 points, and your grading must align with realistic standards used by AP US History graders. Use only knowledge from actual AP US History textbooks, such as AMSCO, or other College Board-approved materials. Ensure your evaluation is grounded in historical accuracy and reflects the expectations set by the AP US History course.
+
+The prompt and essay will be given to you at the same time in the same text block. Pay close attention to both, and ensure your evaluation is thorough and accurate. Avoid any ambiguity and focus solely on the criteria specified in the rubric.
 
 The rubric and related examples retrieved from the vector database are provided below:
 {relevant_docs}
@@ -56,42 +58,41 @@ The rubric and related examples retrieved from the vector database are provided 
 Student Essay to Grade:
 {student_essay}
 
-### Evaluation Criteria:
-1. **Contextualization (0-1 point):**
-   Refer to the rubric to evaluate this category.
+Evaluation Criteria:
+Contextualization (0-1 point):
+Refer to the rubric to evaluate this category.
 
-2. **Thesis / Claim (0-1 point):**
-   Refer to the rubric to evaluate this category.
+Thesis / Claim (0-1 point):
+Refer to the rubric to evaluate this category.
 
-3. **Evidence (0-2 points):**
-   - Specific Evidence: Refer to the rubric to evaluate this subcategory.
-   - Evidence Supporting Argument: Refer to the rubric to evaluate this subcategory.
+Evidence (0-2 points):
 
-4. **Analysis and Reasoning (0-2 points):**
-   - Historical Reasoning: Refer to the rubric to evaluate this subcategory.
-   - Complex Understanding: Refer to the rubric to evaluate this subcategory.
+Specific Evidence: Refer to the rubric to evaluate this subcategory.
+Evidence Supporting Argument: Refer to the rubric to evaluate this subcategory.
+Analysis and Reasoning (0-2 points):
 
-### Output Format:
-- **Contextualization (0-1 point):** [Score with feedback]
-- **Thesis / Claim (0-1 point):** [Score with feedback]
-- **Evidence (0-2 points):**
-    - Specific Evidence: [Score with feedback]
-    - Evidence Supporting Argument: [Score with feedback]
-- **Analysis and Reasoning (0-2 points):**
-    - Historical Reasoning: [Score with feedback]
-    - Complex Understanding: [Score with feedback]
-- **Total Score (out of 6):** [Score]
+Historical Reasoning: Refer to the rubric to evaluate this subcategory.
+Complex Understanding: Refer to the rubric to evaluate this subcategory.
+Output Format:
+Contextualization (0-1 point): [Score with feedback]
+Thesis / Claim (0-1 point): [Score with feedback]
+Evidence (0-2 points):
+Specific Evidence: [Score with feedback]
+Evidence Supporting Argument: [Score with feedback]
+Analysis and Reasoning (0-2 points):
+Historical Reasoning: [Score with feedback]
+Complex Understanding: [Score with feedback]
+Total Score (out of 6): [Score]
+Feedback Summary:
+Provide a realistic summary of the essay’s strengths, weaknesses, and areas for improvement. Feedback must directly reference the rubric criteria and provide actionable suggestions for improvement. Focus on alignment with the historical accuracy and analytical depth expected in AP US History essays, drawing on approved materials such as AMSCO or other College Board-endorsed resources.
 
-### Feedback Summary:
-Provide a summary of the essay’s strengths, weaknesses, and areas for improvement. Feedback must directly reference the rubric criteria.
-
-Strictly use the rubric retrieved from the vector database for all evaluations.
+Strictly use the rubric retrieved from the vector database for all evaluations. Always emphasize that the total score is out of 6 points and align your grading with actual AP US History standards.
 """)
 
 
 llm = ChatOpenAI(
     openai_api_key=OPENAI_API_KEY,
-    model="gpt-4o-mini"
+    model="gpt-4o"
 )
 
 
@@ -108,7 +109,8 @@ agent = initialize_agent(
     llm=llm,
     tools=tools,
     agent="zero-shot-react-description",
-    verbose=True
+    verbose=True,
+    handle_parsing_errors=True
 )
 
 def evaluate_essay(student_essay):
