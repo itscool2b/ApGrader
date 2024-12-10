@@ -135,7 +135,7 @@ def evaluate_essay(student_essay):
     """Evaluate the student's essay using the OpenAI GPT-4 model and the rubric."""
     try:
 
-        relevant_docs = agent.run("Retrieve AP US History rubric and examples for grading.")
+        relevant_docs = agent.invoke("Retrieve AP US History rubric and examples for grading.")
         
         
         formatted_prompt = prompt.format(
@@ -144,7 +144,7 @@ def evaluate_essay(student_essay):
         )
         
         
-        response = agent.run(formatted_prompt)
+        response = agent.invoke(formatted_prompt)
         return response
 
     except Exception as e:
