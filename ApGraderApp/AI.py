@@ -4,25 +4,25 @@ import openai
 from langchain.agents import Tool, initialize_agent
 from langchain.prompts import PromptTemplate
 from langchain.chat_models import ChatOpenAI
-from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain_community.embeddings import OpenAIEmbeddings
+
 from openai import OpenAI
 from .pineconesetup import get_index
 
-# Load environment variables
 load_dotenv()
 
 # Load API keys
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 openai.api_key = OPENAI_API_KEY
 client = OpenAI(api_key=OPENAI_API_KEY)
-# Initialize Pinecone index
+
 index = get_index()
 
 
 def get_relevant_documents(query):
     """Retrieve relevant documents from Pinecone based on the query embedding."""
     try:
-        # Generate embedding for the query using the older API format
+       
         
         response = client.embeddings.create(
         input=query,
@@ -31,7 +31,7 @@ def get_relevant_documents(query):
         )
         query_embedding = response.data[0].embedding
 
-        # Query Pinecone index for relevant documents
+        
         results = index.query(
             vector=query_embedding,
             top_k=5,
@@ -42,7 +42,7 @@ def get_relevant_documents(query):
     except Exception as e:
         raise RuntimeError(f"Error in embedding or querying Pinecone: {e}")
 
-# Define the prompt template
+
 prompt = PromptTemplate.from_template("""
 You are an AP US History essay grader using the College Board's updated LEQ rubric from 2023. 
 Your task is to evaluate a student's Long Essay Question (LEQ) strictly based on the rubric provided. 
@@ -88,22 +88,22 @@ Provide a summary of the essay’s strengths, weaknesses, and areas for improvem
 Strictly use the rubric retrieved from the vector database for all evaluations.
 """)
 
-# Initialize the LLM
+
 llm = ChatOpenAI(
     openai_api_key=OPENAI_API_KEY,
     model="gpt-4o-mini"
 )
 
-# Define tools for LangChain agent
+
 tools = [
     Tool(
         name="get rubric and sample essays",
         func=lambda query: "\n\n".join(get_relevant_documents(query)),
-        description="Retrieve relevant sections of the rubric and example essays for grading."
+        description="Retrieve relevant sections of the rubric and example essays for grading. Use the entire thing for grading for each and every part."
     )
 ]
 
-# Initialize the agent
+
 agent = initialize_agent(
     llm=llm,
     tools=tools,
@@ -114,31 +114,26 @@ agent = initialize_agent(
 def evaluate_essay(student_essay):
     """Evaluate the student's essay using the OpenAI GPT-4 model and the rubric."""
     try:
-        response = agent.run({
-            "query": "You are an AP US History essay grader.",
-            "student_essay": student_essay
-        })
+
+        relevant_docs = agent.run("Retrieve AP US History rubric and examples for grading.")
+        
+        
+        formatted_prompt = prompt.format(
+            relevant_docs=relevant_docs,
+            student_essay=student_essay
+        )
+        
+        
+        response = agent.run(formatted_prompt)
         return response
-        # Query for relevant documents
-        ##relevant_docs = "\n\n".join(get_relevant_documents(query))
-
-        # Format the prompt with the rubric and essay
-        #formatted_prompt = prompt.format(
-            #relevant_docs=relevant_docs,
-            #student_essay=student_essay
-        #)
-
-        # Call the OpenAI ChatCompletion API
-        #response = client.chat.completions.create(
-            #model="gpt-4o",
-            #messages=[
-                #{"role": "system", "content": "You are an AP US History essay grader."},
-                #{"role": "user", "content": formatted_prompt},
-            #],
-        #)
-
-        # Extract and return the response content
-        #return response.choices[0].message.content
 
     except Exception as e:
         raise RuntimeError(f"Error in evaluating essay: {e}")
+    
+
+def test_pinecone_query():
+    query = "What is the AP US History rubric for contextualization?"
+    documents = get_relevant_documents(query)
+    print("Retrieved Documents:", documents)
+
+test_pinecone_query()
