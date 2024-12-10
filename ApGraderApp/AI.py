@@ -136,4 +136,3 @@ def test_pinecone_query():
     documents = get_relevant_documents(query)
     print("Retrieved Documents:", documents)
 
-test_pinecone_query()
