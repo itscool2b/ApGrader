@@ -5,6 +5,7 @@ from django.core.files.storage import FileSystemStorage
 from PyPDF2 import PdfReader
 from .AI import evaluate_essay
 from asgiref.sync import sync_to_async
+import fitz
 
 import logging
 logger = logging.getLogger(__name__)
@@ -17,11 +18,11 @@ def process(request):
                 return JsonResponse({'error': 'No file provided'}, status=400)
 
             pdf_file = request.FILES['file']
-
+            data = pdf_file.read()
             # Ensure the file is a readable PDF
-            reader = PdfReader(pdf_file)
-            student_essay = "".join([page.extract_text() for page in reader.pages])
-
+            doc = fitz.open(stream=data, filetype="pdf")
+            student_essay = "".join([page.get_text() for page in doc])
+            logger.info("Completed PDF text extraction")
             # Process the essay
             response = evaluate_essay(student_essay)
             return JsonResponse({'response': response}, status=200)

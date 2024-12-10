@@ -127,7 +127,7 @@ agent = initialize_agent(
     llm=llm,
     tools=tools,
     agent="zero-shot-react-description",
-    verbose=False,
+    verbose=True,
     handle_parsing_errors=True
 )
 
