@@ -5,6 +5,7 @@ from PyPDF2 import PdfReader
 from .AI import evaluate_essay
 from asgiref.sync import sync_to_async
 import logging
+from io import BytesIO
 
 logger = logging.getLogger(__name__)
 
@@ -17,12 +18,13 @@ async def process(request):
 
             pdf_file = request.FILES['file']
 
-            # Read the file content
-            data = pdf_file.read()
+            # Convert the uploaded file into a BytesIO stream
+            pdf_stream = BytesIO(pdf_file.read())
 
-            # Ensure the file is a readable PDF
-            reader = PdfReader(stream=data)
+            # Initialize PdfReader with the BytesIO stream
+            reader = PdfReader(pdf_stream)
 
+            # Extract text from each page
             student_essay = "".join([page.extract_text() for page in reader.pages])
             logger.info("Completed PDF text extraction")
 
