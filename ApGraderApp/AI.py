@@ -109,6 +109,7 @@ Minimum Score Rule:
 The worst score you can give is a total of 1. If the essay is completely off-topic, incoherent, or incomplete, it should still receive at least 1 point. The only exception is if the student submits absolutely nothing—in that case, the score is 0. Otherwise, the minimum score is always 1.
 
 
+
 """
 
 
