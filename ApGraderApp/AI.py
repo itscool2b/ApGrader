@@ -67,20 +67,22 @@ Student Essay to Grade:
 Evaluation Criteria:
 
 Contextualization (0-1 point):
+Provide feedback on how well the essay establishes historical context as per the rubric. Explain whether the essay earned the point by explicitly detailing its strengths or, if not, describe the shortcomings and reference specific rubric requirements that were unmet.
 Evaluate the essay based on its ability to provide historical context, as outlined in the rubric.
 
 Thesis / Claim (0-1 point):
+Provide detailed feedback on the clarity and relevance of the thesis or claim. If the point was awarded, explain why the thesis met the rubric's standards. If not, identify the issues and suggest specific improvements.
 Assess the thesis or claim for clarity, historical relevance, and alignment with rubric criteria.
 
 Evidence (0-2 points):
 
-Specific Evidence: Evaluate the inclusion and accuracy of specific historical evidence.
-Evidence Supporting Argument: Determine whether the evidence effectively supports the essay’s arguments.
+Specific Evidence: Provide detailed feedback on the use of specific historical evidence. If the point was awarded, highlight the strengths and alignment with rubric criteria. If not, explain what was lacking and reference the rubric requirements for improvement.
+Evidence Supporting Argument: Offer detailed feedback on whether the evidence effectively supports the essay’s arguments. If the point was awarded, specify how the evidence met rubric criteria. If not, clarify the gaps and suggest ways to improve.
 
 Analysis and Reasoning (0-2 points):
 
-Historical Reasoning: Evaluate the use of historical reasoning skills.
-Complex Understanding: Assess whether the essay demonstrates a nuanced and complex understanding of the topic.
+Historical Reasoning: Provide detailed feedback on the essay's use of historical reasoning. Highlight strengths if the point was awarded, or explain how the essay fell short if not, directly referencing the rubric for guidance.
+Complex Understanding: Offer detailed feedback on the essay’s demonstration of nuanced and complex understanding. If the point was awarded, specify the strengths. If not, identify the gaps and connect the feedback to the rubric for actionable improvement.
 
 Output Format:
 
@@ -98,13 +100,15 @@ Complex Understanding: [Score with feedback]
 Total Score (out of 6): [Score]
 
 Feedback Summary:
-Provide a realistic and strict summary of the essay’s strengths, weaknesses, and areas for improvement. Feedback must directly reference the rubric criteria and provide actionable suggestions for improvement. Focus on alignment with the precise historical accuracy and analytical depth expected in AP US History essays, using the retrieved documents as supplemental guidance.
+Provide a realistic and strict summary of the essay’s strengths, weaknesses, and areas for improvement. For each scoring category, detail where points were gained or lost, explicitly referencing the rubric to explain how the essay met or failed to meet the criteria. Offer clear, actionable feedback to guide improvement in future essays. Feedback must directly reference the rubric criteria and provide actionable suggestions for improvement. Focus on alignment with the precise historical accuracy and analytical depth expected in AP US History essays, using the retrieved documents as supplemental guidance.
 
 Strict Grading Policy:
 Always emphasize that the total score is out of 6 points, and apply no leniency in evaluating the essay. Award points only when the essay fully satisfies the rubric’s requirements. Marginal or implied fulfillment of a criterion is not sufficient for credit. Align your grading with the rigorous standards used by actual AP US History graders.
 
 Minimum Score Rule:
 The worst score you can give is a total of 1. If the essay is completely off-topic, incoherent, or incomplete, it should still receive at least 1 point. The only exception is if the student submits absolutely nothing—in that case, the score is 0. Otherwise, the minimum score is always 1.
+
+
 """
 
 
