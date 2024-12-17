@@ -10,44 +10,60 @@ import json
 
 logger = logging.getLogger(__name__)
 
-@csrf_exempt
+
 async def process(request):
     try:
         if request.method == "POST":
+            json_data = None
+            file_data = None
+
+
             if 'file' not in request.FILES:
                 return JsonResponse({'error': 'No file provided'}, status=400)
 
             pdf_file = request.FILES['file']
 
-            # Convert the uploaded file into a BytesIO stream
+            
             pdf_stream = BytesIO(pdf_file.read())
 
-            # Initialize PdfReader with the BytesIO stream
             reader = PdfReader(pdf_stream)
 
-            # Extract text from each page
-            student_essay = "".join([page.extract_text() for page in reader.pages])
+            
+            file_data = "".join([page.extract_text() for page in reader.pages])
             logger.info("Completed PDF text extraction")
 
-            # Process the essay asynchronously
-            response = await sync_to_async(evaluate_essay)(student_essay)
+           
+            if request.body:
+                try:
+                    json_data = json.loads(request.body)
+                    logger.info(f"Received JSON data: {json_data}")
+                except json.JSONDecodeError:
+                    return JsonResponse({'error': 'Invalid JSON data'}, status=400)
+                
+            if file_data and json_data:
 
-            return JsonResponse({'response': response}, status=200)
+                response = await sync_to_async(evaluate_essay)(file_data, json_data)
+                return JsonResponse({'response': response}, status=200)
 
-        return JsonResponse({'error': 'Invalid request method'}, status=405)
+            
+            elif file_data:
+                return JsonResponse({'error': 'JSON data is required to evaluate the essay'}, status=400)
+
+           
+            elif json_data:
+                return JsonResponse({'error': 'PDF file is required for evaluation'}, status=400)
+
+            
+            else:
+                return JsonResponse({'error': 'No file or JSON data provided'}, status=400)
+
+        
+        else:
+            return JsonResponse({'error': 'Method not allowed'}, status=405)
+
     except Exception as e:
         logger.error(f"Error in process endpoint: {e}")
         return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
+                
 
-@csrf_exempt
-def process_prompt(request):
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            print(data)
-            
-            return JsonResponse({'message': 'JSON received successfully'})
-        except json.JSONDecodeError:
-            return JsonResponse({'error': 'Invalid JSON data'}, status=400)
-    else:
-        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
