@@ -6,6 +6,7 @@ from .AI import evaluate_essay
 from asgiref.sync import sync_to_async
 import logging
 from io import BytesIO
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -37,3 +38,16 @@ async def process(request):
     except Exception as e:
         logger.error(f"Error in process endpoint: {e}")
         return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
+
+@csrf_exempt
+def process_prompt(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            print(data)
+            
+            return JsonResponse({'message': 'JSON received successfully'})
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON data'}, status=400)
+    else:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
