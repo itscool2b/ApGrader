@@ -240,6 +240,8 @@ class GraphState(TypedDict):
     question: str
     generation: str
     documents: List[str]
+    prompt_type: str
+    student_essay: str
 
 
 
@@ -260,9 +262,12 @@ def retrieve_documents(state):
         f"Ensure the documents cover the full context and key details related to the prompt type."
     )
     
-    documents = get_relevant_documents(query)
-    state["relevant_documents"] = documents  
-    return state["relevant_documents"]
+    try:
+        
+        state["documents"] = get_relevant_documents(query, prompt_type)
+    except Exception as e:
+        raise RuntimeError(f"Error retrieving documents: {e}")
+    return state
 
 def evaluate_essay(state):
     student_essay = state["student_essay"]
@@ -295,20 +300,24 @@ def evaluate(prompt, essay):
     Returns a structured evaluation with scores and feedback.
     """
     try:
-        inputs = {
-            "prompt": prompt,
+        # Initialize the state with required keys matching GraphState
+        initial_state = {
+            "question": prompt,
+            "generation": None,
+            "documents": [],
+            "prompt_type": None,
             "student_essay": essay
         }
 
         evaluation_output = None
 
         # Stream through the workflow outputs
-        for output in app.stream(inputs):
+        for output in app.stream(initial_state):
             evaluation_output = output  # Capture the last (or only) output
 
-        # Ensure evaluation_output exists and contains the expected "evaluation" key
-        if evaluation_output and "evaluation" in evaluation_output:
-            return evaluation_output["evaluation"]
+        # Ensure evaluation_output exists and contains the expected "generation" key
+        if evaluation_output and "generation" in evaluation_output:
+            return evaluation_output["generation"]
 
         # Handle cases where no evaluation was produced
         return {
@@ -318,5 +327,4 @@ def evaluate(prompt, essay):
 
     except Exception as e:
         raise RuntimeError(f"Error during evaluation: {e}")
-
 
