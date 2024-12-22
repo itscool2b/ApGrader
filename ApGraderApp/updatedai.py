@@ -246,7 +246,7 @@ def evaluate_essay(state):
     student_essay = state["student_essay"]
     relevant_docs = "\n\n".join(state["relevant_docs"])
     prompt_type = state["prompt_type"]
-    response llm.invoke(
+    response = llm.invoke(
         evaluation_prompt.format(relevant_docs=relevant_docs,
             prompt_type=prompt_type,
             student_essay=student_essay)
