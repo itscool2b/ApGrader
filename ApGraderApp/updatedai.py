@@ -222,18 +222,29 @@ tools = [
 ]
 
 from pydantic import BaseModel
-from langgraph.state import StateSchema
+from typing import List
 
-class WorkflowState(StateSchema):
-    prompt: str
-    student_essay: str
-    prompt_type: str = None
-    relevant_docs: list = None
-    evaluation: str = None
+from typing_extensions import TypedDict
+
+
+class GraphState(TypedDict):
+    """
+    Represents the state of our graph.
+
+    Attributes:
+        question: question
+        generation: LLM generation
+        documents: list of documents
+    """
+
+    question: str
+    generation: str
+    documents: List[str]
+
 
 
 # Define the workflow
-workflow = StateGraph(state_schema=WorkflowState)
+workflow = StateGraph(GraphState)
 
 def classify_prompt(state):
     question = state["prompt"]
