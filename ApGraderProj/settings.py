@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['apgrader.onrender.com']
 
@@ -128,9 +128,3 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 CORS_ORIGIN_ALLOW_ALL = True
 
-import os
-import warnings
-
-# Suppress ALL warnings
-if not os.getenv("DEBUG", "True").lower() in ["true", "1"]:
-    warnings.filterwarnings("ignore")
