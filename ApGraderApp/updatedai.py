@@ -5,7 +5,22 @@ from langchain.agents import Tool, initialize_agent
 from langchain.prompts import PromptTemplate
 from langchain.chat_models import ChatOpenAI
 from langchain_community.embeddings import OpenAIEmbeddings
-
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.pydantic_v1 import BaseModel, Field
+from langchain_openai import ChatOpenAI
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_community.document_loaders import WebBaseLoader
+from langchain_community.vectorstores import Chroma
+from langchain_openai import OpenAIEmbeddings
+from langchain import hub
+from langchain_core.output_parsers import StrOutputParser
+from typing import List
+from PyPDF2 import PdfReader
+from typing_extensions import TypedDict
+from io import BytesIO
+from langgraph.graph import END, StateGraph, START
+import os
+from dotenv import load_dotenv
 from openai import OpenAI
 from .pineconesetup import get_index
 
@@ -163,41 +178,79 @@ tools = [
 ]
 
 
-agent = initialize_agent(
-    llm=llm,
-    tools=tools,
-    agent="zero-shot-react-description",
-    verbose=True,
-    handle_parsing_errors=True
-)
+workflow = StateGraph()
 
-def evaluate_essay(student_essay, prompt):
-    """Evaluate the student's essay using the OpenAI GPT-4 model and the rubric."""
-    try:
-        classification_prompt = classification.format(prompt=prompt)
-        response1 = agent.invoke(classification_prompt)
+def classify_prompt(state):
+    question = state["prompt"]
+    response = llm.invoke(classification_prompt.format(prompt=question))
+    state["prompt_type"] = response.strip()
+    return state
+
+def retrieve_documents(state):
+    prompt_type = state["prompt_type"]
+    query = (
+        f"Retrieve rubric, example essays, and all relevant historical chapters "
+        f"for {prompt_type} prompts to fact-check and provide feedback. "
+        f"Ensure the documents cover the full context and key details related to the prompt type."
+    )
     
-        relevant_docs = agent.invoke("Retrieve AP US History rubric and examples that fit the classification:", response1)
-        
-        
-        formatted_prompt = prompt.format(
-            relevant_docs=relevant_docs,
-            prompt_type=response1,
-            student_essay=student_essay,
+    documents = get_relevant_documents(query)
+    state["relevant_documents"] = documents  
+    return state["relevant_documents"]
 
-        )
-        
-        
-        
-        response = agent.invoke(formatted_prompt)
-        return response
+def evaluate_essay(state):
+    student_essay = state["student_essay"]
+    relevant_docs = "\n\n".join(state["relevant_docs"])
+    prompt_type = state["prompt_type"]
+    response llm.invoke(
+        evaluation_prompt.format(relevant_docs=relevant_docs,
+            prompt_type=prompt_type,
+            student_essay=student_essay)
+    )
+    state["evaluation"] = response
+    return state["evaluation"]
+
+workflow.add_node("classify_prompt", classify_prompt)
+workflow.add_node("retrieve_documents", retrieve_documents)
+workflow.add_node("evaluate_essay", evaluate_essay)
+
+
+workflow.add_edge(START, "classify_prompt")
+workflow.add_edge("classify_prompt", "retrieve_documents")
+workflow.add_edge("retrieve_documents", "evaluate_essay")
+workflow.add_edge("evaluate_essay", END)
+
+
+app = workflow.compile()
+
+def evaluate(prompt, essay):
+    """
+    Evaluate a student's essay based on the given prompt using the StateGraph workflow.
+    Returns a structured evaluation with scores and feedback.
+    """
+    try:
+        inputs = {
+            "prompt": prompt,
+            "student_essay": essay
+        }
+
+        evaluation_output = None
+
+        # Stream through the workflow outputs
+        for output in app.stream(inputs):
+            evaluation_output = output  # Capture the last (or only) output
+
+        # Ensure evaluation_output exists and contains the expected "evaluation" key
+        if evaluation_output and "evaluation" in evaluation_output:
+            return evaluation_output["evaluation"]
+
+        # Handle cases where no evaluation was produced
+        return {
+            "error": "No evaluation output generated",
+            "details": "The workflow did not return a valid evaluation."
+        }
 
     except Exception as e:
-        raise RuntimeError(f"Error in evaluating essay: {e}")
-    
+        raise RuntimeError(f"Error during evaluation: {e}")
 
-def test_pinecone_query():
-    query = "What is the AP US History rubric for contextualization?"
-    documents = get_relevant_documents(query)
-    print("Retrieved Documents:", documents)
 
