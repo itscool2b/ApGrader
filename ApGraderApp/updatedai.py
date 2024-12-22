@@ -222,15 +222,18 @@ tools = [
 ]
 
 from pydantic import BaseModel
+from langgraph.state import StateSchema
 
-class WorkflowState(BaseModel):
+class WorkflowState(StateSchema):
     prompt: str
     student_essay: str
     prompt_type: str = None
     relevant_docs: list = None
     evaluation: str = None
 
-workflow = StateGraph(state_schema=WorkFlowState)
+
+# Define the workflow
+workflow = StateGraph(state_schema=WorkflowState)
 
 def classify_prompt(state):
     question = state["prompt"]
