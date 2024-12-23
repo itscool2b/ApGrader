@@ -32,37 +32,35 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 
 index = get_index()
 
-
 def get_relevant_documents(query, prompt_type):
     """
     Retrieve relevant documents from Pinecone based on the query embedding and prompt type.
     Includes all grades for the identified prompt type and returns metadata with text, type, and grade.
     """
     try:
-        # Generate the query embedding
+        # Create the query embedding
         response = client.embeddings.create(
             input=query,
             model="text-embedding-ada-002"
         )
-        # FIX for "'CreateEmbeddingResponse' object is not subscriptable":
-        # Use the new attribute syntax: response.data[0].embedding
+        # Avoid the "'CreateEmbeddingResponse' object is not subscriptable" error:
         query_embedding = response.data[0].embedding
 
-        # Query the vector database
+        # Query Pinecone
         results = index.query(
             vector=query_embedding,
             top_k=100,
             include_metadata=True
         )
 
-        # Filter documents based on the prompt type
+        # Filter documents by prompt_type
         filtered_results = []
         for match in results["matches"]:
             metadata = match.get("metadata", {})
             essay_metadata = metadata.get("essay_type_grad_receivede", "")
             # Check if the metadata starts with the identified prompt type
             if essay_metadata.startswith(prompt_type):
-                # Parse the prompt type and grade from metadata
+                # Parse the prompt type and grade
                 type_grade = essay_metadata.split("(")
                 if len(type_grade) == 2:
                     grade = type_grade[1].rstrip(")")
@@ -78,7 +76,34 @@ def get_relevant_documents(query, prompt_type):
         raise RuntimeError(f"Error in embedding or querying Pinecone: {e}")
 
 
-prompt = PromptTemplate.from_template("""
+###############################################################################
+# Classification Prompt
+###############################################################################
+
+classification_prompt = PromptTemplate.from_template(
+    """
+Here is prompt for classification:
+
+You are a teaching assistant for an AP U.S. History class. Your task is to read the LEQ prompt that a student has provided and determine which of the three main APUSH LEQ types it falls under:
+Comparison: The prompt asks the student to compare and/or contrast historical developments, events, policies, or societies.
+Causation: The prompt asks the student to explain causes and/or effects of historical events or developments.
+Continuity and Change Over Time (CCOT): The prompt asks the student to analyze what changed and what remained the same over a particular time frame.
+Instructions:
+Read the provided LEQ prompt carefully.
+Identify whether the prompt is a Comparison, Causation, or CCOT prompt.
+Do not consider anything outside the prompt text itself—just classify it based on its wording and requirements.
+Respond with only one of the three words: "Comparison" "Causation" or "CCOT" depending on which category best matches the prompt.
+Student’s Prompt to Classify: {prompt}. The output should be one word "Comparison" "Causation" or "CCOT"
+"""
+)
+
+
+###############################################################################
+# Full Evaluation Prompt
+###############################################################################
+
+evaluation_prompt = PromptTemplate.from_template(
+    """
 You are an AP US History essay grader using the College Board's updated LEQ rubric from 2023. 
 Your task is to evaluate a student's Long Essay Question (LEQ) strictly based on the rubric provided. 
 All feedback, scores, and analysis must directly reference the rubric retrieved from the vector database. 
@@ -192,20 +217,12 @@ Use the relevant chapters from AP US History textbooks included in {relevant_doc
 
 Final Note:
 Ensure the total score is calculated as the sum of the points the student receives in the following categories: thesis, evidence, contextualization, and complex understanding and analysis.
-""")
+"""
+)
 
-classification = PromptTemplate.from_template("""Here is prompt for classification:
-
-You are a teaching assistant for an AP U.S. History class. Your task is to read the LEQ prompt that a student has provided and determine which of the three main APUSH LEQ types it falls under:
-Comparison: The prompt asks the student to compare and/or contrast historical developments, events, policies, or societies.
-Causation: The prompt asks the student to explain causes and/or effects of historical events or developments.
-Continuity and Change Over Time (CCOT): The prompt asks the student to analyze what changed and what remained the same over a particular time frame.
-Instructions:
-Read the provided LEQ prompt carefully.
-Identify whether the prompt is a Comparison, Causation, or CCOT prompt.
-Do not consider anything outside the prompt text itself—just classify it based on its wording and requirements.
-Respond with only one of the three words: "Comparison" "Causation" or "CCOT" depending on which category best matches the prompt.
-Student’s Prompt to Classify: {prompt}. The output should be one word "Comparison" "Causation" or "CCOT" """)
+###############################################################################
+# LLM Setup
+###############################################################################
 
 llm = ChatOpenAI(
     openai_api_key=OPENAI_API_KEY,
@@ -223,32 +240,39 @@ tools = [
 from pydantic import BaseModel
 from typing import List
 
+###############################################################################
+# State Definition
+###############################################################################
 from typing_extensions import TypedDict
-
 
 class GraphState(TypedDict):
     """
     Represents the state of our graph.
 
     Attributes:
-        question: question
-        generation: LLM generation
-        documents: list of documents
-        prompt_type: str
-        student_essay: str
+        prompt: The LEQ prompt from the student
+        generation: LLM generation (output from the chain)
+        documents: list of relevant doc dictionaries
+        prompt_type: identified type of the prompt (Comparison, Causation, CCOT)
+        student_essay: the text of the student's essay
     """
-    question: str
+    prompt: str
     generation: str
-    documents: List[str]
+    documents: List[dict]
     prompt_type: str
     student_essay: str
 
 
-# Define the workflow
+###############################################################################
+# StateGraph Workflow
+###############################################################################
+
+from langgraph.graph import END, StateGraph, START
+
 workflow = StateGraph(GraphState)
 
 def classify_prompt(state):
-    question = state["prompt"]
+    question = state["prompt"]  # Must exist in state as "prompt"
     response = llm.invoke(classification_prompt.format(prompt=question))
     state["prompt_type"] = response.strip()
     return state
@@ -260,8 +284,9 @@ def retrieve_documents(state):
         f"for {prompt_type} prompts to fact-check and provide feedback. "
         f"Ensure the documents cover the full context and key details related to the prompt type."
     )
-    
+
     try:
+        # This sets state["documents"] to the list of doc dicts from Pinecone
         state["documents"] = get_relevant_documents(query, prompt_type)
     except Exception as e:
         raise RuntimeError(f"Error retrieving documents: {e}")
@@ -269,8 +294,10 @@ def retrieve_documents(state):
 
 def evaluate_essay(state):
     student_essay = state["student_essay"]
-    relevant_docs = "\n\n".join(state["relevant_docs"])
+    # Combine the text of retrieved documents
+    relevant_docs = "\n\n".join(doc.get("text", "") for doc in state["documents"])
     prompt_type = state["prompt_type"]
+
     response = llm.invoke(
         evaluation_prompt.format(
             relevant_docs=relevant_docs,
@@ -281,6 +308,7 @@ def evaluate_essay(state):
     state["evaluation"] = response
     return state["evaluation"]
 
+# Link them up
 workflow.add_node("classify_prompt", classify_prompt)
 workflow.add_node("retrieve_documents", retrieve_documents)
 workflow.add_node("evaluate_essay", evaluate_essay)
@@ -292,15 +320,18 @@ workflow.add_edge("evaluate_essay", END)
 
 app = workflow.compile()
 
+###############################################################################
+# Main evaluate() Function
+###############################################################################
 def evaluate(prompt, essay):
     """
     Evaluate a student's essay based on the given prompt using the StateGraph workflow.
     Returns a structured evaluation with scores and feedback.
     """
     try:
-        # Initialize the state with required keys matching GraphState
+        # IMPORTANT: we must store "prompt" in initial_state to match classify_prompt()
         initial_state = {
-            "question": prompt,
+            "prompt": prompt,
             "generation": None,
             "documents": [],
             "prompt_type": None,
@@ -309,15 +340,17 @@ def evaluate(prompt, essay):
 
         evaluation_output = None
 
-        # Stream through the workflow outputs
+        # Run through the workflow
         for output in app.stream(initial_state):
-            evaluation_output = output  # Capture the last (or only) output
+            evaluation_output = output
 
-        # Ensure evaluation_output exists and contains the expected "generation" key
-        if evaluation_output and "generation" in evaluation_output:
+        # The final state might store the LLM's response under "evaluation" or "generation".
+        # If it's "evaluation", you can return that. If it's "generation", return that.
+        if evaluation_output and "evaluation" in evaluation_output:
+            return evaluation_output["evaluation"]
+        elif evaluation_output and "generation" in evaluation_output:
             return evaluation_output["generation"]
 
-        # Handle cases where no evaluation was produced
         return {
             "error": "No evaluation output generated",
             "details": "The workflow did not return a valid evaluation."
