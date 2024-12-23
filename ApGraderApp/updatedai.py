@@ -545,7 +545,7 @@ def complexunderstanding_grading(state):
     rubric = state["rubric"]
     essay = state["student_essay"]
     promt_type = state["prompt_type"]
-    response = llm.invoke(complexudnerstanding_prompt.format(rubric=rubric,essay=essay,prompt_type=prompt_type))
+    response = llm.invoke(complexunderstanding_prompt.format(rubric=rubric,essay=essay,prompt_type=prompt_type))
     state["complexunderstanding_generation"] = response.content
     return state
 
@@ -587,19 +587,17 @@ def evaluate(prompt, essay):
     """
     try:
         initial_state = {
-            "prompt": prompt
-        #chapters: List[dict]
-        "prompt_type": None
-        "student_essay": essay
-    #evaluation: str
-        "rubric": None
-        "thesis_generation": None
-        "contextualization_generation": None
-        "evidence_generation": None
-        "complexunderstanding_generation": None
-        "summation": None
-            
-        }
+    "prompt": prompt,
+    "prompt_type": None,
+    "student_essay": essay,
+    "rubric": None,
+    "thesis_generation": None,
+    "contextualization_generation": None,
+    "evidence_generation": None,
+    "complexunderstanding_generation": None,
+    "summation": None
+}
+
 
         evaluation_output = None
         # Run the workflow
