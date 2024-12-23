@@ -272,11 +272,11 @@ class GraphState(TypedDict):
 workflow = StateGraph(GraphState)
 
 def classify_prompt(state):
-    question = state["prompt"]  # Must exist in state as "prompt"
+    question = state["prompt"]
     response = llm.invoke(classification_prompt.format(prompt=question))
-    # response is an AIMessage, so we use response.content (a string)
+    # Return the text from the AIMessage
     state["prompt_type"] = response.content.strip()
-    return state
+    return state  # Return dict
 
 def retrieve_documents(state):
     prompt_type = state["prompt_type"]
@@ -289,7 +289,7 @@ def retrieve_documents(state):
         state["documents"] = get_relevant_documents(query, prompt_type)
     except Exception as e:
         raise RuntimeError(f"Error retrieving documents: {e}")
-    return state
+    return state  # Return dict
 
 def evaluate_essay(state):
     student_essay = state["student_essay"]
@@ -305,11 +305,12 @@ def evaluate_essay(state):
             student_essay=student_essay
         )
     )
-    # Store the string content in state["evaluation"]
+    # Store LLM's result (string) into state
     state["evaluation"] = response.content
-    return state["evaluation"]
 
-# Link them up
+    # IMPORTANT: Return the *entire* state so LangGraph doesn't fail
+    return state
+
 workflow.add_node("classify_prompt", classify_prompt)
 workflow.add_node("retrieve_documents", retrieve_documents)
 workflow.add_node("evaluate_essay", evaluate_essay)
@@ -330,7 +331,7 @@ def evaluate(prompt, essay):
     Returns a structured evaluation with scores and feedback.
     """
     try:
-        # Must store "prompt" in initial_state so classify_prompt() doesn't fail
+        # The initial state must have everything the nodes expect
         initial_state = {
             "prompt": prompt,
             "generation": None,
@@ -342,11 +343,11 @@ def evaluate(prompt, essay):
 
         evaluation_output = None
 
-        # Run through the workflow
+        # Stream through the workflow
         for output in app.stream(initial_state):
-            evaluation_output = output
+            evaluation_output = output  # The final state is a dict
 
-        # The final state might store the LLM's response under "evaluation"
+        # Now you can return the final evaluation string:
         if evaluation_output and "evaluation" in evaluation_output:
             return evaluation_output["evaluation"]
         elif evaluation_output and "generation" in evaluation_output:
