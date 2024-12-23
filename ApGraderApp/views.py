@@ -10,7 +10,6 @@ import json
 
 logger = logging.getLogger(__name__)
 
-
 @csrf_exempt
 async def process(request):
     if request.method != "POST":
