@@ -17,19 +17,12 @@ async def process(request):
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
     try:
-        # Validate and process JSON input
-        if 'application/json' in request.content_type:
-            try:
-                json_data = json.loads(request.body)
-                prompt = json_data.get("prompt")
-                if not prompt:
-                    return JsonResponse({'error': 'Missing "prompt" in JSON data'}, status=400)
-            except json.JSONDecodeError:
-                return JsonResponse({'error': 'Invalid JSON data'}, status=400)
-        else:
-            return JsonResponse({'error': 'Invalid content type, expected application/json'}, status=400)
+        # Validate and process the prompt
+        prompt = request.POST.get("prompt", "").strip()
+        if not prompt:
+            return JsonResponse({'error': 'Missing "prompt" in request'}, status=400)
 
-        # Validate and process file input
+        # Validate and process the file
         if 'file' in request.FILES:
             pdf_file = request.FILES['file']
             try:
