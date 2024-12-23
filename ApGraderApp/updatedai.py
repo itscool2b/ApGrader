@@ -333,22 +333,15 @@ def evaluate_essay(state):
     state["evaluation"] = response.content
     return state
 
-def format_evaluation(state):
-    shit = state["evaluation"]
-    prompt = state["prompt_type"]
-    response = llm.invoke(formatting_prompt.format(prompt=prompt, essay=shit))
-    state["final"] = response.content
 
 workflow.add_node("classify_prompt", classify_prompt)
 workflow.add_node("retrieve_documents", retrieve_documents)
 workflow.add_node("evaluate_essay", evaluate_essay)
-workflow.add_node("format_evaluation", format_evaluation)
 
 workflow.add_edge(START, "classify_prompt")
 workflow.add_edge("classify_prompt", "retrieve_documents")
 workflow.add_edge("retrieve_documents", "evaluate_essay")
-workflow.add_edge("evaluate_essay", "format_evaluation")
-workflow.add_edge("format_evaluation", END)
+workflow.add_edge("evaluate_essay", END)
 
 app = workflow.compile()
 
