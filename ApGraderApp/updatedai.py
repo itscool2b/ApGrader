@@ -22,18 +22,23 @@ from langgraph.graph import END, StateGraph, START
 import os
 from dotenv import load_dotenv
 from openai import OpenAI
+
+# Import your Pinecone setup function
 from .pineconesetup import get_index
 
+###############################################################################
+# 1) Load environment variables and set up your API keys
+###############################################################################
 load_dotenv()
 
-# Load API keys
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=OPENAI_API_KEY)
 
+# Initialize Pinecone index
 index = get_index()
 
 ###############################################################################
-# get_relevant_documents
+# 2) get_relevant_documents: fetch from Pinecone
 ###############################################################################
 def get_relevant_documents(query, prompt_type):
     """
@@ -41,16 +46,12 @@ def get_relevant_documents(query, prompt_type):
     Includes all grades for the identified prompt type and returns metadata with text, type, and grade.
     """
     try:
-        print("DEBUG: get_relevant_documents() called with query =", query)
-        # Create the query embedding
         response = client.embeddings.create(
             input=query,
             model="text-embedding-ada-002"
         )
-        # Access the actual embedding from response.data[0].embedding
         query_embedding = response.data[0].embedding
 
-        # Query Pinecone
         results = index.query(
             vector=query_embedding,
             top_k=100,
@@ -62,9 +63,7 @@ def get_relevant_documents(query, prompt_type):
             for match in results["matches"]:
                 metadata = match.get("metadata", {})
                 essay_metadata = metadata.get("essay_type_grad_receivede", "")
-                # Check if the metadata starts with the identified prompt type
                 if essay_metadata.startswith(prompt_type):
-                    # Parse the prompt type and grade
                     type_grade = essay_metadata.split("(")
                     if len(type_grade) == 2:
                         grade = type_grade[1].rstrip(")")
@@ -73,8 +72,6 @@ def get_relevant_documents(query, prompt_type):
                             "prompt_type": type_grade[0].strip(),
                             "grade": grade.strip()
                         })
-
-        print(f"DEBUG: get_relevant_documents() returning {len(filtered_results)} docs")
         return filtered_results
 
     except Exception as e:
@@ -82,8 +79,10 @@ def get_relevant_documents(query, prompt_type):
 
 
 ###############################################################################
-# Prompts
+# 3) Prompts
 ###############################################################################
+
+# ---- Classification Prompt ----
 classification_prompt = PromptTemplate.from_template(
     """
 Here is prompt for classification:
@@ -104,6 +103,7 @@ The output should be one word "Comparison" "Causation" or "CCOT"
 """
 )
 
+# ---- Evaluation Prompt ----
 evaluation_prompt = PromptTemplate.from_template(
     """
 You are an AP US History essay grader using the College Board's updated LEQ rubric from 2023. 
@@ -164,14 +164,60 @@ Student Essay to Grade:
 {student_essay}
 
 Evaluation Criteria
+
 Contextualization (0–1 point):
-- 1 point: Awarded only if the essay describes a broader historical context relevant to the prompt. ...
-(Truncated for brevity, but keep your full prompt in production)
+- 1 point: Awarded only if the essay describes a broader historical context relevant to the prompt. The response must relate the topic of the prompt to broader historical events, developments, or processes that occur before, during, or continue after the time frame of the question.
+- 0 points: Do not award points for vague, general, or unrelated contextual information. Mere passing references without clear connections to the argument are insufficient.
+
+Thesis / Claim (0–1 point):
+- 1 point: Awarded if the student responds to the prompt with a historically defensible thesis / claim that establishes a line of reasoning. The thesis must make a claim that responds to the prompt, rather than merely restating or rephrasing the prompt. The thesis must consist of one or more sentences located in one place, either in the introduction or the conclusion.
+- 0 points: Do not award points for restatements of the prompt, overgeneralized statements, or claims lacking a clear line of reasoning.
+
+Evidence (0–2 points):
+- Specific Evidence (1 point): Award this point only if the essay clearly identifies at least two specific, relevant historical examples directly related to the topic of the prompt. Generalizations or broad statements without specific details do not merit this point.
+- Evidence Supporting Argument (1 point): This second point can only be awarded if the essay has already earned the Specific Evidence point above. To earn this point, the essay must use at least two specific and relevant pieces of evidence to support a cohesive argument in response to the prompt. The connections between the evidence and the argument must be explicit and well-explained. If the essay fails to meet the requirements for the first evidence point, it cannot earn this second point.
+
+Analysis and Reasoning (0–2 points):
+- Historical Reasoning (1 point): Award this point only if the response demonstrates the use of at least one historical reasoning skill (e.g., comparison, causation, continuity and change) to frame or structure an argument that directly addresses the prompt. The reasoning may be uneven or imbalanced, and the evidence may be somewhat general, but the essay must clearly attempt to engage in a historical reasoning process.
+- Complex Understanding (1 point): This second point can only be awarded if the essay has already earned the Historical Reasoning point above. To earn this point, the response must demonstrate a complex understanding of the historical development that is the focus of the prompt. This can be accomplished through sophisticated argumentation and/or effective use of evidence. Examples include:
+  - Analyzing multiple variables or factors and explaining how they interact.
+  - Considering diverse perspectives or interpretations.
+  - Making connections across different historical periods, themes, or contexts.
+  - Demonstrating insight that goes beyond a basic or superficial interpretation.
+  - Makes connections from past time periods to the present day.
+
+  If the response does not earn the Historical Reasoning point, it cannot receive the Complex Understanding point.
+
+Output Format:
+- Contextualization (0-1 point): [Score with feedback]
+- Thesis / Claim (0-1 point): [Score with feedback]
+- Evidence (0-2 points):
+  - Specific Evidence: [Score with feedback]
+  - Evidence Supporting Argument: [Score with feedback]
+- Analysis and Reasoning (0-2 points):
+  - Historical Reasoning: [Score with feedback]
+  - Complex Understanding: [Score with feedback]
+- Total Score (out of 6): [Score]
+
+Feedback Summary:
+Provide a realistic and strict summary of the essay’s strengths, weaknesses, and areas for improvement. Focus on alignment with the precise historical accuracy and analytical depth expected in AP US History essays.
+
+Strict Grading Policy:
+Always emphasize that the total score is out of 6 points, and apply no leniency. 
+If the essay does not fulfill a point’s exact requirements, do not award partial credit.
+
+Additional Instruction Considering Prompt Type:
+- If "Comparison": The essay should meaningfully address similarities/differences and explain significance.
+- If "Causation": The essay should explain causes/effects.
+- If "CCOT": The essay should describe and analyze continuities/changes.
+
+Final Note:
+Ensure the total score is calculated as the sum of the points the student receives in the following categories: thesis, evidence, contextualization, and complex understanding and analysis.
 """
 )
 
 ###############################################################################
-# LLM Setup
+# 4) LLM Setup
 ###############################################################################
 llm = ChatOpenAI(
     openai_api_key=OPENAI_API_KEY,
@@ -182,7 +228,7 @@ tools = [
     Tool(
         name="get rubric and sample essays",
         func=lambda query: "\n\n".join(get_relevant_documents(query)),
-        description="Retrieve relevant sections of the rubric and example essays for grading. Use the entire thing for grading for each and every part."
+        description="Retrieve relevant sections of the rubric and example essays for grading. Use the entire thing for grading."
     )
 ]
 
@@ -190,7 +236,7 @@ from pydantic import BaseModel
 from typing import List
 
 ###############################################################################
-# State Definition
+# 5) State Definition and Workflow
 ###############################################################################
 from typing_extensions import TypedDict
 
@@ -200,11 +246,11 @@ class GraphState(TypedDict):
 
     Attributes:
         prompt: The LEQ prompt from the student
-        generation: LLM generation (string output)
-        documents: list of relevant doc dictionaries
-        prompt_type: identified type of the prompt (Comparison, Causation, CCOT)
-        student_essay: the text of the student's essay
-        evaluation: final evaluation text from the LLM
+        generation: (Optional) An LLM generation text
+        documents: list of doc dictionaries
+        prompt_type: identified type (Comparison, Causation, CCOT)
+        student_essay: the student's actual essay text
+        evaluation: final evaluation text from LLM
     """
     prompt: str
     generation: str
@@ -213,56 +259,32 @@ class GraphState(TypedDict):
     student_essay: str
     evaluation: str
 
-###############################################################################
-# StateGraph Workflow
-###############################################################################
 workflow = StateGraph(GraphState)
 
 def classify_prompt(state):
-    """
-    Node 1: Classify the student's LEQ prompt into Comparison, Causation, or CCOT
-    """
-    print("DEBUG: classify_prompt() called with state['prompt'] =", state["prompt"])
     response = llm.invoke(classification_prompt.format(prompt=state["prompt"]))
-    # Store the LLM's classification (string) in state["prompt_type"]
     state["prompt_type"] = response.content.strip()
-    print("DEBUG: classify_prompt() sets prompt_type =", state["prompt_type"])
-    return state  # Must return a dict
+    return state  # Must return dict
 
 def retrieve_documents(state):
-    """
-    Node 2: Retrieve relevant rubric, sample essays, and textbook info from Pinecone
-    """
     prompt_type = state["prompt_type"]
     query = (
         f"Retrieve rubric, example essays, and all relevant historical chapters "
         f"for {prompt_type} prompts to fact-check and provide feedback. "
-        f"Ensure the documents cover the full context and key details related to the prompt type."
+        f"Ensure the documents cover the full context and key details."
     )
-    print("DEBUG: retrieve_documents() called with prompt_type =", prompt_type)
-    try:
-        docs = get_relevant_documents(query, prompt_type)
-        state["documents"] = docs
-        print(f"DEBUG: retrieve_documents() found {len(docs)} docs")
-    except Exception as e:
-        raise RuntimeError(f"Error retrieving documents: {e}")
-    return state  # Must return a dict
+    docs = get_relevant_documents(query, prompt_type)
+    state["documents"] = docs
+    return state
 
 def evaluate_essay(state):
     """
-    Node 3: Use LLM to evaluate the student's essay using the retrieved docs.
+    Final node: Evaluate the essay using the retrieved docs and store in state["evaluation"].
     """
-    print("DEBUG: evaluate_essay() called")
-    student_essay = state["student_essay"]
-    # Combine the text of retrieved documents
     relevant_docs = "\n\n".join(doc.get("text", "") for doc in state["documents"])
     prompt_type = state["prompt_type"]
+    student_essay = state["student_essay"]
 
-    print("DEBUG: evaluate_essay() -> relevant_docs length =", len(relevant_docs))
-    print("DEBUG: evaluate_essay() -> prompt_type =", prompt_type)
-    print("DEBUG: evaluate_essay() -> student_essay length =", len(student_essay))
-
-    # Run the evaluation prompt
     response = llm.invoke(
         evaluation_prompt.format(
             relevant_docs=relevant_docs,
@@ -270,40 +292,29 @@ def evaluate_essay(state):
             student_essay=student_essay
         )
     )
-    # Store the LLM's result (string) into state
-    # If the LLM returns a valid string, this should be in response.content
-    evaluation_text = response.content
-    print("DEBUG: evaluate_essay() -> got LLM response length =", len(evaluation_text or ""))
+    state["evaluation"] = response.content
+    return state  # Return the dict
 
-    state["evaluation"] = evaluation_text
-
-    print("DEBUG: evaluate_essay() -> state['evaluation'] is now set!")
-    return state  # Must return a dict
-
-# Add nodes to the workflow
 workflow.add_node("classify_prompt", classify_prompt)
 workflow.add_node("retrieve_documents", retrieve_documents)
 workflow.add_node("evaluate_essay", evaluate_essay)
 
-# Define edges
 workflow.add_edge(START, "classify_prompt")
 workflow.add_edge("classify_prompt", "retrieve_documents")
 workflow.add_edge("retrieve_documents", "evaluate_essay")
 workflow.add_edge("evaluate_essay", END)
 
-# Compile the workflow
 app = workflow.compile()
 
 ###############################################################################
-# Main evaluate() Function
+# 6) The main evaluate() function
 ###############################################################################
 def evaluate(prompt, essay):
     """
     Evaluate a student's essay based on the given prompt using the StateGraph workflow.
-    Returns a structured evaluation with scores and feedback, or an error JSON if something goes wrong.
+    Returns the final LLM feedback text or an error if missing.
     """
     try:
-        # The initial state must have everything the nodes expect
         initial_state = {
             "prompt": prompt,
             "generation": None,
@@ -313,29 +324,25 @@ def evaluate(prompt, essay):
             "evaluation": None
         }
 
-        print("DEBUG: evaluate() -> starting state:", initial_state)
-
         evaluation_output = None
-
-        # Stream through the workflow
         for output in app.stream(initial_state):
-            evaluation_output = output  # The final state is a dict
-            print("DEBUG: State after node:", output)
+            evaluation_output = output  # final dictionary
 
-        # Check if the final state includes "evaluation"
+        # 1) Check if the top-level dict has "evaluation"
         if evaluation_output and "evaluation" in evaluation_output and evaluation_output["evaluation"]:
-            print("DEBUG: evaluate() -> returning final evaluation text")
             return evaluation_output["evaluation"]
-        elif evaluation_output and "generation" in evaluation_output and evaluation_output["generation"]:
-            print("DEBUG: evaluate() -> found 'generation', returning that")
-            return evaluation_output["generation"]
 
-        print("DEBUG: evaluate() -> no evaluation or generation in final state:", evaluation_output)
+        # 2) If the final node’s result is nested, e.g. "evaluate_essay": {"evaluation": "..."}
+        if evaluation_output and "evaluate_essay" in evaluation_output:
+            final_data = evaluation_output["evaluate_essay"]
+            if "evaluation" in final_data and final_data["evaluation"]:
+                return final_data["evaluation"]
+
+        # If we still don't find it, fallback:
         return {
             "error": "No evaluation output generated",
             "details": "The workflow did not return a valid evaluation."
         }
 
     except Exception as e:
-        print("DEBUG: evaluate() -> Exception:", e)
         raise RuntimeError(f"Error during evaluation: {e}")
