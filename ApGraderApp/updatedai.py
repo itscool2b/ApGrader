@@ -63,6 +63,7 @@ def get_relevant_documents(query, prompt_type):
             for match in results["matches"]:
                 metadata = match.get("metadata", {})
                 essay_metadata = metadata.get("essay_type_grad_receivede", "")
+                # Only keep docs whose 'essay_type_grad_receivede' starts with prompt_type
                 if essay_metadata.startswith(prompt_type):
                     type_grade = essay_metadata.split("(")
                     if len(type_grade) == 2:
@@ -79,7 +80,7 @@ def get_relevant_documents(query, prompt_type):
 
 
 ###############################################################################
-# 3) Prompts
+# 3) Prompt Templates
 ###############################################################################
 
 # ---- Classification Prompt ----
@@ -118,7 +119,7 @@ The metadata structure for the essays you will use includes:
 - `text`: The essay content.
 
 You must take the entire structure into account:
-1. Ensure you filter essays matching the correct `prompt_type` (e.g., "causation").
+1. Ensure you filter essays matching the correct `prompt_type`.
 2. Include all grades of the identified type (e.g., both "causation(6)" and "causation(3)").
 3. Use the `text`, `prompt_type`, and `grade` as context while evaluating.
 
@@ -166,53 +167,35 @@ Student Essay to Grade:
 Evaluation Criteria
 
 Contextualization (0–1 point):
-- 1 point: Awarded only if the essay describes a broader historical context relevant to the prompt. The response must relate the topic of the prompt to broader historical events, developments, or processes that occur before, during, or continue after the time frame of the question.
-- 0 points: Do not award points for vague, general, or unrelated contextual information. Mere passing references without clear connections to the argument are insufficient.
+- 1 point: Awarded only if the essay describes a broader historical context relevant to the prompt. 
+- 0 points: Do not award points for vague or unrelated context.
 
 Thesis / Claim (0–1 point):
-- 1 point: Awarded if the student responds to the prompt with a historically defensible thesis / claim that establishes a line of reasoning. The thesis must make a claim that responds to the prompt, rather than merely restating or rephrasing the prompt. The thesis must consist of one or more sentences located in one place, either in the introduction or the conclusion.
-- 0 points: Do not award points for restatements of the prompt, overgeneralized statements, or claims lacking a clear line of reasoning.
+- 1 point: Awarded if the student responds to the prompt with a historically defensible thesis that establishes a line of reasoning.
+- 0 points: Do not award points for restatement of the prompt, overgeneralized statements, or claims lacking a line of reasoning.
 
 Evidence (0–2 points):
-- Specific Evidence (1 point): Award this point only if the essay clearly identifies at least two specific, relevant historical examples directly related to the topic of the prompt. Generalizations or broad statements without specific details do not merit this point.
-- Evidence Supporting Argument (1 point): This second point can only be awarded if the essay has already earned the Specific Evidence point above. To earn this point, the essay must use at least two specific and relevant pieces of evidence to support a cohesive argument in response to the prompt. The connections between the evidence and the argument must be explicit and well-explained. If the essay fails to meet the requirements for the first evidence point, it cannot earn this second point.
+- Specific Evidence (1 point): At least two specific, relevant historical examples. 
+- Evidence Supporting Argument (1 point): The essay must use at least two pieces of evidence effectively to support the argument.
 
 Analysis and Reasoning (0–2 points):
-- Historical Reasoning (1 point): Award this point only if the response demonstrates the use of at least one historical reasoning skill (e.g., comparison, causation, continuity and change) to frame or structure an argument that directly addresses the prompt. The reasoning may be uneven or imbalanced, and the evidence may be somewhat general, but the essay must clearly attempt to engage in a historical reasoning process.
-- Complex Understanding (1 point): This second point can only be awarded if the essay has already earned the Historical Reasoning point above. To earn this point, the response must demonstrate a complex understanding of the historical development that is the focus of the prompt. This can be accomplished through sophisticated argumentation and/or effective use of evidence. Examples include:
-  - Analyzing multiple variables or factors and explaining how they interact.
-  - Considering diverse perspectives or interpretations.
-  - Making connections across different historical periods, themes, or contexts.
-  - Demonstrating insight that goes beyond a basic or superficial interpretation.
-  - Makes connections from past time periods to the present day.
-
-  If the response does not earn the Historical Reasoning point, it cannot receive the Complex Understanding point.
+- Historical Reasoning (1 point): The response demonstrates at least one historical reasoning skill (comparison, causation, CCOT) to structure the argument.
+- Complex Understanding (1 point): The essay must demonstrate a complex understanding of the historical development.
 
 Output Format:
-- Contextualization (0-1 point): [Score with feedback]
-- Thesis / Claim (0-1 point): [Score with feedback]
+- Contextualization (0-1 point): [Score w/ feedback]
+- Thesis / Claim (0-1 point): [Score w/ feedback]
 - Evidence (0-2 points):
-  - Specific Evidence: [Score with feedback]
-  - Evidence Supporting Argument: [Score with feedback]
+  - Specific Evidence: [Score w/ feedback]
+  - Evidence Supporting Argument: [Score w/ feedback]
 - Analysis and Reasoning (0-2 points):
-  - Historical Reasoning: [Score with feedback]
-  - Complex Understanding: [Score with feedback]
+  - Historical Reasoning: [Score w/ feedback]
+  - Complex Understanding: [Score w/ feedback]
 - Total Score (out of 6): [Score]
 
 Feedback Summary:
-Provide a realistic and strict summary of the essay’s strengths, weaknesses, and areas for improvement. Focus on alignment with the precise historical accuracy and analytical depth expected in AP US History essays.
+Provide a strict summary of strengths, weaknesses, and areas for improvement. Draw on approved AP US History materials. The total score is out of 6 points. Award no partial or “benefit-of-the-doubt” credit if the criteria is not explicitly met.
 
-Strict Grading Policy:
-Always emphasize that the total score is out of 6 points, and apply no leniency. 
-If the essay does not fulfill a point’s exact requirements, do not award partial credit.
-
-Additional Instruction Considering Prompt Type:
-- If "Comparison": The essay should meaningfully address similarities/differences and explain significance.
-- If "Causation": The essay should explain causes/effects.
-- If "CCOT": The essay should describe and analyze continuities/changes.
-
-Final Note:
-Ensure the total score is calculated as the sum of the points the student receives in the following categories: thesis, evidence, contextualization, and complex understanding and analysis.
 """
 )
 
@@ -228,7 +211,7 @@ tools = [
     Tool(
         name="get rubric and sample essays",
         func=lambda query: "\n\n".join(get_relevant_documents(query)),
-        description="Retrieve relevant sections of the rubric and example essays for grading. Use the entire thing for grading."
+        description="Retrieve relevant sections of the rubric and example essays for grading. Use the entire thing."
     )
 ]
 
@@ -248,7 +231,7 @@ class GraphState(TypedDict):
         prompt: The LEQ prompt from the student
         generation: (Optional) An LLM generation text
         documents: list of doc dictionaries
-        prompt_type: identified type (Comparison, Causation, CCOT)
+        prompt_type: str for classification (Comparison, Causation, CCOT)
         student_essay: the student's actual essay text
         evaluation: final evaluation text from LLM
     """
@@ -262,11 +245,17 @@ class GraphState(TypedDict):
 workflow = StateGraph(GraphState)
 
 def classify_prompt(state):
+    """
+    Node 1: Classify the student's LEQ prompt.
+    """
     response = llm.invoke(classification_prompt.format(prompt=state["prompt"]))
     state["prompt_type"] = response.content.strip()
-    return state  # Must return dict
+    return state  # Must return a dict
 
 def retrieve_documents(state):
+    """
+    Node 2: Retrieve relevant docs from Pinecone based on 'prompt_type'.
+    """
     prompt_type = state["prompt_type"]
     query = (
         f"Retrieve rubric, example essays, and all relevant historical chapters "
@@ -279,7 +268,7 @@ def retrieve_documents(state):
 
 def evaluate_essay(state):
     """
-    Final node: Evaluate the essay using the retrieved docs and store in state["evaluation"].
+    Node 3: Use the LLM to evaluate the essay, referencing the retrieved docs.
     """
     relevant_docs = "\n\n".join(doc.get("text", "") for doc in state["documents"])
     prompt_type = state["prompt_type"]
@@ -292,8 +281,9 @@ def evaluate_essay(state):
             student_essay=student_essay
         )
     )
+    # Put the final feedback text into state["evaluation"]
     state["evaluation"] = response.content
-    return state  # Return the dict
+    return state
 
 workflow.add_node("classify_prompt", classify_prompt)
 workflow.add_node("retrieve_documents", retrieve_documents)
@@ -307,7 +297,7 @@ workflow.add_edge("evaluate_essay", END)
 app = workflow.compile()
 
 ###############################################################################
-# 6) The main evaluate() function
+# 6) The main evaluate() function (with flatten fix)
 ###############################################################################
 def evaluate(prompt, essay):
     """
@@ -325,20 +315,26 @@ def evaluate(prompt, essay):
         }
 
         evaluation_output = None
+        # Run the workflow
         for output in app.stream(initial_state):
-            evaluation_output = output  # final dictionary
+            evaluation_output = output  # final dictionary from the last node
 
-        # 1) Check if the top-level dict has "evaluation"
+        # 1) Some versions of langgraph store the final dict under the node name, e.g.:
+        #    { "evaluate_essay": { "evaluation": "...text..." } }
+        #    Flatten it if that's the case
+        if evaluation_output and len(evaluation_output) == 1:
+            # If there's exactly one key
+            only_key = list(evaluation_output.keys())[0]
+            # If that single key is "evaluate_essay" (the final node name)
+            if only_key == "evaluate_essay":
+                # Flatten: move that sub-dict up
+                evaluation_output = evaluation_output[only_key]
+
+        # 2) Now check if "evaluation" is present
         if evaluation_output and "evaluation" in evaluation_output and evaluation_output["evaluation"]:
             return evaluation_output["evaluation"]
 
-        # 2) If the final node’s result is nested, e.g. "evaluate_essay": {"evaluation": "..."}
-        if evaluation_output and "evaluate_essay" in evaluation_output:
-            final_data = evaluation_output["evaluate_essay"]
-            if "evaluation" in final_data and final_data["evaluation"]:
-                return final_data["evaluation"]
-
-        # If we still don't find it, fallback:
+        # If we still didn't find it
         return {
             "error": "No evaluation output generated",
             "details": "The workflow did not return a valid evaluation."
