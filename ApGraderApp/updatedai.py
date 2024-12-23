@@ -43,7 +43,7 @@ def get_relevant_documents(query, prompt_type):
             input=query,
             model="text-embedding-ada-002"
         )
-        # Avoid the "'CreateEmbeddingResponse' object is not subscriptable" error:
+        # Access the actual embedding from response.data[0].embedding
         query_embedding = response.data[0].embedding
 
         # Query Pinecone
@@ -53,7 +53,6 @@ def get_relevant_documents(query, prompt_type):
             include_metadata=True
         )
 
-        # Filter documents by prompt_type
         filtered_results = []
         for match in results["matches"]:
             metadata = match.get("metadata", {})
@@ -88,12 +87,15 @@ You are a teaching assistant for an AP U.S. History class. Your task is to read 
 Comparison: The prompt asks the student to compare and/or contrast historical developments, events, policies, or societies.
 Causation: The prompt asks the student to explain causes and/or effects of historical events or developments.
 Continuity and Change Over Time (CCOT): The prompt asks the student to analyze what changed and what remained the same over a particular time frame.
+
 Instructions:
 Read the provided LEQ prompt carefully.
 Identify whether the prompt is a Comparison, Causation, or CCOT prompt.
 Do not consider anything outside the prompt text itself—just classify it based on its wording and requirements.
 Respond with only one of the three words: "Comparison" "Causation" or "CCOT" depending on which category best matches the prompt.
-Student’s Prompt to Classify: {prompt}. The output should be one word "Comparison" "Causation" or "CCOT"
+
+Student’s Prompt to Classify: {prompt}
+The output should be one word "Comparison" "Causation" or "CCOT"
 """
 )
 
@@ -251,30 +253,29 @@ class GraphState(TypedDict):
 
     Attributes:
         prompt: The LEQ prompt from the student
-        generation: LLM generation (output from the chain)
+        generation: LLM generation (string output)
         documents: list of relevant doc dictionaries
         prompt_type: identified type of the prompt (Comparison, Causation, CCOT)
         student_essay: the text of the student's essay
+        evaluation: final evaluation text from the LLM
     """
     prompt: str
     generation: str
     documents: List[dict]
     prompt_type: str
     student_essay: str
-
+    evaluation: str
 
 ###############################################################################
 # StateGraph Workflow
 ###############################################################################
-
-from langgraph.graph import END, StateGraph, START
-
 workflow = StateGraph(GraphState)
 
 def classify_prompt(state):
     question = state["prompt"]  # Must exist in state as "prompt"
     response = llm.invoke(classification_prompt.format(prompt=question))
-    state["prompt_type"] = response.strip()
+    # response is an AIMessage, so we use response.content (a string)
+    state["prompt_type"] = response.content.strip()
     return state
 
 def retrieve_documents(state):
@@ -284,9 +285,7 @@ def retrieve_documents(state):
         f"for {prompt_type} prompts to fact-check and provide feedback. "
         f"Ensure the documents cover the full context and key details related to the prompt type."
     )
-
     try:
-        # This sets state["documents"] to the list of doc dicts from Pinecone
         state["documents"] = get_relevant_documents(query, prompt_type)
     except Exception as e:
         raise RuntimeError(f"Error retrieving documents: {e}")
@@ -298,6 +297,7 @@ def evaluate_essay(state):
     relevant_docs = "\n\n".join(doc.get("text", "") for doc in state["documents"])
     prompt_type = state["prompt_type"]
 
+    # Run the evaluation prompt
     response = llm.invoke(
         evaluation_prompt.format(
             relevant_docs=relevant_docs,
@@ -305,7 +305,8 @@ def evaluate_essay(state):
             student_essay=student_essay
         )
     )
-    state["evaluation"] = response
+    # Store the string content in state["evaluation"]
+    state["evaluation"] = response.content
     return state["evaluation"]
 
 # Link them up
@@ -329,13 +330,14 @@ def evaluate(prompt, essay):
     Returns a structured evaluation with scores and feedback.
     """
     try:
-        # IMPORTANT: we must store "prompt" in initial_state to match classify_prompt()
+        # Must store "prompt" in initial_state so classify_prompt() doesn't fail
         initial_state = {
             "prompt": prompt,
             "generation": None,
             "documents": [],
             "prompt_type": None,
-            "student_essay": essay
+            "student_essay": essay,
+            "evaluation": None
         }
 
         evaluation_output = None
@@ -344,8 +346,7 @@ def evaluate(prompt, essay):
         for output in app.stream(initial_state):
             evaluation_output = output
 
-        # The final state might store the LLM's response under "evaluation" or "generation".
-        # If it's "evaluation", you can return that. If it's "generation", return that.
+        # The final state might store the LLM's response under "evaluation"
         if evaluation_output and "evaluation" in evaluation_output:
             return evaluation_output["evaluation"]
         elif evaluation_output and "generation" in evaluation_output:
