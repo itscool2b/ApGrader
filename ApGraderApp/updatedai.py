@@ -75,7 +75,7 @@ def get_relevant_documents(query, prompt_type):
                 input=query,
                 model="text-embedding-ada-002"
             )
-            query_embedding = response["data"][0]["embedding"]
+            query_embedding = response.data[0].embedding
 
             results = index.query(
                 vector=query_embedding,
