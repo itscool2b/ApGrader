@@ -103,12 +103,11 @@ def get_relevant_documents(query, prompt_type):
         raise RuntimeError(f"Error in embedding or querying Pinecone: {e}")
 
 
-
 ###############################################################################
 # 3) Prompt Templates
 ###############################################################################
 
-# ---- Classification Prompt ----
+# ---- Classification Prompt #1 (not always used, but included) ----
 classification_prompt = PromptTemplate.from_template(
     """
 Here is prompt for classification:
@@ -129,7 +128,7 @@ The output should be one word "Comparison" "Causation" or "CCOT"
 """
 )
 
-# ---- Evaluation Prompt ----
+# ---- Evaluation Prompt (used in certain workflows) ----
 evaluation_prompt = PromptTemplate.from_template(
     """
 You are an AP US History essay grader using the College Board's updated LEQ rubric from 2023. 
@@ -204,7 +203,8 @@ Evidence (0–2 points):
 - Evidence Supporting Argument (1 point): The essay must use at least two pieces of evidence effectively to support the argument.
 
 Analysis and Reasoning (0–2 points):
-- Historical Reasoning (1 point): The response demonstrates at least one historical reasoning skill (comparison, causation, CCOT) to structure the argument.
+- Historical Reasoning (1 point): The response demonstrates at least one historical reasoning skill (comparison, causation, CCOT) 
+  to structure the argument.
 - Complex Understanding (1 point): The essay must demonstrate a complex understanding of the historical development.
 
 Output Format:
@@ -220,10 +220,10 @@ Output Format:
 
 Feedback Summary:
 Provide a strict summary of strengths, weaknesses, and areas for improvement. Draw on approved AP US History materials. The total score is out of 6 points. Award no partial or “benefit-of-the-doubt” credit if the criteria is not explicitly met.
-
 """
 )
 
+# ---- Additional formatting prompt (often used for final formatting) ----
 formatting_prompt = PromptTemplate.from_template(
     """
 Your sole task is to format the response to ensure it is well-structured and broken into clear sections. 
@@ -272,6 +272,7 @@ here is the essay and prompt type
 """
 )
 
+# ---- Another classification prompt (#2) ----
 classify_prompt = PromptTemplate.from_template("""
 You are a teaching assistant for an AP U.S. History class. Your task is to read the LEQ prompt provided by a student and classify it into one of the three main APUSH LEQ types:
 
@@ -288,10 +289,9 @@ Output:
 Respond with only one word: "Comparison," "Causation," or "CCOT" depending on which category best matches the prompt.
 
 Student’s Prompt: {prompt}
-
-
 """)
 
+# ---- Thesis Prompt ----
 thesis_prompt = PromptTemplate.from_template("""Evaluate the thesis statement in the following essay based on the provided rubric and evaluation standards:
 
 Rubric for Thesis / Claim:
@@ -316,13 +316,13 @@ Output:
 Score (0 or 1): Indicate whether the thesis earns the point.
 Feedback: Provide a brief explanation justifying the score.""")
 
+# ---- Contextualization Prompt ----
 contextualization_prompt = PromptTemplate.from_template("""
 Evaluate the contextualization in the following essay based on the provided rubric and evaluation standards:
 
 Rubric for Contextualization:
 Describes a broader historical context relevant to the prompt. Relates the topic to broader historical events, developments, or processes before, during, or after the time frame of the question. Not awarded for merely a phrase or reference.
 {rubric}
-
 
 Evaluation Standards:
 Ignore grammar and spelling errors as long as the meaning is clear.
@@ -343,6 +343,7 @@ Score (0 or 1): Indicate whether the contextualization earns the point.
 Feedback: Provide a brief explanation justifying the score.
 """)
 
+# ---- Evidence Prompt ----
 evidence_prompt = PromptTemplate.from_template("""Evaluate the evidence and support for the argument in the following essay based on the rubric and evaluation standards:
 
 **Rubric for Evidence & Support for Argument:**
@@ -383,6 +384,7 @@ evidence_prompt = PromptTemplate.from_template("""Evaluate the evidence and supp
 
 """)
 
+# ---- Complex Understanding Prompt ----
 complexunderstanding_prompt = PromptTemplate.from_template("""Evaluate the analysis and reasoning in the following essay based on the rubric and evaluation standards. The evaluation must take into account the type of prompt (Comparison, Causation, or CCOT) when awarding points for historical reasoning.
 
 **Rubric for Analysis and Reasoning:**
@@ -425,7 +427,7 @@ complexunderstanding_prompt = PromptTemplate.from_template("""Evaluate the analy
   - For Complex Understanding: How the response demonstrated a nuanced or sophisticated argument, referencing specific elements of the essay.
   - Reasons for any points not awarded.""")
 
-
+# ---- Summation Prompt ----
 summation_prompt = PromptTemplate.from_template("""Based on the feedback and scores provided for each section of the essay, generate a comprehensive evaluation:
 
 Section score and Feedback:
@@ -450,6 +452,7 @@ Strengths
 Weaknesses
 dont do anything with just just mention this in the output. it is the prompt type. {prompt_type}
 Suggestions for Improvement""")
+
 ###############################################################################
 # 4) LLM Setup
 ###############################################################################
@@ -480,17 +483,18 @@ class GraphState(TypedDict):
 
     Attributes:
         prompt: The LEQ prompt from the student
-        generation: (Optional) An LLM generation text
-        documents: list of doc dictionaries
         prompt_type: str for classification (Comparison, Causation, CCOT)
         student_essay: the student's actual essay text
-        evaluation: final evaluation text from LLM
+        rubric: doc results
+        thesis_generation: str
+        contextualization_generation: str
+        evidence_generation: str
+        complexunderstanding_generation: str
+        summation: str
     """
     prompt: str
-    #chapters: List[dict]
     prompt_type: str
     student_essay: str
-    #evaluation: str
     rubric: List[dict]
     thesis_generation: str
     contextualization_generation: str
@@ -500,26 +504,38 @@ class GraphState(TypedDict):
 
 workflow = StateGraph(GraphState)
 
-def classify_prompt(state):
+###############################################################################
+# 6) Node functions
+###############################################################################
+
+# MINIMAL FIX: rename the classification function to avoid overshadowing
+def classify_prompt_node(state):
     """
-    Node 1: Classify the student's LEQ prompt.
+    Node 1: Classify the student's LEQ prompt using the 'classify_prompt' template.
     """
     response = llm.invoke(classify_prompt.format(prompt=state["prompt"]))
     state["prompt_type"] = response.content.strip()
-    return state  # Must return a dict
+    return state
 
 def fetch_rubric(state):
+    """
+    Node 2: Fetch the 'Leq Rubric' from Pinecone.
+    """
     query = "Leq Rubric"
     docs = get_relevant_documents(query, None)
     state["rubric"] = docs
     return state
 
 def retrieve_chapters(state):
+    """
+    Potential node for retrieving chapters or references 
+    (not fully implemented in the snippet).
+    """
     pass
 
 def retrieve_essays(state):
     """
-    Node 2: Retrieve relevant docs from Pinecone based on 'prompt_type'.
+    Retrieve relevant docs from Pinecone based on 'prompt_type'.
     """
     prompt_type = state["prompt_type"]
     docs = get_relevant_documents(None, prompt_type)
@@ -527,60 +543,94 @@ def retrieve_essays(state):
     return state
 
 def thesis_grading(state):
+    """
+    Node that calls 'thesis_prompt'.
+    """
     rubric = state["rubric"]
     essay = state["student_essay"]
     prompt_type = state["prompt_type"]
-    response = llm.invoke(thesis_prompt.format(rubric=rubric,essay=essay,prompt_type=prompt_type))
+    response = llm.invoke(thesis_prompt.format(rubric=rubric, essay=essay, prompt_type=prompt_type))
     state["thesis_generation"] = response.content
     return state
 
 def contextualization_grading(state):
+    """
+    Node that calls 'contextualization_prompt'.
+    """
     rubric = state["rubric"]
     essay = state["student_essay"]
     prompt_type = state["prompt_type"]
-    response = llm.invoke(contextualization_prompt.format(rubric=rubric,essay=essay,prompt_type=prompt_type))
+    response = llm.invoke(contextualization_prompt.format(
+        rubric=rubric, essay=essay, prompt_type=prompt_type
+    ))
     state["contextualization_generation"] = response.content
     return state
 
 def complexunderstanding_grading(state):
+    """
+    Node that calls 'complexunderstanding_prompt'.
+    """
     rubric = state["rubric"]
     essay = state["student_essay"]
-    promt_type = state["prompt_type"]
-    response = llm.invoke(complexunderstanding_prompt.format(rubric=rubric,essay=essay,prompt_type=prompt_type))
+    prompt_type = state["prompt_type"]
+    response = llm.invoke(
+        complexunderstanding_prompt.format(rubric=rubric, essay=essay, prompt_type=prompt_type)
+    )
     state["complexunderstanding_generation"] = response.content
     return state
 
 def summation_node(state):
+    """
+    Final node that calls 'summation_prompt' to combine partial feedback.
+    """
     thesis = state["thesis_generation"]
-    cont = state["contexualization_generation"]
-    evidence = state["evidence_generation"]
+    cont = state["contextualization_generation"]
+    evidence = state.get("evidence_generation", None)
     complexu = state["complexunderstanding_generation"]
-    prompt = state["prompt_type"]
-    response = llm.invoke(summation_prompt.format(thesis_generation=thesis,contextualization_generation=cont,evidence_generation=evidence,complexunderstanding_generation=complexu,prompt=prompt))
+    prompt_type = state["prompt_type"]
+
+    # This snippet does not show 'evidence_grading' usage, 
+    # but we keep it for completeness:
+    if evidence is None:
+        evidence = "No separate evidence generation included"
+
+    response = llm.invoke(
+        summation_prompt.format(
+            thesis_generation=thesis,
+            contextualization_generation=cont,
+            evidence_generation=evidence,
+            complexunderstanding_generation=complexu,
+            prompt_type=prompt_type
+        )
+    )
     state["summation"] = response.content
     return state
 
+###############################################################################
+# 7) Add nodes & edges to the workflow
+###############################################################################
 
-workflow.add_node("classify_prompt", classify_prompt)
+workflow.add_node("classify_prompt", classify_prompt_node)
 workflow.add_node("fetch_rubric", fetch_rubric)
-#workflow.add_node("retrieve_essays", retrieve_essays)
+# The user snippet commented out retrieve_essays, so it's not connected
+# workflow.add_node("retrieve_essays", retrieve_essays)
 workflow.add_node("thesis_grading", thesis_grading)
 workflow.add_node("contextualization_grading", contextualization_grading)
-workflow.add_node("complexunderstanding_grading",complexunderstanding_grading)
+workflow.add_node("complexunderstanding_grading", complexunderstanding_grading)
 workflow.add_node("summation_node", summation_node)
 
 workflow.add_edge(START, "classify_prompt")
 workflow.add_edge("classify_prompt", "fetch_rubric")
 workflow.add_edge("fetch_rubric", "thesis_grading")
 workflow.add_edge("thesis_grading", "contextualization_grading")
-workflow.add_edge("contextualization_grading","complexunderstanding_grading")
+workflow.add_edge("contextualization_grading", "complexunderstanding_grading")
 workflow.add_edge("complexunderstanding_grading", "summation_node")
 workflow.add_edge("summation_node", END)
 
 app = workflow.compile()
 
 ###############################################################################
-# 6) The main evaluate() function (with flatten fix)
+# 8) The main evaluate() function (with flatten fix)
 ###############################################################################
 def evaluate(prompt, essay):
     """
@@ -588,43 +638,44 @@ def evaluate(prompt, essay):
     Returns the final LLM feedback text or an error if missing.
     """
     try:
+        # Initialize the state
         initial_state = {
-    "prompt": prompt,
-    "prompt_type": None,
-    "student_essay": essay,
-    "rubric": None,
-    "thesis_generation": None,
-    "contextualization_generation": None,
-    "evidence_generation": None,
-    "complexunderstanding_generation": None,
-    "summation": None
-}
-
+            "prompt": prompt,
+            "prompt_type": None,
+            "student_essay": essay,
+            "rubric": None,
+            "thesis_generation": None,
+            "contextualization_generation": None,
+            "evidence_generation": None,
+            "complexunderstanding_generation": None,
+            "summation": None
+        }
 
         evaluation_output = None
-        # Run the workflow
+        # Stream through the workflow
         for output in app.stream(initial_state):
-            evaluation_output = output  # final dictionary from the last node
+            evaluation_output = output
 
-        # 1) Some versions of langgraph store the final dict under the node name, e.g.:
-        #    { "evaluate_essay": { "evaluation": "...text..." } }
-        #    Flatten it if that's the case
+        # If the final state is nested under a single key, flatten it
         if evaluation_output and len(evaluation_output) == 1:
-            # If there's exactly one key
             only_key = list(evaluation_output.keys())[0]
-            # If that single key is "evaluate_essay" (the final node name)
             if only_key == "evaluate_essay":
-                # Flatten: move that sub-dict up
                 evaluation_output = evaluation_output[only_key]
 
-        # 2) Now check if "evaluation" is present
+        # If there's a final "evaluation" we want to return it;
+        # But in this snippet, we actually store final text in "summation".
+        # So let's check for "summation" first:
+        if evaluation_output and "summation" in evaluation_output and evaluation_output["summation"]:
+            return evaluation_output["summation"]
+
+        # Otherwise fallback to checking "evaluation"
         if evaluation_output and "evaluation" in evaluation_output and evaluation_output["evaluation"]:
             return evaluation_output["evaluation"]
 
-        # If we still didn't find it
+        # If neither is found:
         return {
             "error": "No evaluation output generated",
-            "details": "The workflow did not return a valid evaluation."
+            "details": "The workflow did not return a valid final text."
         }
 
     except Exception as e:
