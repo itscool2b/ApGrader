@@ -11,3 +11,4 @@ langchain-core==0.3.28
 langchain-openai==0.2.14
 langchain-pinecone==0.2.0
 uvicorn==0.32.1
+langgraph>=0.0.1
