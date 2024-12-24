@@ -488,35 +488,21 @@ llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4")
 ###############################################################################
 # 5) State Definition and Workflow
 ###############################################################################
-class RubricDocument(TypedDict):
-    text: str
-    prompt_type: str
-    grade: str
 
 class GraphState(TypedDict):
     """
-    Represents the state of our graph.
-
-    Attributes:
-        prompt: The LEQ prompt from the student
-        prompt_type: str for classification (Comparison, Causation, CCOT)
-        student_essay: The student's actual essay text
-        rubric: A list of docs from the rubric
-        thesis_generation: Output from thesis evaluation
-        contextualization_generation: Output from context evaluation
-        evidence_generation: Output from evidence evaluation
-        complexunderstanding_generation: Output from analysis reasoning
-        summation: final combined output
+    Represents the state of the graph workflow.
     """
     prompt: str
     prompt_type: str
     student_essay: str
-    rubric: List[RubricDocument]
+    rubric: List[Dict]  # Rubric remains a list of dictionaries
     thesis_generation: str
     contextualization_generation: str
     evidence_generation: str
     complexunderstanding_generation: str
     summation: str
+
 
 # Initialize the workflow
 workflow = StateGraph(GraphState)
@@ -545,8 +531,13 @@ def fetch_rubric_node(state: GraphState) -> GraphState:
     """
     try:
         logging.info("Fetching rubric documents.")
-        query = "Leq Rubric"
-        docs = get_relevant_documents(query, None)
+        query = "LEQ Rubric"  # The query to fetch rubric data
+        docs = get_relevant_documents(query, None)  # Retrieve documents
+
+        if not docs:
+            raise ValueError("No rubric documents found in Pinecone.")
+
+        # Store the documents directly in the state as a list of dictionaries
         state["rubric"] = docs
         logging.info(f"Fetched {len(docs)} rubric documents.")
     except Exception as e:
@@ -579,15 +570,19 @@ def thesis_grading_node(state: GraphState) -> GraphState:
     """
     try:
         logging.info("Grading thesis statement.")
-        rubric = state["rubric"]
+        rubric = state["rubric"]  # Retrieve the rubric as a list of dictionaries
         essay = state["student_essay"]
         ptype = state["prompt_type"]
+
+        # Convert rubric into a formatted JSON string for the LLM prompt
         formatted_rubric = json.dumps(rubric, indent=2)
         formatted_prompt = thesis_prompt.format(
             rubric=formatted_rubric,
             essay=essay,
             prompt_type=ptype
         )
+
+        # Generate the response using the LLM
         response = llm(formatted_prompt)
         state["thesis_generation"] = response.strip()
         logging.info("Thesis grading completed.")
@@ -602,15 +597,19 @@ def contextualization_grading_node(state: GraphState) -> GraphState:
     """
     try:
         logging.info("Grading contextualization.")
-        rubric = state["rubric"]
+        rubric = state["rubric"]  # List of dictionaries
         essay = state["student_essay"]
         ptype = state["prompt_type"]
+
+        # Convert rubric into JSON string
         formatted_rubric = json.dumps(rubric, indent=2)
         formatted_prompt = contextualization_prompt.format(
             rubric=formatted_rubric,
             essay=essay,
             prompt_type=ptype
         )
+
+        # Generate the response
         response = llm(formatted_prompt)
         state["contextualization_generation"] = response.strip()
         logging.info("Contextualization grading completed.")
@@ -619,21 +618,26 @@ def contextualization_grading_node(state: GraphState) -> GraphState:
         raise RuntimeError(f"Error in contextualization_grading_node: {e}")
     return state
 
+
 def evidence_grading_node(state: GraphState) -> GraphState:
     """
     Node 6: Grade the evidence section.
     """
     try:
         logging.info("Grading evidence.")
-        rubric = state["rubric"]
+        rubric = state["rubric"]  # Simple list of dictionaries
         essay = state["student_essay"]
         ptype = state["prompt_type"]
+
+        # Format the rubric into JSON string
         formatted_rubric = json.dumps(rubric, indent=2)
         formatted_prompt = evidence_prompt.format(
             rubric=formatted_rubric,
             essay=essay,
             prompt_type=ptype
         )
+
+        # Generate the response
         response = llm(formatted_prompt)
         state["evidence_generation"] = response.strip()
         logging.info("Evidence grading completed.")
@@ -648,15 +652,19 @@ def analysis_grading_node(state: GraphState) -> GraphState:
     """
     try:
         logging.info("Grading analysis and reasoning.")
-        rubric = state["rubric"]
+        rubric = state["rubric"]  # Simple list of dictionaries
         essay = state["student_essay"]
         ptype = state["prompt_type"]
+
+        # Format the rubric into JSON string
         formatted_rubric = json.dumps(rubric, indent=2)
         formatted_prompt = complexunderstanding_prompt.format(
             rubric=formatted_rubric,
             essay=essay,
             prompt_type=ptype
         )
+
+        # Generate the response
         response = llm(formatted_prompt)
         state["complexunderstanding_generation"] = response.strip()
         logging.info("Analysis and reasoning grading completed.")
@@ -677,7 +685,7 @@ def final_node(state: GraphState) -> GraphState:
         evidence = state.get("evidence_generation", "")
         complexu = state.get("complexunderstanding_generation", "")
         ptype = state.get("prompt_type", "")
-        
+
         formatted_prompt = summation_prompt.format(
             thesis_generation=thesis,
             contextualization_generation=cont,
@@ -724,11 +732,11 @@ def evaluate(prompt: str, essay: str) -> Dict:
     """
     Evaluate a student's essay based on the given prompt using the StateGraph workflow.
     Returns the final LLM feedback text or an error if missing.
-    
+
     Args:
         prompt (str): The LEQ prompt provided by the student.
         essay (str): The student's essay to be evaluated.
-    
+
     Returns:
         Dict: A dictionary containing the evaluation status and summation or error details.
     """
