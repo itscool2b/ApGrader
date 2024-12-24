@@ -2,7 +2,7 @@ asgiref==3.8.1              # For async support with Django
 django==5.1.3               # Django framework for the web application
 django-cors-headers==4.6.0  # To handle Cross-Origin Resource Sharing (CORS)
 python-dotenv==1.0.1        # For loading environment variables from .env file
-PyPDF2==3.0.1               # For handling PDF files
+PyPDF2==3.0.1
 openai==1.58.1              # OpenAI API client
 pinecone-client==5.0.1      # Pinecone API client
 langchain==0.3.13           # LangChain for LLM workflows
