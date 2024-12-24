@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from PyPDF2 import PdfReader
-from .updatedai import evaluate
+from .evaluate_ai import evaluate  # Updated import
 from asgiref.sync import sync_to_async
 import logging
 from io import BytesIO

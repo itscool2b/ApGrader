@@ -1,5 +1,5 @@
 ##############################
-#  updatedai.py
+# evaluate_ai.py
 ##############################
 
 import os
@@ -217,13 +217,17 @@ Analysis and Reasoning (0–2 points):
 
 Output Format:
 - Contextualization (0-1 point): [Score w/ feedback]
+
 - Thesis / Claim (0-1 point): [Score w/ feedback]
+
 - Evidence (0-2 points):
   - Specific Evidence: [Score w/ feedback]
   - Evidence Supporting Argument: [Score w/ feedback]
+
 - Analysis and Reasoning (0-2 points):
   - Historical Reasoning: [Score w/ feedback]
   - Complex Understanding: [Score w/ feedback]
+
 - Total Score (out of 6): [Score]
 
 Feedback Summary:
@@ -321,8 +325,7 @@ Prompt Type: {prompt_type}
 
 Output:
 Score (0 or 1): Indicate whether the thesis earns the point.
-Feedback: Provide a brief explanation justifying the score.
-"""
+Feedback: Provide a brief explanation justifying the score."""
 )
 
 contextualization_prompt = PromptTemplate.from_template(
@@ -469,7 +472,7 @@ Suggestions for Improvement
 ###############################################################################
 # 4) LLM Setup
 ###############################################################################
-llm = ChatOpenAI(openai_api_key=OPENAI_API_KEY, model="gpt-4")
+llm = ChatOpenAI(openai_api_key=os.getenv("OPENAI_API_KEY"), model="gpt-4")
 
 tools = [
     Tool(
@@ -479,6 +482,8 @@ tools = [
     )
 ]
 
+from pydantic import BaseModel
+from typing import List
 
 ###############################################################################
 # 5) State Definition and Workflow
