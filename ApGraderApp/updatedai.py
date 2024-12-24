@@ -48,7 +48,7 @@ openai.api_key = OPENAI_API_KEY
 
 # Initialize Pinecone index
 index = get_index()
-client = OpenAI()
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 ###############################################################################
 # 2) get_relevant_documents: fetch from Pinecone
