@@ -550,7 +550,7 @@ def complexunderstanding_grading(state):
     state["complexunderstanding_generation"] = response.content
     return state
 
-def summation(state):
+def summation_node(state):
     thesis = state["thesis_generation"]
     cont = state["contexualization_generation"]
     evidence = state["evidence_generation"]
@@ -567,7 +567,7 @@ workflow.add_node("fetch_rubric", fetch_rubric)
 workflow.add_node("thesis_grading", thesis_grading)
 workflow.add_node("contextualization_grading", contextualization_grading)
 workflow.add_node("complexunderstanding_grading",complexunderstanding_grading)
-workflow.add_node("summation_node", summation)
+workflow.add_node("summation_node", summation_node)
 
 workflow.add_edge(START, "classify_prompt")
 workflow.add_edge("classify_prompt", "fetch_rubric")
