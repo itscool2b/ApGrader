@@ -17,7 +17,7 @@ from langchain_community.document_loaders import WebBaseLoader
 from langchain_community.vectorstores import Chroma
 from langchain_openai import ChatOpenAI as LegacyChatOpenAI
 from langchain_openai import OpenAIEmbeddings as LegacyOpenAIEmbeddings
-from openai import OpenAI
+
 
 from PyPDF2 import PdfReader
 from typing import List
@@ -49,7 +49,7 @@ openai.api_key = OPENAI_API_KEY
 
 # Initialize Pinecone index
 index = get_index()
-client = OpenAI(api_key=OPENAI_API_KEY)
+client = openai
 
 ###############################################################################
 # 2) get_relevant_documents: fetch from Pinecone
