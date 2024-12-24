@@ -3,7 +3,7 @@ import time
 import openai
 from PyPDF2 import PdfReader
 from dotenv import load_dotenv, dotenv_values
-from pineconesetup import pc, setup_index, get_index
+from p import pc, setup_index, get_index
 from openai import OpenAI
 
 # Load environment variables

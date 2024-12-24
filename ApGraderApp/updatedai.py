@@ -7,7 +7,7 @@ import openai
 import json
 import logging
 from dotenv import load_dotenv
-
+from openai import OpenAI
 from langchain.prompts import PromptTemplate
 from langchain.chat_models import ChatOpenAI
 from langchain.embeddings import OpenAIEmbeddings
@@ -22,8 +22,7 @@ from typing_extensions import TypedDict
 from langgraph.graph import END, StateGraph, START
 
 # Import your Pinecone setup function
-from .pineconesetup import get_index  # Ensure pineconesetup.py is in the same directory or adjust the path accordingly
-
+from p import get_index  
 ###############################################################################
 # 1) Load environment variables and set up your API keys
 ###############################################################################
@@ -37,7 +36,7 @@ if not OPENAI_API_KEY:
 
 # Set OpenAI API key for the openai library
 openai.api_key = OPENAI_API_KEY
-
+client = OpenAI(aip_key=OPENAI_API_KEY)
 # Initialize Pinecone index
 index = get_index()
 
@@ -69,11 +68,11 @@ def get_relevant_documents(query: str, prompt_type: str) -> List[Dict]:
             )
         else:
             # Normal embedding logic
-            response = openai.Embedding.create(
+            response = client.embeddings.create(
                 input=query,
                 model="text-embedding-ada-002"
             )
-            query_embedding = response['data'][0]['embedding']
+            query_embedding = response.data[0].embedding
 
             results = index.query(
                 vector=query_embedding,
