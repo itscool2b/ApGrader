@@ -12,7 +12,7 @@ from langchain.agents import Tool
 from langchain.prompts import PromptTemplate
 from langchain.chat_models import ChatOpenAI
 from langchain.embeddings import OpenAIEmbeddings
-from langchain.output_parsers import StrOutputParser
+
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.document_loaders import WebBaseLoader
 from langchain.vectorstores import Chroma
