@@ -22,7 +22,7 @@ from typing_extensions import TypedDict
 from langgraph.graph import END, StateGraph, START
 
 # Import your Pinecone setup function
-from pineconesetup import get_index  # Ensure pineconesetup.py is in the same directory or adjust the path accordingly
+from .pineconesetup import get_index  # Ensure pineconesetup.py is in the same directory or adjust the path accordingly
 
 ###############################################################################
 # 1) Load environment variables and set up your API keys
