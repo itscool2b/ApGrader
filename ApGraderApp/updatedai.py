@@ -48,7 +48,7 @@ openai.api_key = OPENAI_API_KEY
 
 # Initialize Pinecone index
 index = get_index()
-
+client = OpenAI
 
 ###############################################################################
 # 2) get_relevant_documents: fetch from Pinecone
@@ -71,7 +71,7 @@ def get_relevant_documents(query, prompt_type):
             )
         else:
             # Normal embedding logic
-            response = openai.Embedding.create(
+            response = client.Embedding.create(
                 input=query,
                 model="text-embedding-ada-002"
             )
