@@ -8,14 +8,13 @@ import json
 import logging
 from dotenv import load_dotenv
 
-from langchain.agents import Tool
 from langchain.prompts import PromptTemplate
 from langchain.chat_models import ChatOpenAI
 from langchain.embeddings import OpenAIEmbeddings
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.document_loaders import WebBaseLoader
-from langchain.vectorstores import Chroma
+
 
 from typing import List, Dict
 from typing_extensions import TypedDict
@@ -485,13 +484,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4")
 
 # Define tools if needed (currently not integrated into the workflow)
-tools = [
-    Tool(
-        name="get rubric and sample essays",
-        func=lambda query: "\n\n".join([doc["text"] for doc in get_relevant_documents(query, None)]),
-        description="Retrieve relevant sections of the rubric and example essays for grading. Use the entire thing."
-    )
-]
+
 
 ###############################################################################
 # 5) State Definition and Workflow
