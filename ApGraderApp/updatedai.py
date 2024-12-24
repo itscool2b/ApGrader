@@ -442,13 +442,13 @@ Total Score (0-6): Calculate the total score by summing up the scores included i
 Summary:
 carfully sum up the scores from each section and sum up the feedback from each section.
 
-prompt_type - {prompt_type}
 
 Output Requirements:
 Total Score (0-6): Include the calculated total score.
 Final Feedback Summary: Provide a structured and detailed summary with:
 Strengths
 Weaknesses
+dont do anything with just just mention this in the output. it is the prompt type. {prompt_type}
 Suggestions for Improvement""")
 ###############################################################################
 # 4) LLM Setup
@@ -567,15 +567,15 @@ workflow.add_node("fetch_rubric", fetch_rubric)
 workflow.add_node("thesis_grading", thesis_grading)
 workflow.add_node("contextualization_grading", contextualization_grading)
 workflow.add_node("complexunderstanding_grading",complexunderstanding_grading)
-workflow.add_node("summation", summation)
+workflow.add_node("summation_node", summation)
 
 workflow.add_edge(START, "classify_prompt")
 workflow.add_edge("classify_prompt", "fetch_rubric")
 workflow.add_edge("fetch_rubric", "thesis_grading")
 workflow.add_edge("thesis_grading", "contextualization_grading")
 workflow.add_edge("contextualization_grading","complexunderstanding_grading")
-workflow.add_edge("complexunderstanding_grading", "summation")
-workflow.add_edge("summation", END)
+workflow.add_edge("complexunderstanding_grading", "summation_node")
+workflow.add_edge("summation_node", END)
 
 app = workflow.compile()
 
