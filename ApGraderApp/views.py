@@ -16,12 +16,12 @@ async def process(request):
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
     try:
-        # Validate and process the prompt
+        
         prompt = request.POST.get("prompt", "").strip()
         if not prompt:
             return JsonResponse({'error': 'Missing "prompt" in request'}, status=400)
 
-        # Validate and process the file
+        
         if 'file' in request.FILES:
             pdf_file = request.FILES['file']
             try:
@@ -36,7 +36,7 @@ async def process(request):
         else:
             return JsonResponse({'error': 'PDF file is required'}, status=400)
 
-        # Pass prompt and essay to evaluation function
+        
         response = await sync_to_async(evaluate)(prompt, essay_text)
         return JsonResponse({'response': response}, status=200)
 

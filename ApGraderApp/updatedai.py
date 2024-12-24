@@ -442,6 +442,7 @@ Total Score (0-6): Calculate the total score by summing up the scores included i
 Summary:
 carfully sum up the scores from each section and sum up the feedback from each section.
 
+prompt_type - {prompt_type}
 
 Output Requirements:
 Total Score (0-6): Include the calculated total score.
@@ -554,7 +555,8 @@ def summation(state):
     cont = state["contexualization_generation"]
     evidence = state["evidence_generation"]
     complexu = state["complexunderstanding_generation"]
-    response = llm.invoke(summation_prompt.format(thesis_generation=thesis,contextualization_generation=cont,evidence_generation=evidence,complexunderstanding_generation=complexu))
+    prompt = state["prompt_type"]
+    response = llm.invoke(summation_prompt.format(thesis_generation=thesis,contextualization_generation=cont,evidence_generation=evidence,complexunderstanding_generation=complexu,prompt=prompt))
     state["summation"] = response.content
     return state
 
