@@ -11,7 +11,7 @@ from openai import OpenAI
 from langchain.prompts import PromptTemplate
 from langchain.chat_models import ChatOpenAI
 from langchain.embeddings import OpenAIEmbeddings
-
+from p import pc, setup_index, get_index
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.document_loaders import WebBaseLoader
 
@@ -22,7 +22,7 @@ from typing_extensions import TypedDict
 from langgraph.graph import END, StateGraph, START
 
 # Import your Pinecone setup function
-from p import get_index  
+
 ###############################################################################
 # 1) Load environment variables and set up your API keys
 ###############################################################################
