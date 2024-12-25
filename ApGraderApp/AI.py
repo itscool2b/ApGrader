@@ -518,17 +518,18 @@ def classify_prompt_node(state: GraphState) -> GraphState:
         if not state.get("prompt"):
             raise ValueError("Prompt is empty or invalid.")
 
-        # Format the prompt and get the response
+        # Format the prompt
         formatted_prompt = classification_prompt.format(prompt=state["prompt"])
-        response = llm(formatted_prompt).strip()
+        logging.debug(f"Formatted Prompt Sent to LLM: {formatted_prompt}")
 
-        # Log the LLM response for debugging
+        # Get response from LLM
+        response = llm(formatted_prompt).strip()
         logging.debug(f"LLM Response: {response}")
 
         # Validate the response
         valid_types = {"Comparison", "Causation", "CCOT"}
         if response not in valid_types:
-            logging.error(f"Unexpected prompt type: {response}")
+            logging.error(f"Unexpected LLM response: {response}")
             raise ValueError(f"Got unknown type: {response}")
 
         # Store the valid response
