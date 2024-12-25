@@ -293,15 +293,15 @@ You are a teaching assistant for an AP U.S. History class. Your task is to read 
 
 **Instructions**:
 1. Carefully read the provided LEQ prompt.
-2. Determine whether it is a "Comparison," "Causation," or "CCOT" prompt based on its wording and requirements.
-3. Base your decision solely on the prompt text. Do not infer or consider anything outside the provided text.
+2. Respond with only one of these three exact words: **"Comparison"**, **"Causation"**, or **"CCOT"**.
+3. Do not provide any additional text or explanation.
 
-**Output**:
-Respond with only one word: "Comparison", "Causation", or "CCOT" depending on which category best matches the prompt.
+**Student’s Prompt to Classify**: {prompt}
 
-**Student’s Prompt**: {prompt}
+**Your Response**:
 """
 )
+
 
 
 # Smaller Rubrics for Partial Grading
@@ -524,14 +524,14 @@ def classify_prompt_node(state: GraphState) -> GraphState:
         # Format the prompt
         formatted_prompt = classification_prompt.format(prompt=state["prompt"])
         
-        # Add debug log for the formatted prompt
+        # Log the formatted prompt for debugging
         logging.debug(f"Formatted Prompt Sent to LLM: {formatted_prompt}")
 
         # Get response from LLM
         response = llm(formatted_prompt).strip()
 
-        # Add debug log for the LLM response
-        logging.debug(f"LLM Response: {response}")
+        # Log the raw LLM response
+        logging.debug(f"Raw LLM Response: {response}")
 
         # Validate the response
         valid_types = {"Comparison", "Causation", "CCOT"}
