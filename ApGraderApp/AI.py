@@ -483,52 +483,66 @@ workflow = StateGraph(GraphState)
 ###############################################################################
 # 6) Node Functions
 ###############################################################################
-
 def classify_prompt_node(state: GraphState) -> GraphState:
+    """
+    Classifies the student prompt into one of the predefined categories: 
+    'Comparison', 'Causation', or 'CCOT'. Handles edge cases gracefully.
+    """
     try:
         logging.info("Classifying prompt.")
 
-        # Validate input
+        # Step 1: Validate Input
         prompt = state.get("prompt", "").strip()
         if not prompt:
-            raise ValueError("Prompt is empty or invalid.")
+            raise ValueError("The provided prompt is empty or invalid.")
 
-        # Define maximum number of attempts
+        # Step 2: Define Classification Rules
+        valid_types = {"Comparison", "Causation", "CCOT"}
         max_attempts = 5
-        attempt = 0
         response_clean = None
 
-        valid_types = {"Comparison", "Causation", "CCOT"}
+        # Step 3: Attempt Classification
+        for attempt in range(max_attempts):
+            logging.info(f"Classification attempt {attempt + 1}.")
 
-        while attempt < max_attempts and response_clean not in valid_types:
             # Format the prompt
             formatted_prompt = classification_prompt.format(prompt=prompt)
-            logging.debug(f"Formatted Prompt Sent to LLM (Attempt {attempt + 1}): {formatted_prompt}")
+            logging.debug(f"Formatted Prompt Sent to LLM: {formatted_prompt}")
 
-            # Get response from LLM
-            response = llm(formatted_prompt).strip()
-            logging.debug(f"Raw LLM Response (Attempt {attempt + 1}): {response}")
+            # Query the LLM
+            try:
+                response = llm(formatted_prompt)
+                logging.debug(f"LLM Response: {response}")
+            except Exception as llm_error:
+                logging.error(f"Error querying the LLM: {llm_error}")
+                continue
 
-            # Sanitize the response
-            response_clean = response.splitlines()[0].strip()
+            # Step 4: Process and Validate Response
+            response_clean = response.strip().splitlines()[0].strip() if response else None
+            logging.debug(f"Cleaned Response: '{response_clean}'")
 
             if response_clean in valid_types:
-                logging.info(f"Prompt classified as: {response_clean}")
+                logging.info(f"Successfully classified prompt as: {response_clean}")
                 state["prompt_type"] = response_clean
-                break
-            else:
-                logging.warning(f"Invalid type received on attempt {attempt + 1}: '{response_clean}'")
-                attempt += 1
+                return state  # Successful classification
 
-        if response_clean not in valid_types:
-            # If all attempts fail, handle gracefully by assigning 'Unknown' type
-            logging.error(f"Failed to classify prompt after {max_attempts} attempts. Response: '{response_clean}'")
-            state["prompt_type"] = "Unknown"
+            logging.warning(f"Invalid classification response: '{response_clean}'")
 
+        # Step 5: Graceful Fallback
+        logging.error(f"Failed to classify the prompt after {max_attempts} attempts.")
+        state["prompt_type"] = "Unknown"
+        return state
+
+    except ValueError as ve:
+        logging.error(f"Input validation error: {ve}")
+        state["prompt_type"] = "Unknown"
     except Exception as e:
-        logging.error(f"Error in classify_prompt_node: {e}")
-        raise RuntimeError(f"Error in classify_prompt_node: {e}")
+        logging.error(f"Unhandled error in classify_prompt_node: {e}")
+        state["prompt_type"] = "Unknown"
+
     return state
+
+
 
 
 def fetch_rubric_node(state: GraphState) -> GraphState:
