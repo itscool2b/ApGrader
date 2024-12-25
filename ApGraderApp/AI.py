@@ -60,11 +60,11 @@ def get_relevant_documents(query: str, prompt_type: str) -> List[Dict]:
                 include_metadata=True
             )
         else:
-            response = openai.Embedding.create(
+            response = client.embeddings.create(
                 input=query,
                 model="text-embedding-ada-002"
             )
-            query_embedding = response["data"][0]["embedding"]
+            query_embedding = response.data[0].embedding
 
             results = index.query(
                 vector=query_embedding,
