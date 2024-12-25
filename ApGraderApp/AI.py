@@ -729,15 +729,22 @@ def final_node(state: GraphState) -> GraphState:
     """
     try:
         logging.info("Generating final summation.")
+
+        # Extract required inputs from the state
         thesis = state.get("thesis_generation", "")
         cont = state.get("contextualization_generation", "")
         evidence = state.get("evidence_generation", "")
         complexu = state.get("complexunderstanding_generation", "")
         ptype = state.get("prompt_type", "")
 
-        # Log inputs to summation
+        # Log the inputs to ensure they're populated
         logging.debug(f"Summation inputs - Thesis: {thesis}, Context: {cont}, Evidence: {evidence}, Analysis: {complexu}")
 
+        # Check for empty inputs and log warnings
+        if not all([thesis, cont, evidence, complexu]):
+            logging.warning("One or more inputs to the summation are missing or empty.")
+        
+        # Prepare the summation prompt
         formatted_prompt = summation_prompt.format(
             thesis_generation=thesis,
             contextualization_generation=cont,
@@ -745,18 +752,26 @@ def final_node(state: GraphState) -> GraphState:
             complexunderstanding_generation=complexu,
             prompt_type=ptype,
         )
+        logging.debug(f"Formatted Summation Prompt: {formatted_prompt}")
+
+        # Generate the response
         response = llm.invoke(formatted_prompt)
 
-        # Ensure the response content is extracted correctly
-        if hasattr(response, "content"):
+        # Extract and set the response content
+        if hasattr(response, "content") and response.content.strip():
             state["summation"] = response.content.strip()
-            logging.info("Final summation generated.")
+            logging.info("Final summation generated successfully.")
         else:
-            raise ValueError("Invalid response format: 'content' missing.")
+            logging.error("Summation response is invalid or empty.")
+            state["summation"] = None
+
     except Exception as e:
         logging.error(f"Error in final_node: {e}")
+        state["summation"] = None
         raise RuntimeError(f"Error in final_node: {e}")
+
     return state
+
 
 
 
@@ -829,7 +844,7 @@ def evaluate(prompt: str, essay: str) -> Dict:
             "status": "error",
             "result": None,
             "message": "Evaluation workflow completed but did not generate a summation.",
-            "details": "Ensure the workflow logic is correctly implemented and all nodes return valid outputs.",
+            "details": f"Final state: {final_output}",
         }
 
     except Exception as e:
