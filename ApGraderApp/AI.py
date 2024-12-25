@@ -295,16 +295,55 @@ app = workflow.compile()
 ###############################################################################
 
 def evaluate(prompt: str, essay: str) -> Dict:
-    initial_state: GraphState = {
-        "prompt": prompt,
-        "prompt_type": None,
-        "student_essay": essay,
-        "rubric": [],
-        "thesis_generation": None,
-        "contextualization_generation": None,
-        "evidence_generation": None,
-        "complexunderstanding_generation": None,
-        "summation": None,
-    }
-    final_output = app.run(initial_state)
-    return final_output.get("summation", "Evaluation could not be completed.")
+    """
+    Evaluate a student's essay based on the given prompt using the StateGraph workflow.
+    """
+    try:
+        initial_state: GraphState = {
+            "prompt": prompt,
+            "prompt_type": None,
+            "student_essay": essay,
+            "rubric": [],
+            "thesis_generation": None,
+            "contextualization_generation": None,
+            "evidence_generation": None,
+            "complexunderstanding_generation": None,
+            "summation": None,
+        }
+
+        logging.info("Starting evaluation workflow.")
+        final_output = None
+
+        # Run the workflow and collect output
+        for output in app.stream(initial_state):
+            logging.debug(f"Intermediate state: {output}")
+            final_output = output
+
+        # Validate the final output
+        if final_output and final_output.get("summation"):
+            logging.info("Evaluation completed successfully.")
+            return {
+                "status": "success",
+                "result": final_output["summation"],
+                "message": "Evaluation completed successfully.",
+                "details": None,
+            }
+
+        # Handle missing summation
+        logging.warning("Summation not found in the final output.")
+        return {
+            "status": "error",
+            "result": None,
+            "message": "Evaluation workflow completed but did not generate a summation.",
+            "details": f"Final state: {final_output}",
+        }
+
+    except Exception as e:
+        logging.error(f"Error during evaluation: {e}")
+        return {
+            "status": "error",
+            "result": None,
+            "message": "An error occurred during evaluation.",
+            "details": str(e),
+        }
+
