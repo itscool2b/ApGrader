@@ -488,15 +488,12 @@ def evaluate(prompt: str, essay: str) -> str:
     }
 
     # Run the workflow
+    final_state = None  # To store the final state of the workflow
     for output in app.stream(initial_state):
-        pass  # Let the workflow process to its final state
+        final_state = output  # Keep track of the last state
 
-    # Fetch the summation and ensure it's returned correctly
-    summation = output.get("summation", "")
-    if not summation:
+    # Explicitly fetch the summation from the final state
+    if final_state and "summation" in final_state:
+        return final_state["summation"]
+    else:
         raise ValueError("Summation not found in the final state.")
-    return summation
-
-
-
-
