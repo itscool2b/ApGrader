@@ -723,7 +723,7 @@ def analysis_grading_node(state: GraphState) -> GraphState:
 
 
 
-      def final_node(state: GraphState) -> GraphState:
+def final_node(state: GraphState) -> GraphState:
     """
     Node 8: Compose the final summation from all partial sections.
     Stores the final text in state["summation"].
