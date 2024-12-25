@@ -517,42 +517,35 @@ def classify_prompt_node(state: GraphState) -> GraphState:
     try:
         logging.info("Classifying prompt.")
 
-        # Validate the input prompt
+        # Validate input
         if not state.get("prompt"):
             raise ValueError("Prompt is empty or invalid.")
 
         # Format the prompt
         formatted_prompt = classification_prompt.format(prompt=state["prompt"])
-        
-        # Log the formatted prompt for debugging
         logging.debug(f"Formatted Prompt Sent to LLM: {formatted_prompt}")
 
         # Get response from LLM
         response = llm(formatted_prompt).strip()
-
-        # Log the raw LLM response
         logging.debug(f"Raw LLM Response: {response}")
 
-        # Validate the response
+        # Sanitize the response
+        response_clean = response.splitlines()[0].strip()  # Take the first line and clean whitespace
         valid_types = {"Comparison", "Causation", "CCOT"}
-        if response not in valid_types:
-            logging.error(f"Unexpected LLM response: {response}")
-            
-            # Fallback mechanism
-            fallback_response = "Unknown Type"
-            logging.warning(f"LLM response invalid. Defaulting to: {fallback_response}")
-            state["prompt_type"] = fallback_response
-            return state
+
+        # Validate the response
+        if response_clean not in valid_types:
+            logging.error(f"Unexpected LLM response: {response_clean}")
+            raise ValueError(f"Got unknown type: {response_clean}")
 
         # Store the valid response
-        state["prompt_type"] = response
+        state["prompt_type"] = response_clean
         logging.info(f"Prompt classified as: {state['prompt_type']}")
 
     except Exception as e:
         logging.error(f"Error in classify_prompt_node: {e}")
         raise RuntimeError(f"Error in classify_prompt_node: {e}")
     return state
-
 
  
 
