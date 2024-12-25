@@ -455,7 +455,7 @@ Carefully sum up the scores from each section and sum up the feedback from each 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Initialize the language model
-llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4")
+llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4-32k")
 
 # Define tools if needed (currently not integrated into the workflow)
 
@@ -506,11 +506,12 @@ def classify_prompt_node(state: GraphState) -> GraphState:
             logging.debug(f"Formatted Prompt Sent to LLM (Attempt {attempt + 1}): {formatted_prompt}")
 
             # Get response from LLM
-            response = llm.invoke(formatted_prompt).strip()
-            logging.debug(f"Raw LLM Response (Attempt {attempt + 1}): {response}")
+            response = llm.invoke(formatted_prompt)
+            response_content = response.content.strip()  # Access the content attribute
+            logging.debug(f"Raw LLM Response (Attempt {attempt + 1}): {response_content}")
 
             # Sanitize the response
-            response_clean = response.splitlines()[0].strip().lower()
+            response_clean = response_content.splitlines()[0].strip().lower()
 
             if response_clean in valid_types:
                 logging.info(f"Prompt classified as: {response_clean.capitalize()}")
@@ -590,11 +591,16 @@ def thesis_grading_node(state: GraphState) -> GraphState:
         if not rubric:
             raise ValueError("Rubric is missing in state.")
 
+        # Reduce rubric size if too large
+        if len(rubric) > 1000:  # Arbitrary limit; adjust as needed
+            rubric = rubric[:1000]
+            logging.warning("Rubric truncated due to size.")
+
         # Convert rubric into a formatted JSON string for the LLM prompt
         formatted_rubric = json.dumps(rubric, indent=2)
         formatted_prompt = thesis_prompt.format(
             rubric=formatted_rubric,
-            essay=essay,
+            essay=essay[:3000],  # Truncate essay if too large
             prompt_type=ptype
         )
 
@@ -602,12 +608,14 @@ def thesis_grading_node(state: GraphState) -> GraphState:
 
         # Generate the response using the LLM
         response = llm.invoke(formatted_prompt)
-        state["thesis_generation"] = response.strip()
+        response_content = response.content.strip()  # Access the content attribute
+        state["thesis_generation"] = response_content
         logging.info("Thesis grading completed.")
     except Exception as e:
         logging.error(f"Error in thesis_grading_node: {e}")
         raise RuntimeError(f"Error in thesis_grading_node: {e}")
     return state
+
 
 
 
