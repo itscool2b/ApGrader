@@ -288,6 +288,7 @@ workflow.add_edge("fetch_rubric", "retrieve_essays")
 workflow.add_edge("retrieve_essays", "thesis_grading")
 workflow.add_edge("thesis_grading", "final_node")
 workflow.add_edge("final_node", END)
+app = workflow.compile()
 
 ###############################################################################
 # 6) Main Function
