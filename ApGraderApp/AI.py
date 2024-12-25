@@ -423,26 +423,39 @@ def analysis_grading_node(state: GraphState) -> GraphState:
     return state
 
 
-def final_node(state: GraphState) -> GraphState:
-    thesis = state["thesis_generation"]
-    contextualization = state["contextualization_generation"]
-    evidence = state["evidence_generation"]
-    analysis = state["complexunderstanding_generation"]
-    prompt_type = state["prompt_type"]
+def final_node(state: GraphState) -> str:
+    """
+    Node 8: Compose the final summation from all partial sections.
+    Directly returns the final summation as a string.
+    """
+    try:
+        # Extract required inputs from the state
+        thesis = state["thesis_generation"]
+        cont = state["contextualization_generation"]
+        evidence = state["evidence_generation"]
+        complexu = state["complexunderstanding_generation"]
+        ptype = state["prompt_type"]
 
-   
-    formatted_prompt = summation_prompt.format(
-        thesis_generation=thesis,
-        contextualization_generation=contextualization,
-        evidence_generation=evidence,
-        complexunderstanding_generation=analysis,
-        prompt_type=prompt_type
-    )
-    response = llm.invoke(formatted_prompt)
-    state["summation"] = response.content.strip()
-    print(state["summation"])
+        # Prepare the summation prompt
+        formatted_prompt = summation_prompt.format(
+            thesis_generation=thesis,
+            contextualization_generation=cont,
+            evidence_generation=evidence,
+            complexunderstanding_generation=complexu,
+            prompt_type=ptype,
+        )
 
-    return state
+        # Generate the response
+        response = llm.invoke(formatted_prompt)
+
+        # Extract and return the response content
+        if hasattr(response, "content") and response.content.strip():
+            return response.content.strip()
+        else:
+            raise ValueError("Summation generation failed.")
+
+    except Exception as e:
+        raise RuntimeError(f"Error in final_node: {e}")
 
 
 
@@ -473,7 +486,7 @@ app = workflow.compile()
 
 def evaluate(prompt: str, essay: str) -> str:
     """
-    Evaluate the given essay based on the prompt and return only the summation.
+    Evaluate the given essay based on the prompt and directly return the summation.
     """
     initial_state = {
         "prompt": prompt,
@@ -484,15 +497,12 @@ def evaluate(prompt: str, essay: str) -> str:
         "contextualization_generation": None,
         "evidence_generation": None,
         "complexunderstanding_generation": None,
-        "summation": None,
     }
 
-    # Run the workflow and capture the final state
+    # Run the workflow
     for output in app.stream(initial_state):
-        # Log the output for debugging
-        logging.debug(f"Workflow state: {output}")
-        if "summation" in output and output["summation"]:
-            return output["summation"]  # Return as soon as summation is found
+        if isinstance(output, str):  # Final node returns the summation directly
+            return output
 
     # If no summation is found, raise an error
     raise ValueError("Summation not found in the final state.")
