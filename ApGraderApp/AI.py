@@ -223,7 +223,7 @@ Ensure you pay attention to this prompt as it directly dictates the context and 
 
 - **Total Score (out of 6)**: [Score]
 
-**Feedback Summary**:
+- **Feedback Summary**:
 Provide a strict summary of strengths, weaknesses, and areas for improvement. Draw on approved AP US History materials. The total score is out of 6 points. Award no partial or “benefit-of-the-doubt” credit if the criteria is not explicitly met.
 """
 )
@@ -443,7 +443,7 @@ Carefully sum up the scores from each section and sum up the feedback from each 
   - **Strengths**
   - **Weaknesses**
   - **Suggestions for Improvement**
-
+  
 *Do not mention the prompt type. It is the prompt type: {prompt_type}*
 """
 )
@@ -463,301 +463,301 @@ llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4")
 # 5) State Definition and Workflow
 ###############################################################################
 
-import os
-import openai
-import json
-import logging
-from dotenv import load_dotenv
-from typing import List, Dict
-from typing_extensions import TypedDict
-from langchain.prompts import PromptTemplate
-from langchain.chat_models import ChatOpenAI
-from langgraph.graph import END, StateGraph, START
-
-# Load environment variables
-load_dotenv()
-
-# Set up API keys
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-if not OPENAI_API_KEY:
-    raise ValueError("OPENAI_API_KEY not found. Please set it in your environment.")
-
-openai.api_key = OPENAI_API_KEY
-llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4")
-
-# Initialize logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-# Define typed state
 class GraphState(TypedDict):
+    """
+    Represents the state of the graph workflow.
+    """
     prompt: str
     prompt_type: str
     student_essay: str
-    rubric: List[Dict]
+    rubric: List[Dict]  # Rubric remains a list of dictionaries
     thesis_generation: str
     contextualization_generation: str
     evidence_generation: str
     complexunderstanding_generation: str
     summation: str
 
-# Prompt templates
-classification_prompt = PromptTemplate.from_template(
-    """
-    You are a highly accurate classifier for AP US History prompts. Classify the provided LEQ prompt into one of these types:
-    - Comparison
-    - Causation
-    - Continuity and Change Over Time (CCOT)
+# Initialize the workflow
+workflow = StateGraph(GraphState)
 
-    Only respond with one of the above exact words. No extra text.
-
-    Prompt: {prompt}
-
-    Your Response:
-    """
-)
-
-def get_relevant_documents(query: str, prompt_type: str = None) -> List[Dict]:
-    # Placeholder: This function fetches relevant documents from Pinecone or other sources.
-    return []
+###############################################################################
+# 6) Node Functions
+###############################################################################
 
 def classify_prompt_node(state: GraphState) -> GraphState:
-    """Classify the student's prompt into Comparison, Causation, or CCOT."""
     try:
         logging.info("Classifying prompt.")
 
+        # Validate input
         prompt = state.get("prompt", "").strip()
         if not prompt:
-            logging.error("Prompt is empty or invalid.")
-            state["prompt_type"] = "Unknown"
-            return state
+            raise ValueError("Prompt is empty or invalid.")
 
-        valid_types = {"Comparison", "Causation", "CCOT"}
+        # Define maximum number of attempts
         max_attempts = 5
+        attempt = 0
         response_clean = None
 
-        for attempt in range(max_attempts):
-            logging.info(f"Classification attempt {attempt + 1}.")
+        valid_types = {"comparison", "causation", "ccot"}
 
-            try:
-                formatted_prompt = classification_prompt.format(prompt=prompt)
-                logging.debug(f"Formatted Prompt Sent to LLM: {formatted_prompt}")
+        while attempt < max_attempts and response_clean not in valid_types:
+            # Format the prompt
+            formatted_prompt = classification_prompt.format(prompt=prompt)
+            logging.debug(f"Formatted Prompt Sent to LLM (Attempt {attempt + 1}): {formatted_prompt}")
 
-                # Query the LLM using the updated invocation method
-                response = llm.invoke(formatted_prompt)  # Updated to use `invoke`
-                logging.debug(f"LLM Response: {response}")
+            # Get response from LLM
+            response = llm.invoke(formatted_prompt).strip()
+            logging.debug(f"Raw LLM Response (Attempt {attempt + 1}): {response}")
 
-                # Clean and validate response
-                response_clean = response.strip().splitlines()[0].strip()
-                if response_clean in valid_types:
-                    logging.info(f"Prompt classified as: {response_clean}")
-                    state["prompt_type"] = response_clean
-                    return state
+            # Sanitize the response
+            response_clean = response.splitlines()[0].strip().lower()
 
-                logging.warning(f"Invalid classification response: '{response_clean}'")
+            if response_clean in valid_types:
+                logging.info(f"Prompt classified as: {response_clean.capitalize()}")
+                state["prompt_type"] = response_clean.capitalize()
+                break
+            else:
+                logging.warning(f"Invalid type received on attempt {attempt + 1}: '{response_clean}'")
+                attempt += 1
 
-            except Exception as llm_error:
-                logging.error(f"Error querying the LLM: {llm_error}")
-
-        # Fallback classification (if LLM fails repeatedly)
-        logging.error("Failed to classify the prompt after maximum attempts.")
-        state["prompt_type"] = "Unknown"
-        return state
+        if response_clean not in valid_types:
+            # If all attempts fail, default to 'Comparison'
+            logging.error(f"Failed to classify prompt after {max_attempts} attempts. Defaulting to 'Comparison'.")
+            state["prompt_type"] = "Comparison"
 
     except Exception as e:
-        logging.error(f"Unhandled error in classify_prompt_node: {e}")
-        state["prompt_type"] = "Unknown"
-        return state
+        logging.error(f"Error in classify_prompt_node: {e}")
+        # Default to 'Comparison' even if error occurs
+        state["prompt_type"] = "Comparison"
+    return state
+
+
+   
+
+
+
+def fetch_rubric_node(state: GraphState) -> GraphState:
+    """
+    Node 2: Fetch the rubric documents from Pinecone.
+    """
+    try:
+        logging.info("Fetching rubric documents.")
+        query = "LEQ Rubric"  # The query to fetch rubric data
+        docs = get_relevant_documents(query, None)  # Retrieve documents
+
+        if not docs:
+            raise ValueError("No rubric documents found in Pinecone.")
+
+        # Store the documents directly in the state as a list of dictionaries
+        state["rubric"] = docs
+        logging.info(f"Fetched {len(docs)} rubric documents.")
+    except Exception as e:
+        logging.error(f"Error in fetch_rubric_node: {e}")
+        raise RuntimeError(f"Error in fetch_rubric_node: {e}")
+    return state
+
+
+def retrieve_essays_node(state: GraphState) -> GraphState:
+    """
+    Node 3: Retrieve relevant essays based on 'prompt_type'.
+    Optional if you want extra essay or rubric data for final LLM context.
+    """
+    try:
+        prompt_type = state.get("prompt_type", "").strip()
+        if prompt_type and prompt_type != "Unknown":
+            logging.info(f"Retrieving essays for prompt type: {prompt_type}")
+            docs = get_relevant_documents(None, prompt_type)
+            state["documents"] = docs
+            logging.info(f"Retrieved {len(docs)} essays for prompt type {prompt_type}.")
+        else:
+            logging.warning("Prompt type is 'Unknown' or empty. Skipping essay retrieval.")
+    except Exception as e:
+        logging.error(f"Error in retrieve_essays_node: {e}")
+        raise RuntimeError(f"Error in retrieve_essays_node: {e}")
+    return state
+
 
 def thesis_grading_node(state: GraphState) -> GraphState:
+    """
+    Node 4: Grade the thesis statement.
+    """
     try:
         logging.info("Grading thesis statement.")
-
-        if state.get("prompt_type") == "Unknown":
-            logging.warning("Prompt type is 'Unknown'. Skipping thesis grading.")
-            state["thesis_generation"] = "Skipped due to unknown prompt type."
-            return state
-
         rubric = state.get("rubric", [])
         essay = state.get("student_essay", "")
+        ptype = state.get("prompt_type", "")
 
         if not rubric:
-            logging.error("Rubric is missing. Cannot proceed with thesis grading.")
-            state["thesis_generation"] = "Error: Rubric missing."
-            return state
+            raise ValueError("Rubric is missing in state.")
 
-        if not essay:
-            logging.error("Essay is missing. Cannot proceed with thesis grading.")
-            state["thesis_generation"] = "Error: Essay missing."
-            return state
-
+        # Convert rubric into a formatted JSON string for the LLM prompt
         formatted_rubric = json.dumps(rubric, indent=2)
         formatted_prompt = thesis_prompt.format(
-            rubric=formatted_rubric, essay=essay, prompt_type=state["prompt_type"]
+            rubric=formatted_rubric,
+            essay=essay,
+            prompt_type=ptype
         )
 
-        response = llm.invoke(formatted_prompt)  # Updated to use `invoke`
+        logging.debug(f"Formatted Thesis Grading Prompt: {formatted_prompt}")
+
+        # Generate the response using the LLM
+        response = llm.invoke(formatted_prompt)
         state["thesis_generation"] = response.strip()
         logging.info("Thesis grading completed.")
-        return state
-
     except Exception as e:
         logging.error(f"Error in thesis_grading_node: {e}")
-        state["thesis_generation"] = f"Error: {e}"
-        return state
+        raise RuntimeError(f"Error in thesis_grading_node: {e}")
+    return state
 
-# Repeat for all other nodes with similar structure
+
+
 def contextualization_grading_node(state: GraphState) -> GraphState:
+    """
+    Node 5: Grade the contextualization section.
+    """
     try:
         logging.info("Grading contextualization.")
-
-        if state.get("prompt_type") == "Unknown":
-            logging.warning("Prompt type is 'Unknown'. Skipping contextualization grading.")
-            state["contextualization_generation"] = "Skipped due to unknown prompt type."
-            return state
-
         rubric = state.get("rubric", [])
         essay = state.get("student_essay", "")
+        ptype = state.get("prompt_type", "")
 
         if not rubric:
-            logging.error("Rubric is missing. Cannot proceed with contextualization grading.")
-            state["contextualization_generation"] = "Error: Rubric missing."
-            return state
+            raise ValueError("Rubric is missing in state.")
 
-        if not essay:
-            logging.error("Essay is missing. Cannot proceed with contextualization grading.")
-            state["contextualization_generation"] = "Error: Essay missing."
-            return state
-
+        # Convert rubric into JSON string
         formatted_rubric = json.dumps(rubric, indent=2)
         formatted_prompt = contextualization_prompt.format(
-            rubric=formatted_rubric, essay=essay, prompt_type=state["prompt_type"]
+            rubric=formatted_rubric,
+            essay=essay,
+            prompt_type=ptype
         )
 
-        response = llm.invoke(formatted_prompt)  # Updated to use `invoke`
+        logging.debug(f"Formatted Contextualization Grading Prompt: {formatted_prompt}")
+
+        # Generate the response
+        response = llm.invoke(formatted_prompt)
         state["contextualization_generation"] = response.strip()
         logging.info("Contextualization grading completed.")
-        return state
-
     except Exception as e:
         logging.error(f"Error in contextualization_grading_node: {e}")
-        state["contextualization_generation"] = f"Error: {e}"
-        return state
+        raise RuntimeError(f"Error in contextualization_grading_node: {e}")
+    return state
+
 
 def evidence_grading_node(state: GraphState) -> GraphState:
+    """
+    Node 6: Grade the evidence section.
+    """
     try:
         logging.info("Grading evidence.")
-
-        if state.get("prompt_type") == "Unknown":
-            logging.warning("Prompt type is 'Unknown'. Skipping evidence grading.")
-            state["evidence_generation"] = "Skipped due to unknown prompt type."
-            return state
-
         rubric = state.get("rubric", [])
         essay = state.get("student_essay", "")
+        ptype = state.get("prompt_type", "")
 
         if not rubric:
-            logging.error("Rubric is missing. Cannot proceed with evidence grading.")
-            state["evidence_generation"] = "Error: Rubric missing."
-            return state
+            raise ValueError("Rubric is missing in state.")
 
-        if not essay:
-            logging.error("Essay is missing. Cannot proceed with evidence grading.")
-            state["evidence_generation"] = "Error: Essay missing."
-            return state
-
+        # Format the rubric into JSON string
         formatted_rubric = json.dumps(rubric, indent=2)
         formatted_prompt = evidence_prompt.format(
-            rubric=formatted_rubric, essay=essay, prompt_type=state["prompt_type"]
+            rubric=formatted_rubric,
+            essay=essay,
+            prompt_type=ptype
         )
 
-        response = llm.invoke(formatted_prompt)  # Updated to use `invoke`
+        logging.debug(f"Formatted Evidence Grading Prompt: {formatted_prompt}")
+
+        # Generate the response
+        response = llm.invoke(formatted_prompt)
         state["evidence_generation"] = response.strip()
         logging.info("Evidence grading completed.")
-        return state
-
     except Exception as e:
         logging.error(f"Error in evidence_grading_node: {e}")
-        state["evidence_generation"] = f"Error: {e}"
-        return state
+        raise RuntimeError(f"Error in evidence_grading_node: {e}")
+    return state
+
+
 
 def analysis_grading_node(state: GraphState) -> GraphState:
+    """
+    Node 7: Grade the analysis and reasoning section.
+    """
     try:
         logging.info("Grading analysis and reasoning.")
-
-        if state.get("prompt_type") == "Unknown":
-            logging.warning("Prompt type is 'Unknown'. Skipping analysis grading.")
-            state["complexunderstanding_generation"] = "Skipped due to unknown prompt type."
-            return state
-
         rubric = state.get("rubric", [])
         essay = state.get("student_essay", "")
+        ptype = state.get("prompt_type", "")
 
         if not rubric:
-            logging.error("Rubric is missing. Cannot proceed with analysis grading.")
-            state["complexunderstanding_generation"] = "Error: Rubric missing."
-            return state
+            raise ValueError("Rubric is missing in state.")
 
-        if not essay:
-            logging.error("Essay is missing. Cannot proceed with analysis grading.")
-            state["complexunderstanding_generation"] = "Error: Essay missing."
-            return state
-
+        # Format the rubric into JSON string
         formatted_rubric = json.dumps(rubric, indent=2)
         formatted_prompt = complexunderstanding_prompt.format(
-            rubric=formatted_rubric, essay=essay, prompt_type=state["prompt_type"]
+            rubric=formatted_rubric,
+            essay=essay,
+            prompt_type=ptype
         )
 
-        response = llm.invoke(formatted_prompt)  # Updated to use `invoke`
-        state["complexunderstanding_generation"] = response.strip()
-        logging.info("Analysis grading completed.")
-        return state
+        logging.debug(f"Formatted Analysis Grading Prompt: {formatted_prompt}")
 
+        # Generate the response
+        response = llm.invoke(formatted_prompt)
+        state["complexunderstanding_generation"] = response.strip()
+        logging.info("Analysis and reasoning grading completed.")
     except Exception as e:
         logging.error(f"Error in analysis_grading_node: {e}")
-        state["complexunderstanding_generation"] = f"Error: {e}"
-        return state
+        raise RuntimeError(f"Error in analysis_grading_node: {e}")
+    return state
+
 
 def final_node(state: GraphState) -> GraphState:
+    """
+    Node 8: Compose the final summation from all partial sections.
+    Stores the final text in state["summation"].
+    """
     try:
         logging.info("Generating final summation.")
-
-        if state.get("prompt_type") == "Unknown":
-            state["summation"] = "Skipped due to unknown prompt type."
-            return state
-
-        thesis = state.get("thesis_generation", "Thesis grading skipped or failed.")
-        cont = state.get("contextualization_generation", "Contextualization grading skipped or failed.")
-        evidence = state.get("evidence_generation", "Evidence grading skipped or failed.")
-        complexu = state.get("complexunderstanding_generation", "Analysis grading skipped or failed.")
+        thesis = state.get("thesis_generation", "")
+        cont = state.get("contextualization_generation", "")
+        evidence = state.get("evidence_generation", "")
+        complexu = state.get("complexunderstanding_generation", "")
+        ptype = state.get("prompt_type", "")
 
         formatted_prompt = summation_prompt.format(
             thesis_generation=thesis,
             contextualization_generation=cont,
             evidence_generation=evidence,
             complexunderstanding_generation=complexu,
-            prompt_type=state.get("prompt_type", "Unknown")
+            prompt_type=ptype
         )
+        logging.debug(f"Formatted Summation Prompt: {formatted_prompt}")
 
-        response = llm.invoke(formatted_prompt)  # Updated to use `invoke`
+        response = llm.invoke(formatted_prompt)
         state["summation"] = response.strip()
         logging.info("Final summation generated.")
-        return state
-
     except Exception as e:
         logging.error(f"Error in final_node: {e}")
-        state["summation"] = f"Error: {e}"
-        return state
+        raise RuntimeError(f"Error in final_node: {e}")
+    return state
 
-# Workflow setup
-workflow = StateGraph(GraphState)
+
+###############################################################################
+# 7) Build the Workflow
+###############################################################################
 workflow.add_node("classify_prompt", classify_prompt_node)
+workflow.add_node("fetch_rubric", fetch_rubric_node)
+workflow.add_node("retrieve_essays", retrieve_essays_node)
 workflow.add_node("thesis_grading", thesis_grading_node)
 workflow.add_node("contextualization_grading", contextualization_grading_node)
 workflow.add_node("evidence_grading", evidence_grading_node)
 workflow.add_node("analysis_grading", analysis_grading_node)
 workflow.add_node("final_node", final_node)
+
 workflow.add_edge(START, "classify_prompt")
-workflow.add_edge("classify_prompt", "thesis_grading")
+workflow.add_edge("classify_prompt", "fetch_rubric")
+workflow.add_edge("fetch_rubric", "retrieve_essays")
+workflow.add_edge("retrieve_essays", "thesis_grading")
 workflow.add_edge("thesis_grading", "contextualization_grading")
 workflow.add_edge("contextualization_grading", "evidence_grading")
 workflow.add_edge("evidence_grading", "analysis_grading")
@@ -766,8 +766,25 @@ workflow.add_edge("final_node", END)
 
 app = workflow.compile()
 
-# Main evaluation function
+###############################################################################
+# 8) The main evaluate() function
+###############################################################################
 def evaluate(prompt: str, essay: str) -> Dict:
+    """
+    Evaluate a student's essay based on the given prompt using the StateGraph workflow.
+    Returns the final LLM feedback text or a detailed error message.
+
+    Args:
+        prompt (str): The LEQ prompt provided by the student.
+        essay (str): The student's essay to be evaluated.
+
+    Returns:
+        Dict: A dictionary containing:
+            - status (str): "success" or "error".
+            - result (str or None): The evaluation text if successful, otherwise None.
+            - message (str): A human-readable message summarizing the outcome.
+            - details (str or None): Additional details for debugging in case of an error.
+    """
     try:
         initial_state: GraphState = {
             "prompt": prompt,
@@ -781,11 +798,16 @@ def evaluate(prompt: str, essay: str) -> Dict:
             "summation": None
         }
 
+        logging.info("Starting evaluation workflow.")
         final_output = None
+
+        # Run the workflow and collect output
         for output in app.stream(initial_state):
             final_output = output
 
-        if final_output and "summation" in final_output:
+        # Validate the final output
+        if final_output and "summation" in final_output and final_output["summation"]:
+            logging.info("Evaluation completed successfully.")
             return {
                 "status": "success",
                 "result": final_output["summation"],
@@ -793,11 +815,13 @@ def evaluate(prompt: str, essay: str) -> Dict:
                 "details": None
             }
 
+        # Handle case where summation is missing
+        logging.warning("Summation not found in the final output.")
         return {
             "status": "error",
             "result": None,
-            "message": "Summation not found in the output.",
-            "details": "Ensure nodes are returning valid outputs."
+            "message": "Evaluation workflow completed but did not generate a summation.",
+            "details": "Ensure the workflow logic is correctly implemented and all nodes return valid outputs."
         }
 
     except Exception as e:
