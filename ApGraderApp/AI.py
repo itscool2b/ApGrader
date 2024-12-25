@@ -722,7 +722,8 @@ def analysis_grading_node(state: GraphState) -> GraphState:
 
 
 
-def final_node(state: GraphState) -> GraphState:
+
+      def final_node(state: GraphState) -> GraphState:
     """
     Node 8: Compose the final summation from all partial sections.
     Stores the final text in state["summation"].
@@ -731,26 +732,25 @@ def final_node(state: GraphState) -> GraphState:
         logging.info("Generating final summation.")
 
         # Extract required inputs from the state
-        thesis = state.get("thesis_generation", "Thesis evaluation not available.")
-        cont = state.get("contextualization_generation", "Contextualization evaluation not available.")
-        evidence = state.get("evidence_generation", "Evidence evaluation not available.")
-        complexu = state.get("complexunderstanding_generation", "Analysis and reasoning evaluation not available.")
-        ptype = state.get("prompt_type", "Unknown")
+        thesis = state.get("thesis_generation", "")
+        cont = state.get("contextualization_generation", "")
+        evidence = state.get("evidence_generation", "")
+        complexu = state.get("complexunderstanding_generation", "")
+        ptype = state.get("prompt_type", "")
 
         # Log the inputs to ensure they're populated
         logging.debug(f"Summation inputs - Thesis: {thesis}, Context: {cont}, Evidence: {evidence}, Analysis: {complexu}")
 
         # Check for empty inputs and log warnings
-        if not any([thesis, cont, evidence, complexu]):
+        if not all([thesis, cont, evidence, complexu]):
             logging.warning("One or more inputs to the summation are missing or empty.")
-            raise ValueError("Summation inputs are incomplete. Ensure all nodes generate valid outputs.")
-
+        
         # Prepare the summation prompt
         formatted_prompt = summation_prompt.format(
-            thesis_generation=thesis,
-            contextualization_generation=cont,
-            evidence_generation=evidence,
-            complexunderstanding_generation=complexu,
+            thesis_generation=thesis.replace("\\", " ").strip(),
+            contextualization_generation=cont.replace("\\", " ").strip(),
+            evidence_generation=evidence.replace("\\", " ").strip(),
+            complexunderstanding_generation=complexu.replace("\\", " ").strip(),
             prompt_type=ptype,
         )
         logging.debug(f"Formatted Summation Prompt: {formatted_prompt}")
@@ -760,18 +760,20 @@ def final_node(state: GraphState) -> GraphState:
 
         # Extract and set the response content
         if hasattr(response, "content") and response.content.strip():
-            state["summation"] = response.content.strip()
+            clean_output = response.content.replace("\\", " ").strip()
+            state["summation"] = clean_output
             logging.info("Final summation generated successfully.")
         else:
             logging.error("Summation response is invalid or empty.")
-            state["summation"] = "Summation could not be generated due to missing or invalid inputs."
+            state["summation"] = None
 
     except Exception as e:
         logging.error(f"Error in final_node: {e}")
-        state["summation"] = "Error occurred during summation generation."
+        state["summation"] = None
         raise RuntimeError(f"Error in final_node: {e}")
 
     return state
+
 
 
 
