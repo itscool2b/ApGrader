@@ -731,14 +731,18 @@ app = workflow.compile()
 def evaluate(prompt: str, essay: str) -> Dict:
     """
     Evaluate a student's essay based on the given prompt using the StateGraph workflow.
-    Returns the final LLM feedback text or an error if missing.
+    Returns the final LLM feedback text or a detailed error message.
 
     Args:
         prompt (str): The LEQ prompt provided by the student.
         essay (str): The student's essay to be evaluated.
 
     Returns:
-        Dict: A dictionary containing the evaluation status and summation or error details.
+        Dict: A dictionary containing:
+            - status (str): "success" or "error".
+            - result (str or None): The evaluation text if successful, otherwise None.
+            - message (str): A human-readable message summarizing the outcome.
+            - details (str or None): Additional details for debugging in case of an error.
     """
     try:
         initial_state: GraphState = {
@@ -754,28 +758,36 @@ def evaluate(prompt: str, essay: str) -> Dict:
         }
 
         logging.info("Starting evaluation workflow.")
-        # Run the workflow
         final_output = None
+
+        # Run the workflow and collect output
         for output in app.stream(initial_state):
             final_output = output
 
-        # Check if we got a final dictionary and "summation" is set
+        # Validate the final output
         if final_output and "summation" in final_output and final_output["summation"]:
             logging.info("Evaluation completed successfully.")
-            return {"status": "success", "summation": final_output["summation"]}
+            return {
+                "status": "success",
+                "result": final_output["summation"],
+                "message": "Evaluation completed successfully.",
+                "details": None
+            }
 
-        # If we get here, we have no final text
-        logging.warning("No evaluation output generated.")
+        # Handle case where summation is missing
+        logging.warning("Summation not found in the final output.")
         return {
             "status": "error",
-            "message": "No evaluation output generated.",
-            "details": "The workflow did not return a valid final text."
+            "result": None,
+            "message": "Evaluation workflow completed but did not generate a summation.",
+            "details": "Ensure the workflow logic is correctly implemented and all nodes return valid outputs."
         }
 
     except Exception as e:
         logging.error(f"Error during evaluation: {e}")
         return {
             "status": "error",
-            "message": f"Error during evaluation: {e}",
+            "result": None,
+            "message": "An error occurred during evaluation.",
             "details": str(e)
         }
