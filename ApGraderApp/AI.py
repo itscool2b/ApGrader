@@ -207,16 +207,48 @@ def analysis_grading_node(state: GraphState) -> GraphState:
     return state
 
 def final_node(state: GraphState) -> GraphState:
-    summation = llm.invoke(
-        summation_prompt.format(
-            thesis_generation=state["thesis_generation"],
-            contextualization_generation=state["contextualization_generation"],
-            evidence_generation=state["evidence_generation"],
-            complexunderstanding_generation=state["complexunderstanding_generation"],
+    """
+    Final node to generate the summation from all partial sections.
+    """
+    try:
+        logging.info("Generating final summation.")
+
+        # Extract required inputs
+        thesis = state.get("thesis_generation", "")
+        contextualization = state.get("contextualization_generation", "")
+        evidence = state.get("evidence_generation", "")
+        complex_understanding = state.get("complexunderstanding_generation", "")
+
+        # Log the inputs for debugging
+        logging.debug(f"Inputs for final summation - Thesis: {thesis}, Contextualization: {contextualization}, Evidence: {evidence}, Complex Understanding: {complex_understanding}")
+
+        # Check for missing inputs
+        if not all([thesis, contextualization, evidence, complex_understanding]):
+            logging.warning("One or more inputs for summation are missing.")
+            state["summation"] = None
+            return state
+
+        # Format the prompt
+        formatted_prompt = summation_prompt.format(
+            thesis_generation=thesis,
+            contextualization_generation=contextualization,
+            evidence_generation=evidence,
+            complexunderstanding_generation=complex_understanding,
         )
-    ).content.strip()
-    state["summation"] = summation
-    return state
+        logging.debug(f"Summation Prompt: {formatted_prompt}")
+
+        # Generate response
+        response = llm.invoke(formatted_prompt).content.strip()
+        logging.debug(f"Summation Response: {response}")
+
+        state["summation"] = response
+        return state
+
+    except Exception as e:
+        logging.error(f"Error in final_node: {e}")
+        state["summation"] = None
+        return state
+
 
 ###############################################################################
 # 6) Workflow construction
@@ -242,6 +274,9 @@ app = workflow.compile()
 # 7) Evaluate function
 ###############################################################################
 def evaluate(prompt: str, essay: str) -> Dict:
+    """
+    Evaluate a student's essay using the StateGraph workflow.
+    """
     try:
         initial_state: GraphState = {
             "prompt": prompt,
@@ -255,12 +290,16 @@ def evaluate(prompt: str, essay: str) -> Dict:
         }
 
         for output in app.stream(initial_state):
+            logging.info(f"Intermediate state: {output}")
             final_output = output
 
         if final_output.get("summation"):
+            logging.info("Summation successfully generated.")
             return {"status": "success", "result": final_output["summation"]}
 
-        return {"status": "error", "message": "Summation not generated."}
+        logging.warning("Summation not generated.")
+        return {"status": "error", "message": "Summation not generated.", "details": final_output}
 
     except Exception as e:
+        logging.error(f"Error during evaluation: {e}")
         return {"status": "error", "message": str(e)}
