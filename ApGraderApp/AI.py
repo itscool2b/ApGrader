@@ -12,8 +12,8 @@ from langchain.prompts import PromptTemplate
 from langchain.chat_models import ChatOpenAI
 
 from ApGraderApp.p import pc, setup_index, get_index
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.document_loaders import WebBaseLoader
+
+
 
 
 from typing import List, Dict
@@ -36,7 +36,7 @@ if not OPENAI_API_KEY:
 
 # Set OpenAI API key for the openai library
 openai.api_key = OPENAI_API_KEY
-client = OpenAI(aip_key=OPENAI_API_KEY)
+client = OpenAI(api_key=OPENAI_API_KEY)
 # Initialize Pinecone index
 index = get_index()
 
