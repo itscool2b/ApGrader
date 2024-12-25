@@ -289,7 +289,7 @@ Make sure your final output follows exactly the data above. Do not include any a
 So here is what u shoud be outputing based on all the data u have been given
 
 **output format**
-MAKE SURE TO ADD EVERYTHING UP PROPERLY
+MAKE SURE TO ADD EVERYTHING UP PROPERLY AND MAKE SURE THE EXTRACTION OF DATA IS ACCURATE AND COMPLETE. I GAVE U ALL THE DATA ABOVE BEFORE
 **Thesis score** - 
 ****contextualization score** - 
 evidence score** - 
