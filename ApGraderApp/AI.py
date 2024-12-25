@@ -486,9 +486,7 @@ app = workflow.compile()
 
 
 def evaluate(prompt: str, essay: str) -> str:
-    """
-    Evaluate the given essay based on the prompt and return the summation.
-    """
+  
     # Define the initial state
     state = {
         "prompt": prompt,
