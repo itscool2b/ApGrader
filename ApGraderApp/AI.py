@@ -423,10 +423,12 @@ def analysis_grading_node(state: GraphState) -> GraphState:
     return state
 
 
-def final_node(state: GraphState) -> GraphState:
+from langgraph.graph import Node
+
+@Node
+def final_node(state: dict) -> dict:
     """
-    Node 8: Compose the final summation from all partial sections.
-    Updates the state with the final summation.
+    Final node to compute the summation and update the state.
     """
     try:
         # Extract required inputs from the state
@@ -454,10 +456,10 @@ def final_node(state: GraphState) -> GraphState:
         else:
             raise ValueError("Summation generation failed.")
 
+        return state  # Return the updated state
+
     except Exception as e:
         raise RuntimeError(f"Error in final_node: {e}")
-
-    return state  # Ensure the state is returned
 
 
 
@@ -490,6 +492,7 @@ def evaluate(prompt: str, essay: str) -> str:
     """
     Evaluate the given essay based on the prompt and return the summation.
     """
+    # Define the initial state
     initial_state = {
         "prompt": prompt,
         "prompt_type": None,
@@ -503,11 +506,10 @@ def evaluate(prompt: str, essay: str) -> str:
     }
 
     # Run the workflow
-    for output in app.stream(initial_state):
-        pass  # Let the workflow process to the final state
+    final_state = app.run(initial_state)
 
-    # Extract the summation from the final state
-    if "summation" in output and output["summation"]:
-        return output["summation"]
-
-    raise ValueError("Summation not found in the final state.")
+    # Check if the summation is present in the final state
+    if "summation" in final_state and final_state["summation"]:
+        return final_state["summation"]
+    else:
+        raise ValueError("Summation not found in the final state.")
