@@ -295,8 +295,14 @@ MAKE SURE TO ADD EVERYTHING UP PROPERLY AND MAKE SURE THE EXTRACTION OF DATA IS 
 evidence score** - 
 **complex understanding score** - 
 **total summed up score** - 
-**feedback** - 
-constructuve criticism and feedback based on the data u have been given, meaning the feedback from each data point above. Everything should add up properly and be accurate
+
+**FEEDBACK** - 
+**Thesis feedback** - 
+****contextualization feedback** - 
+evidence feedback** - 
+**complex understanding feedback** - 
+**overall feedback** - 
+Be thorough with the feed back, explain why they earned or lost the point in each section. Again this data has been given to u above before.
 """
 ) 
 
