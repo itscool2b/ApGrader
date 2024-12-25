@@ -445,12 +445,14 @@ def final_node(state: dict) -> dict:
     Final node to compute the summation and update the state.
     """
     try:
+        # Extract required inputs from the state
         thesis = state["thesis_generation"]
         cont = state["contextualization_generation"]
         evidence = state["evidence_generation"]
         complexu = state["complexunderstanding_generation"]
         ptype = state["prompt_type"]
 
+        # Prepare the summation prompt
         formatted_prompt = summation_prompt.format(
             thesis_generation=thesis,
             contextualization_generation=cont,
@@ -459,18 +461,12 @@ def final_node(state: dict) -> dict:
             prompt_type=ptype,
         )
 
+        # Generate the response
         response = llm.invoke(formatted_prompt)
 
+        # Extract and store the response content in the state
         if hasattr(response, "content") and response.content.strip():
-            spaced_output = response.content.strip()
-            spaced_output = spaced_output.replace("Thesis(0-1):", "\nThesis(0-1):\n")
-            spaced_output = spaced_output.replace("Contextualization(0-1):", "\nContextualization(0-1):\n")
-            spaced_output = spaced_output.replace("Evidence(0-2):", "\nEvidence(0-2):\n")
-            spaced_output = spaced_output.replace("Analysis and Reasoning(0-2):", "\nAnalysis and Reasoning(0-2):\n")
-            spaced_output = spaced_output.replace("TOTAL SCORE = total / 6", "\nTOTAL SCORE = total / 6\n")
-            spaced_output = spaced_output.replace("Feedback summary:", "\nFeedback summary:\n")
-
-            state["summation"] = spaced_output
+            state["summation"] = response.content.strip()
         else:
             raise ValueError("Summation generation failed.")
 
@@ -478,6 +474,7 @@ def final_node(state: dict) -> dict:
 
     except Exception as e:
         raise RuntimeError(f"Error in final_node: {e}")
+
 
 
 
