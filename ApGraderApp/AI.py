@@ -644,13 +644,20 @@ def contextualization_grading_node(state: GraphState) -> GraphState:
 
         # Generate the response
         response = llm.invoke(formatted_prompt)
-        state["contextualization_generation"] = response.strip()
+
+        # Ensure the response content is extracted correctly
+        if hasattr(response, "content"):
+            state["contextualization_generation"] = response.content.strip()
+        else:
+            raise ValueError("Invalid response format from LLM.")
+
         logging.info("Contextualization grading completed.")
     except Exception as e:
         logging.error(f"Error in contextualization_grading_node: {e}")
         raise RuntimeError(f"Error in contextualization_grading_node: {e}")
     return state
 
+  
 
 def evidence_grading_node(state: GraphState) -> GraphState:
     """
