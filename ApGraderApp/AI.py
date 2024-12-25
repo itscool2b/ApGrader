@@ -7,7 +7,7 @@ from openai import OpenAI
 from langchain.prompts import PromptTemplate
 from langchain.chat_models import ChatOpenAI
 
-from p import pc, setup_index, get_index
+from ApGraderApp.p import pc, setup_index, get_index
 
 from typing import List, Dict
 from typing_extensions import TypedDict
