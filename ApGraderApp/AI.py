@@ -511,19 +511,35 @@ workflow = StateGraph(GraphState)
 # 6) Node Functions
 ###############################################################################
 def classify_prompt_node(state: GraphState) -> GraphState:
-    """
-    Node 1: Classify the student's LEQ prompt.
-    """
     try:
         logging.info("Classifying prompt.")
+
+        # Validate the input prompt
+        if not state.get("prompt"):
+            raise ValueError("Prompt is empty or invalid.")
+
+        # Format the prompt and get the response
         formatted_prompt = classification_prompt.format(prompt=state["prompt"])
-        response = llm(formatted_prompt)
-        state["prompt_type"] = response.strip()
+        response = llm(formatted_prompt).strip()
+
+        # Log the LLM response for debugging
+        logging.debug(f"LLM Response: {response}")
+
+        # Validate the response
+        valid_types = {"Comparison", "Causation", "CCOT"}
+        if response not in valid_types:
+            logging.error(f"Unexpected prompt type: {response}")
+            raise ValueError(f"Got unknown type: {response}")
+
+        # Store the valid response
+        state["prompt_type"] = response
         logging.info(f"Prompt classified as: {state['prompt_type']}")
+
     except Exception as e:
         logging.error(f"Error in classify_prompt_node: {e}")
         raise RuntimeError(f"Error in classify_prompt_node: {e}")
     return state
+
 
 def fetch_rubric_node(state: GraphState) -> GraphState:
     """
