@@ -723,6 +723,10 @@ def analysis_grading_node(state: GraphState) -> GraphState:
 
 
 def final_node(state: GraphState) -> GraphState:
+    """
+    Node 8: Compose the final summation from all partial sections.
+    Stores the final text in state["summation"].
+    """
     try:
         logging.info("Generating final summation.")
         thesis = state.get("thesis_generation", "")
@@ -731,16 +735,19 @@ def final_node(state: GraphState) -> GraphState:
         complexu = state.get("complexunderstanding_generation", "")
         ptype = state.get("prompt_type", "")
 
+        # Log inputs to summation
+        logging.debug(f"Summation inputs - Thesis: {thesis}, Context: {cont}, Evidence: {evidence}, Analysis: {complexu}")
+
         formatted_prompt = summation_prompt.format(
             thesis_generation=thesis,
             contextualization_generation=cont,
             evidence_generation=evidence,
             complexunderstanding_generation=complexu,
-            prompt_type=ptype
+            prompt_type=ptype,
         )
         response = llm.invoke(formatted_prompt)
 
-        # Ensure proper response handling
+        # Ensure the response content is extracted correctly
         if hasattr(response, "content"):
             state["summation"] = response.content.strip()
             logging.info("Final summation generated.")
@@ -750,6 +757,7 @@ def final_node(state: GraphState) -> GraphState:
         logging.error(f"Error in final_node: {e}")
         raise RuntimeError(f"Error in final_node: {e}")
     return state
+
 
 
 
@@ -783,7 +791,6 @@ app = workflow.compile()
 def evaluate(prompt: str, essay: str) -> Dict:
     """
     Evaluate a student's essay based on the given prompt using the StateGraph workflow.
-    Returns the final LLM feedback text or a detailed error message.
     """
     try:
         initial_state: GraphState = {
@@ -803,6 +810,7 @@ def evaluate(prompt: str, essay: str) -> Dict:
 
         # Run the workflow and collect output
         for output in app.stream(initial_state):
+            logging.debug(f"Intermediate state: {output}")
             final_output = output
 
         # Validate the final output
