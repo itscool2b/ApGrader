@@ -216,7 +216,7 @@ Based on the feedback and scores provided for each section of the essay, generat
 Provide a summary of strengths, weaknesses, and areas for improvement.
 """
 )
-
+llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4o")
 ###############################################################################
 # 4) Workflow Definition
 ###############################################################################
