@@ -455,7 +455,7 @@ Carefully sum up the scores from each section and sum up the feedback from each 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Initialize the language model
-llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4-32k")
+llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4o")
 
 # Define tools if needed (currently not integrated into the workflow)
 
