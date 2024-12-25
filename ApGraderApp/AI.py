@@ -784,7 +784,7 @@ workflow.add_node("thesis_grading", thesis_grading_node)
 workflow.add_node("contextualization_grading", contextualization_grading_node)
 workflow.add_node("evidence_grading", evidence_grading_node)
 workflow.add_node("analysis_grading", analysis_grading_node)
-workflow.add_node("final_node", final_node)
+workflow.add_node("final_node", final_node)  
 
 workflow.add_edge(START, "classify_prompt")
 workflow.add_edge("classify_prompt", "fetch_rubric")
