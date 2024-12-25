@@ -283,7 +283,8 @@ Essay:
 )
 
 # Extra Classification Prompt (not always used)
-classify_prompt = PromptTemplate.from_template("""
+classification_prompt = PromptTemplate.from_template(
+    """
 You are a teaching assistant for an AP U.S. History class. Your task is to read the LEQ prompt provided by a student and classify it into one of the three main APUSH LEQ types:
 
 - **Comparison**: The prompt asks the student to compare and/or contrast historical developments, events, policies, or societies.
@@ -296,11 +297,12 @@ You are a teaching assistant for an AP U.S. History class. Your task is to read 
 3. Base your decision solely on the prompt text. Do not infer or consider anything outside the provided text.
 
 **Output**:
-Respond with only one word: "Comparison," "Causation," or "CCOT" depending on which category best matches the prompt.
+Respond with only one word: "Comparison", "Causation", or "CCOT" depending on which category best matches the prompt.
 
 **Student’s Prompt**: {prompt}
 """
 )
+
 
 # Smaller Rubrics for Partial Grading
 thesis_prompt = PromptTemplate.from_template(
@@ -510,6 +512,7 @@ workflow = StateGraph(GraphState)
 ###############################################################################
 # 6) Node Functions
 ###############################################################################
+
 def classify_prompt_node(state: GraphState) -> GraphState:
     try:
         logging.info("Classifying prompt.")
@@ -520,17 +523,26 @@ def classify_prompt_node(state: GraphState) -> GraphState:
 
         # Format the prompt
         formatted_prompt = classification_prompt.format(prompt=state["prompt"])
+        
+        # Add debug log for the formatted prompt
         logging.debug(f"Formatted Prompt Sent to LLM: {formatted_prompt}")
 
         # Get response from LLM
         response = llm(formatted_prompt).strip()
+
+        # Add debug log for the LLM response
         logging.debug(f"LLM Response: {response}")
 
         # Validate the response
         valid_types = {"Comparison", "Causation", "CCOT"}
         if response not in valid_types:
             logging.error(f"Unexpected LLM response: {response}")
-            raise ValueError(f"Got unknown type: {response}")
+            
+            # Fallback mechanism
+            fallback_response = "Unknown Type"
+            logging.warning(f"LLM response invalid. Defaulting to: {fallback_response}")
+            state["prompt_type"] = fallback_response
+            return state
 
         # Store the valid response
         state["prompt_type"] = response
@@ -540,6 +552,9 @@ def classify_prompt_node(state: GraphState) -> GraphState:
         logging.error(f"Error in classify_prompt_node: {e}")
         raise RuntimeError(f"Error in classify_prompt_node: {e}")
     return state
+
+
+ 
 
 
 def fetch_rubric_node(state: GraphState) -> GraphState:
