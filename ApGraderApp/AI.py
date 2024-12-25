@@ -487,51 +487,30 @@ workflow = StateGraph(GraphState)
 def classify_prompt_node(state: GraphState) -> GraphState:
     try:
         logging.info("Classifying prompt.")
-
-        # Validate input
         prompt = state.get("prompt", "").strip()
         if not prompt:
             raise ValueError("Prompt is empty or invalid.")
 
-        # Define maximum number of attempts
-        max_attempts = 5
-        attempt = 0
-        response_clean = None
+        formatted_prompt = classification_prompt.format(prompt=prompt)
+        response = llm.invoke(formatted_prompt)
 
-        valid_types = {"comparison", "causation", "ccot"}
-
-        while attempt < max_attempts and response_clean not in valid_types:
-            # Format the prompt
-            formatted_prompt = classification_prompt.format(prompt=prompt)
-            logging.debug(f"Formatted Prompt Sent to LLM (Attempt {attempt + 1}): {formatted_prompt}")
-
-            # Get response from LLM
-            response = llm.invoke(formatted_prompt)
-            response_content = response.content.strip()  # Access the content attribute
-            logging.debug(f"Raw LLM Response (Attempt {attempt + 1}): {response_content}")
-
-            # Sanitize the response
-            response_clean = response_content.splitlines()[0].strip().lower()
-
-            if response_clean in valid_types:
-                logging.info(f"Prompt classified as: {response_clean.capitalize()}")
-                state["prompt_type"] = response_clean.capitalize()
-                break
+        # Access response content properly
+        if hasattr(response, "content"):
+            response_content = response.content.strip()
+            valid_types = {"comparison", "causation", "ccot"}
+            if response_content.lower() in valid_types:
+                state["prompt_type"] = response_content.capitalize()
+                logging.info(f"Prompt classified as: {state['prompt_type']}")
             else:
-                logging.warning(f"Invalid type received on attempt {attempt + 1}: '{response_clean}'")
-                attempt += 1
-
-        if response_clean not in valid_types:
-            # If all attempts fail, default to 'Comparison'
-            logging.error(f"Failed to classify prompt after {max_attempts} attempts. Defaulting to 'Comparison'.")
-            state["prompt_type"] = "Comparison"
-
+                logging.warning(f"Invalid prompt type returned: {response_content}")
+                state["prompt_type"] = "Comparison"  # Default
+        else:
+            raise ValueError("LLM response content missing.")
     except Exception as e:
         logging.error(f"Error in classify_prompt_node: {e}")
-        # Default to 'Comparison' even if error occurs
-        state["prompt_type"] = "Comparison"
+        state["prompt_type"] = "Comparison"  # Default fallback
     return state
-
+   
 
    
 
@@ -742,11 +721,8 @@ def analysis_grading_node(state: GraphState) -> GraphState:
       
 
 
+
 def final_node(state: GraphState) -> GraphState:
-    """
-    Node 8: Compose the final summation from all partial sections.
-    Stores the final text in state["summation"].
-    """
     try:
         logging.info("Generating final summation.")
         thesis = state.get("thesis_generation", "")
@@ -762,18 +738,14 @@ def final_node(state: GraphState) -> GraphState:
             complexunderstanding_generation=complexu,
             prompt_type=ptype
         )
-        logging.debug(f"Formatted Summation Prompt: {formatted_prompt}")
-
-        # Generate the response
         response = llm.invoke(formatted_prompt)
 
-        # Ensure the response content is extracted correctly
+        # Ensure proper response handling
         if hasattr(response, "content"):
             state["summation"] = response.content.strip()
+            logging.info("Final summation generated.")
         else:
-            raise ValueError("Invalid response format from LLM.")
-
-        logging.info("Final summation generated.")
+            raise ValueError("Invalid response format: 'content' missing.")
     except Exception as e:
         logging.error(f"Error in final_node: {e}")
         raise RuntimeError(f"Error in final_node: {e}")
@@ -812,17 +784,6 @@ def evaluate(prompt: str, essay: str) -> Dict:
     """
     Evaluate a student's essay based on the given prompt using the StateGraph workflow.
     Returns the final LLM feedback text or a detailed error message.
-
-    Args:
-        prompt (str): The LEQ prompt provided by the student.
-        essay (str): The student's essay to be evaluated.
-
-    Returns:
-        Dict: A dictionary containing:
-            - status (str): "success" or "error".
-            - result (str or None): The evaluation text if successful, otherwise None.
-            - message (str): A human-readable message summarizing the outcome.
-            - details (str or None): Additional details for debugging in case of an error.
     """
     try:
         initial_state: GraphState = {
@@ -834,7 +795,7 @@ def evaluate(prompt: str, essay: str) -> Dict:
             "contextualization_generation": None,
             "evidence_generation": None,
             "complexunderstanding_generation": None,
-            "summation": None
+            "summation": None,
         }
 
         logging.info("Starting evaluation workflow.")
@@ -845,22 +806,22 @@ def evaluate(prompt: str, essay: str) -> Dict:
             final_output = output
 
         # Validate the final output
-        if final_output and "summation" in final_output and final_output["summation"]:
+        if final_output and final_output.get("summation"):
             logging.info("Evaluation completed successfully.")
             return {
                 "status": "success",
                 "result": final_output["summation"],
                 "message": "Evaluation completed successfully.",
-                "details": None
+                "details": None,
             }
 
-        # Handle case where summation is missing
+        # Handle missing summation
         logging.warning("Summation not found in the final output.")
         return {
             "status": "error",
             "result": None,
             "message": "Evaluation workflow completed but did not generate a summation.",
-            "details": "Ensure the workflow logic is correctly implemented and all nodes return valid outputs."
+            "details": "Ensure the workflow logic is correctly implemented and all nodes return valid outputs.",
         }
 
     except Exception as e:
@@ -869,5 +830,5 @@ def evaluate(prompt: str, essay: str) -> Dict:
             "status": "error",
             "result": None,
             "message": "An error occurred during evaluation.",
-            "details": str(e)
+            "details": str(e),
         }
