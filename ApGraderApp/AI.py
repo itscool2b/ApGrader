@@ -268,39 +268,34 @@ Do not include any additional headings or commentary.
 
 Thesis (0-1):
 {thesis_generation}
-extract the score and feed back from above and use for further instruction
+extract the score and feed back from above and use for further instruction.ONLY USE THIS FOR THE OUTPUT FORMAT BELOW
 
 Contextualization (0-1):
 {contextualization_generation}
-extract the score and feed back from above and use for further instruction
+extract the score and feed back from above and use for further instruction.ONLY USE THIS FOR THE OUTPUT FORMAT BELOW
 
 Evidence (0-2):
 {evidence_generation}
-extract the score and feed back from above and use for further instruction
+extract the score and feed back from above and use for further instruction.ONLY USE THIS FOR THE OUTPUT FORMAT BELOW
 
 Analysis and Reasoning (0-2):
 {complexunderstanding_generation}
-extract the score and feed back from above and use for further instruction
+extract the score and feed back from above and use for further instruction. ONLY USE THIS FOR THE OUTPUT FORMAT BELOW
 
-TOTAL SCORE = total / 6
-(Where "total" is the sum of the scores above. Make sure to carefully extract the scores and add them up.)
 
-Feedback summary:
-Provide a concise summary of the strong and weak parts of the student's argument.
 
-You have these numeric scores out of 6
-
-Make sure your final output follows exactly the template above. Do not include any additional headings or extra commentary. After "Feedback summary:", provide a short paragraph or two summarizing strengths and weaknesses which u received so sum everything up dont leave anything out.
+Make sure your final output follows exactly the data above. Do not include any additional headings or extra commentary. After "Feedback summary:", provide a short paragraph or two summarizing strengths and weaknesses which u received so sum everything up dont leave anything out.
 
 So here is what u shoud be outputing based on all the data u have been given
 
-***output format****
-
-Thesis score - 
-contextualization score - 
-evidence score - 
-complex understanding score - 
-total summed up score - 
+**output format**
+MAKE SURE TO ADD EVERYTHING UP PROPERLY
+**Thesis score** - 
+****contextualization score** - 
+evidence score** - 
+**complex understanding score** - 
+**total summed up score** - 
+**feedback** - 
 constructuve criticism and feedback based on the data u have been given, meaning the feedback from each data point above. Everything should add up properly and be accurate
 """
 ) 
