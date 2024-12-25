@@ -588,165 +588,230 @@ def retrieve_essays_node(state: GraphState) -> GraphState:
 
 def thesis_grading_node(state: GraphState) -> GraphState:
     """
-    Node 4: Grade the thesis statement.
+    Grade the thesis statement of the student's essay.
     """
     try:
         logging.info("Grading thesis statement.")
+
+        prompt_type = state.get("prompt_type", "Unknown")
+        if prompt_type == "Unknown":
+            logging.warning("Prompt type is 'Unknown'. Skipping thesis grading.")
+            state["thesis_generation"] = "Skipped due to unknown prompt type."
+            return state
+
         rubric = state.get("rubric", [])
         essay = state.get("student_essay", "")
-        ptype = state.get("prompt_type", "")
 
         if not rubric:
-            raise ValueError("Rubric is missing in state.")
+            logging.error("Rubric is missing in state. Cannot proceed with thesis grading.")
+            state["thesis_generation"] = "Error: Rubric missing."
+            return state
 
-        # Convert rubric into a formatted JSON string for the LLM prompt
+        if not essay:
+            logging.error("Essay is empty or missing. Cannot proceed with thesis grading.")
+            state["thesis_generation"] = "Error: Essay missing."
+            return state
+
         formatted_rubric = json.dumps(rubric, indent=2)
         formatted_prompt = thesis_prompt.format(
             rubric=formatted_rubric,
             essay=essay,
-            prompt_type=ptype
+            prompt_type=prompt_type
         )
 
-        logging.debug(f"Formatted Thesis Grading Prompt: {formatted_prompt}")
+        logging.debug(f"Thesis Grading Prompt: {formatted_prompt}")
 
-        # Generate the response using the LLM
+        # Query LLM
         response = llm(formatted_prompt)
         state["thesis_generation"] = response.strip()
         logging.info("Thesis grading completed.")
+        return state
+
     except Exception as e:
         logging.error(f"Error in thesis_grading_node: {e}")
-        raise RuntimeError(f"Error in thesis_grading_node: {e}")
-    return state
+        state["thesis_generation"] = f"Error: {e}"
+        return state
+
+
 
 
 def contextualization_grading_node(state: GraphState) -> GraphState:
     """
-    Node 5: Grade the contextualization section.
+    Grade the contextualization section of the student's essay.
     """
     try:
         logging.info("Grading contextualization.")
+
+        prompt_type = state.get("prompt_type", "Unknown")
+        if prompt_type == "Unknown":
+            logging.warning("Prompt type is 'Unknown'. Skipping contextualization grading.")
+            state["contextualization_generation"] = "Skipped due to unknown prompt type."
+            return state
+
         rubric = state.get("rubric", [])
         essay = state.get("student_essay", "")
-        ptype = state.get("prompt_type", "")
 
         if not rubric:
-            raise ValueError("Rubric is missing in state.")
+            logging.error("Rubric is missing in state. Cannot proceed with contextualization grading.")
+            state["contextualization_generation"] = "Error: Rubric missing."
+            return state
 
-        # Convert rubric into JSON string
+        if not essay:
+            logging.error("Essay is empty or missing. Cannot proceed with contextualization grading.")
+            state["contextualization_generation"] = "Error: Essay missing."
+            return state
+
         formatted_rubric = json.dumps(rubric, indent=2)
         formatted_prompt = contextualization_prompt.format(
             rubric=formatted_rubric,
             essay=essay,
-            prompt_type=ptype
+            prompt_type=prompt_type
         )
 
-        logging.debug(f"Formatted Contextualization Grading Prompt: {formatted_prompt}")
+        logging.debug(f"Contextualization Grading Prompt: {formatted_prompt}")
 
-        # Generate the response
+        # Query LLM
         response = llm(formatted_prompt)
         state["contextualization_generation"] = response.strip()
         logging.info("Contextualization grading completed.")
+        return state
+
     except Exception as e:
         logging.error(f"Error in contextualization_grading_node: {e}")
-        raise RuntimeError(f"Error in contextualization_grading_node: {e}")
-    return state
+        state["contextualization_generation"] = f"Error: {e}"
+        return state
+
+
 
 
 def evidence_grading_node(state: GraphState) -> GraphState:
     """
-    Node 6: Grade the evidence section.
+    Grade the evidence section of the student's essay.
     """
     try:
         logging.info("Grading evidence.")
+
+        prompt_type = state.get("prompt_type", "Unknown")
+        if prompt_type == "Unknown":
+            logging.warning("Prompt type is 'Unknown'. Skipping evidence grading.")
+            state["evidence_generation"] = "Skipped due to unknown prompt type."
+            return state
+
         rubric = state.get("rubric", [])
         essay = state.get("student_essay", "")
-        ptype = state.get("prompt_type", "")
 
         if not rubric:
-            raise ValueError("Rubric is missing in state.")
+            logging.error("Rubric is missing in state. Cannot proceed with evidence grading.")
+            state["evidence_generation"] = "Error: Rubric missing."
+            return state
 
-        # Format the rubric into JSON string
+        if not essay:
+            logging.error("Essay is empty or missing. Cannot proceed with evidence grading.")
+            state["evidence_generation"] = "Error: Essay missing."
+            return state
+
         formatted_rubric = json.dumps(rubric, indent=2)
         formatted_prompt = evidence_prompt.format(
             rubric=formatted_rubric,
             essay=essay,
-            prompt_type=ptype
+            prompt_type=prompt_type
         )
 
-        logging.debug(f"Formatted Evidence Grading Prompt: {formatted_prompt}")
+        logging.debug(f"Evidence Grading Prompt: {formatted_prompt}")
 
-        # Generate the response
+        # Query LLM
         response = llm(formatted_prompt)
         state["evidence_generation"] = response.strip()
         logging.info("Evidence grading completed.")
+        return state
+
     except Exception as e:
         logging.error(f"Error in evidence_grading_node: {e}")
-        raise RuntimeError(f"Error in evidence_grading_node: {e}")
-    return state
+        state["evidence_generation"] = f"Error: {e}"
+        return state
+
 
 
 def analysis_grading_node(state: GraphState) -> GraphState:
     """
-    Node 7: Grade the analysis and reasoning section.
+    Grade the analysis and reasoning section of the student's essay.
     """
     try:
         logging.info("Grading analysis and reasoning.")
+
+        prompt_type = state.get("prompt_type", "Unknown")
+        if prompt_type == "Unknown":
+            logging.warning("Prompt type is 'Unknown'. Skipping analysis grading.")
+            state["complexunderstanding_generation"] = "Skipped due to unknown prompt type."
+            return state
+
         rubric = state.get("rubric", [])
         essay = state.get("student_essay", "")
-        ptype = state.get("prompt_type", "")
 
         if not rubric:
-            raise ValueError("Rubric is missing in state.")
+            logging.error("Rubric is missing in state. Cannot proceed with analysis grading.")
+            state["complexunderstanding_generation"] = "Error: Rubric missing."
+            return state
 
-        # Format the rubric into JSON string
+        if not essay:
+            logging.error("Essay is empty or missing. Cannot proceed with analysis grading.")
+            state["complexunderstanding_generation"] = "Error: Essay missing."
+            return state
+
         formatted_rubric = json.dumps(rubric, indent=2)
         formatted_prompt = complexunderstanding_prompt.format(
             rubric=formatted_rubric,
             essay=essay,
-            prompt_type=ptype
+            prompt_type=prompt_type
         )
 
-        logging.debug(f"Formatted Analysis Grading Prompt: {formatted_prompt}")
+        logging.debug(f"Analysis Grading Prompt: {formatted_prompt}")
 
-        # Generate the response
+        # Query LLM
         response = llm(formatted_prompt)
         state["complexunderstanding_generation"] = response.strip()
-        logging.info("Analysis and reasoning grading completed.")
+        logging.info("Analysis grading completed.")
+        return state
+
     except Exception as e:
         logging.error(f"Error in analysis_grading_node: {e}")
-        raise RuntimeError(f"Error in analysis_grading_node: {e}")
-    return state
+        state["complexunderstanding_generation"] = f"Error: {e}"
+        return state
 
 
 def final_node(state: GraphState) -> GraphState:
     """
-    Node 8: Compose the final summation from all partial sections.
-    Stores the final text in state["summation"].
+    Compile the final evaluation based on previous node outputs.
     """
     try:
         logging.info("Generating final summation.")
-        thesis = state.get("thesis_generation", "")
-        cont = state.get("contextualization_generation", "")
-        evidence = state.get("evidence_generation", "")
-        complexu = state.get("complexunderstanding_generation", "")
-        ptype = state.get("prompt_type", "")
+
+        thesis = state.get("thesis_generation", "Thesis grading skipped or failed.")
+        cont = state.get("contextualization_generation", "Contextualization grading skipped or failed.")
+        evidence = state.get("evidence_generation", "Evidence grading skipped or failed.")
+        complexu = state.get("complexunderstanding_generation", "Analysis grading skipped or failed.")
+        prompt_type = state.get("prompt_type", "Unknown")
 
         formatted_prompt = summation_prompt.format(
             thesis_generation=thesis,
             contextualization_generation=cont,
             evidence_generation=evidence,
             complexunderstanding_generation=complexu,
-            prompt_type=ptype
+            prompt_type=prompt_type
         )
-        logging.debug(f"Formatted Summation Prompt: {formatted_prompt}")
+
+        logging.debug(f"Final Summation Prompt: {formatted_prompt}")
 
         response = llm(formatted_prompt)
         state["summation"] = response.strip()
         logging.info("Final summation generated.")
+        return state
+
     except Exception as e:
         logging.error(f"Error in final_node: {e}")
-        raise RuntimeError(f"Error in final_node: {e}")
-    return state
+        state["summation"] = f"Error: {e}"
+        return state
+
 
 ###############################################################################
 # 7) Build the Workflow
