@@ -16,12 +16,12 @@ async def process(request):
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
     try:
-        
+        # Fetch prompt from request
         prompt = request.POST.get("prompt", "").strip()
         if not prompt:
             return JsonResponse({'error': 'Missing "prompt" in request'}, status=400)
 
-        
+        # Fetch and process PDF file
         if 'file' in request.FILES:
             pdf_file = request.FILES['file']
             try:
@@ -36,10 +36,19 @@ async def process(request):
         else:
             return JsonResponse({'error': 'PDF file is required'}, status=400)
 
-        
+        # Evaluate the essay using the prompt
         response = await sync_to_async(evaluate)(prompt, essay_text)
-        return JsonResponse({'response': response}, status=200)
+
+        # Return response in the specified JSON format
+        return JsonResponse({
+            "response": {
+                "output": response
+            }
+        }, status=200)
 
     except Exception as e:
         logger.error(f"Error in process endpoint: {e}")
-        return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
+        return JsonResponse({
+            "error": "Internal Server Error",
+            "details": str(e)
+        }, status=500)
