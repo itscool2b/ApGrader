@@ -291,6 +291,17 @@ Provide a concise summary of the strong and weak parts of the student's argument
 You have these numeric scores out of 6
 
 Make sure your final output follows exactly the template above. Do not include any additional headings or extra commentary. After "Feedback summary:", provide a short paragraph or two summarizing strengths and weaknesses which u received so sum everything up dont leave anything out.
+
+So here is what u shoud be outputing based on all the data u have been given
+
+***output format****
+
+Thesis score - 
+contextualization score - 
+evidence score - 
+complex understanding score - 
+total summed up score - 
+constructuve criticism and feedback based on the data u have been given, meaning the feedback from each data point above. Everything should add up properly and be accurate
 """
 ) 
 
