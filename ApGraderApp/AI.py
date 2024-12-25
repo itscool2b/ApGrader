@@ -2,7 +2,6 @@ import os
 import openai
 import json
 import logging
-import re  # <-- We'll use regex for score parsing
 from dotenv import load_dotenv
 from openai import OpenAI
 from langchain.prompts import PromptTemplate
@@ -21,8 +20,10 @@ load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
+#k
 if not OPENAI_API_KEY:
     raise ValueError("OPENAI_API_KEY not found. Please set it in your environment.")
+
 
 openai.api_key = OPENAI_API_KEY
 client = OpenAI(api_key=OPENAI_API_KEY)
@@ -35,10 +36,18 @@ def get_relevant_documents(query: str, prompt_type: str) -> List[Dict]:
     Retrieve relevant documents from Pinecone based on:
     1) The query embedding (unless query is None, in which case we do a 'dummy' query).
     2) The prompt_type filter (unless prompt_type is None, then we skip startswith check).
+
+    Args:
+        query (str): The search query for embeddings.
+        prompt_type (str): The type of prompt to filter documents.
+
+    Returns:
+        List[Dict]: A list of filtered documents with 'text', 'prompt_type', and 'grade'.
     """
     try:
         # CASE A: If query is None => skip embedding by using a dummy vector
         if query is None:
+            # For text-embedding-ada-002, vector dimension is 1536
             dummy_vector = [0.0] * 1536
             results = index.query(
                 vector=dummy_vector,
@@ -63,7 +72,7 @@ def get_relevant_documents(query: str, prompt_type: str) -> List[Dict]:
         if "matches" in results:
             for match in results["matches"]:
                 metadata = match.get("metadata", {})
-                essay_metadata = metadata.get("essay_type_grad_received", "")
+                essay_metadata = metadata.get("essay_type_grad_received", "")  # Corrected key
 
                 # If prompt_type is None, skip the startswith filter
                 if prompt_type is None or essay_metadata.lower().startswith(prompt_type.lower()):
@@ -108,6 +117,8 @@ You are a highly accurate and strict teaching assistant for an AP U.S. History c
 """
 )
 
+
+
 thesis_prompt = PromptTemplate.from_template(
     """Evaluate the thesis statement in the following essay based on the provided rubric and evaluation standards:
 
@@ -130,7 +141,7 @@ thesis_prompt = PromptTemplate.from_template(
 **Prompt Type**: {prompt_type}
 
 **Output**:
-- **Score (0 or 1)**: [put the number here, 1 or 0, with no extra words]
+- **Score (0 or 1)**: Indicate whether the thesis earns the point.
 - **Feedback**: Provide a brief explanation justifying the score.
 """
 )
@@ -159,7 +170,7 @@ Evaluate the contextualization in the following essay based on the provided rubr
 **Prompt Type**: {prompt_type}
 
 **Output**:
-- **Score (0 or 1)**: [put the number here either 1 or 0 with no extra words]
+- **Score (0 or 1)**: Indicate whether the contextualization earns the point.
 - **Feedback**: Provide a brief explanation justifying the score.
 """
 )
@@ -197,7 +208,7 @@ evidence_prompt = PromptTemplate.from_template(
 **Prompt Type**: {prompt_type}
 
 **Output**:
-- **Score (0, 1, or 2)**: [put the number here, 0 / 1 / or 2, with no extra words]
+- **Score (0, 1, or 2)**: Indicate the total points awarded for the Evidence & Support for Argument section.
 - **Feedback**: Provide a brief explanation for the score, including:
   - Specific examples of evidence identified.
   - An assessment of how well the evidence supports the argument.
@@ -242,7 +253,7 @@ complexunderstanding_prompt = PromptTemplate.from_template(
 **Prompt Type**: {prompt_type}
 
 **Output**:
-- **Score (0, 1, or 2)**: [put the number here, 0 / 1 / or 2, with no extra words]
+- **Score (0, 1, or 2)**: Indicate the total points awarded for the Analysis and Reasoning section.
 - **Feedback**: Provide a brief explanation for the score, including:
   - For Historical Reasoning: How the response used reasoning aligned with the specific type of prompt (e.g., comparison, causation, CCOT).
   - For Complex Understanding: How the response demonstrated a nuanced or sophisticated argument, referencing specific elements of the essay.
@@ -250,114 +261,60 @@ complexunderstanding_prompt = PromptTemplate.from_template(
 """
 )
 
-###
-# Updated summation_prompt to also show the numeric scores we've computed:
-###
 summation_prompt = PromptTemplate.from_template(
     """
-Your task is to output the final feedback **in the exact format** below:
+Your task is to output the final feedback in the exact format below:
 
-Thesis(0-1): {thesis_score}
+Thesis(0-1): 
 {thesis_generation}
-
-Contextualization(0-1): {context_score}
+extract the score and feed back from above and use for further instruction
+Contextualization(0-1): 
 {contextualization_generation}
-
-Evidence(0-2): {evidence_score}
+extract the score and feed back from above and use for further instruction
+Evidence(0-2): 
 {evidence_generation}
-
-Analysis and Reasoning(0-2): {analysis_score}
+extract the score and feed back from above and use for further instruction
+Analysis and Reasoning(0-2): 
 {complexunderstanding_generation}
-
-TOTAL SCORE = {total_score} / 6
-
+extract the score and feed back from above and use for further instruction
+TOTAL SCORE = total / 6
+for the total score make sure to carefully extract the scores and add them up from above
 Feedback summary:
 Provide a concise summary of the strong and weak parts of the student's argument.
 
 ---
-You have these numeric scores:
-- Thesis: {thesis_score}
-- Contextualization: {context_score}
-- Evidence: {evidence_score}
-- Analysis & Reasoning: {analysis_score}
-Computed total: {total_score} out of 6.
+You have these numeric scores out of 6
 
-Make sure your final output follows **exactly** the template above. Do not include any additional headings or extra commentary. After "Feedback summary:", provide a short paragraph or two summarizing strengths and weaknesses.
+Make sure your final output follows exactly the template above. Do not include any additional headings or extra commentary. After "Feedback summary:", provide a short paragraph or two summarizing strengths and weaknesses which u recieved so sum everything up dont leave anything out.
 """
 )
+
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4o")
 
 
-###
-# Extend the GraphState to hold numeric scores in addition to text feedback
-###
+
 class GraphState(TypedDict):
+    """
+    Represents the state of the graph workflow.
+    """
     prompt: str
     prompt_type: str
     student_essay: str
-    rubric: List[Dict]
+    rubric: List[Dict]  
     thesis_generation: str
     contextualization_generation: str
     evidence_generation: str
     complexunderstanding_generation: str
     summation: str
 
-    # New fields to store numeric scores
-    thesis_score: int
-    context_score: int
-    evidence_score: int
-    analysis_score: int
-
 
 workflow = StateGraph(GraphState)
 
-###
-# Helper functions to parse scores out of the LLM text responses
-###
-def parse_thesis_score(response_text: str) -> int:
-    """
-    Looks for a line like 'Score (0 or 1): X' in the text
-    and returns the integer score. Defaults to 0 if not found.
-    """
-    match = re.search(r"Score\s*\(0\s*or\s*1\)\s*:\s*(\d+)", response_text)
-    if match:
-        return int(match.group(1))
-    return 0
-
-def parse_context_score(response_text: str) -> int:
-    """
-    Looks for 'Score (0 or 1): X'.
-    """
-    match = re.search(r"Score\s*\(0\s*or\s*1\)\s*:\s*(\d+)", response_text)
-    if match:
-        return int(match.group(1))
-    return 0
-
-def parse_evidence_score(response_text: str) -> int:
-    """
-    Looks for 'Score (0, 1, or 2): X'.
-    """
-    match = re.search(r"Score\s*\(0,\s*1,\s*or\s*2\)\s*:\s*(\d+)", response_text)
-    if match:
-        return int(match.group(1))
-    return 0
-
-def parse_analysis_score(response_text: str) -> int:
-    """
-    Looks for 'Score (0, 1, or 2): X'.
-    """
-    match = re.search(r"Score\s*\(0,\s*1,\s*or\s*2\)\s*:\s*(\d+)", response_text)
-    if match:
-        return int(match.group(1))
-    return 0
 
 
-###
-# NODES
-###
 def classify_prompt_node(state: GraphState) -> GraphState:
     logging.info("Classifying prompt.")
     prompt = state.get("prompt", "").strip()
@@ -368,6 +325,10 @@ def classify_prompt_node(state: GraphState) -> GraphState:
     response = llm.invoke(formatted_prompt)
     state["prompt_type"] = response.content.strip()
     return state
+   
+
+   
+
 
 
 def fetch_rubric_node(state: GraphState) -> GraphState:
@@ -376,12 +337,13 @@ def fetch_rubric_node(state: GraphState) -> GraphState:
     """
     try:
         logging.info("Fetching rubric documents.")
-        query = "LEQ Rubric"
-        docs = get_relevant_documents(query, None)
+        query = "LEQ Rubric"  # The query to fetch rubric data
+        docs = get_relevant_documents(query, None)  # Retrieve documents
 
         if not docs:
             raise ValueError("No rubric documents found in Pinecone.")
 
+        # Store the documents directly in the state as a list of dictionaries
         state["rubric"] = docs
         logging.info(f"Fetched {len(docs)} rubric documents.")
     except Exception as e:
@@ -418,15 +380,9 @@ def thesis_grading_node(state: GraphState) -> GraphState:
     essay = state["student_essay"]
     prompt_type = state["prompt_type"]
 
-    formatted_prompt = thesis_prompt.format(rubric=rubric, prompt_type=prompt_type, essay=essay)
+    formatted_prompt = thesis_prompt.format(rubric=rubric,prompt_type=prompt_type,essay=essay)
     response = llm.invoke(formatted_prompt)
-
-    # Store the raw text feedback
     state["thesis_generation"] = response.content.strip()
-
-    # Parse and store the numeric score
-    state["thesis_score"] = parse_thesis_score(state["thesis_generation"])
-
     return state
 
 
@@ -435,32 +391,22 @@ def contextualization_grading_node(state: GraphState) -> GraphState:
     essay = state["student_essay"]
     prompt_type = state["prompt_type"]
 
-    formatted_prompt = contextualization_prompt.format(rubric=rubric, essay=essay, prompt_type=prompt_type)
+    formatted_prompt = contextualization_prompt.format(rubric=rubric,essay=essay,prompt_type=prompt_type)
     response = llm.invoke(formatted_prompt)
-
-    # Store the raw text feedback
     state["contextualization_generation"] = response.content.strip()
-
-    # Parse and store the numeric score
-    state["context_score"] = parse_context_score(state["contextualization_generation"])
 
     return state
 
-
 def evidence_grading_node(state: GraphState) -> GraphState:
+   
     rubric = state["rubric"]
     essay = state["student_essay"]
     prompt_type = state["prompt_type"]
 
-    formatted_prompt = evidence_prompt.format(rubric=rubric, essay=essay, prompt_type=prompt_type)
+    formatted_prompt = evidence_prompt.format(rubric=rubric,essay=essay,prompt_type=prompt_type)
     response = llm.invoke(formatted_prompt)
 
-    # Store the raw text feedback
     state["evidence_generation"] = response.content.strip()
-
-    # Parse and store the numeric score
-    state["evidence_score"] = parse_evidence_score(state["evidence_generation"])
-
     return state
 
 
@@ -468,51 +414,40 @@ def analysis_grading_node(state: GraphState) -> GraphState:
     rubric = state["rubric"]
     essay = state["student_essay"]
     prompt_type = state["prompt_type"]
-
-    formatted_prompt = complexunderstanding_prompt.format(rubric=rubric, essay=essay, prompt_type=prompt_type)
+      
+    formatted_prompt = complexunderstanding_prompt.format(rubric=rubric,essay=essay,prompt_type=prompt_type)
     response = llm.invoke(formatted_prompt)
 
-    # Store the raw text feedback
     state["complexunderstanding_generation"] = response.content.strip()
-
-    # Parse and store the numeric score
-    state["analysis_score"] = parse_analysis_score(state["complexunderstanding_generation"])
 
     return state
 
 
-def final_node(state: GraphState) -> GraphState:
+def final_node(state: dict) -> dict:
     """
     Final node to compute the summation and update the state.
     """
     try:
-        # We now have numeric scores from each node in the state.
-        thesis_score = state["thesis_score"]
-        context_score = state["context_score"]
-        evidence_score = state["evidence_score"]
-        analysis_score = state["analysis_score"]
+        # Extract required inputs from the state
+        thesis = state["thesis_generation"]
+        cont = state["contextualization_generation"]
+        evidence = state["evidence_generation"]
+        complexu = state["complexunderstanding_generation"]
+        ptype = state["prompt_type"]
 
-        # Compute the final total via code
-        total_score = thesis_score + context_score + evidence_score + analysis_score
-        
-        # Prepare the final prompt
+        # Prepare the summation prompt
         formatted_prompt = summation_prompt.format(
-            thesis_generation=state["thesis_generation"],
-            contextualization_generation=state["contextualization_generation"],
-            evidence_generation=state["evidence_generation"],
-            complexunderstanding_generation=state["complexunderstanding_generation"],
-            thesis_score=thesis_score,
-            context_score=context_score,
-            evidence_score=evidence_score,
-            analysis_score=analysis_score,
-            total_score=total_score,
-            prompt_type=state["prompt_type"]
+            thesis_generation=thesis,
+            contextualization_generation=cont,
+            evidence_generation=evidence,
+            complexunderstanding_generation=complexu,
+            prompt_type=ptype,
         )
 
-        # Invoke the LLM one last time for a cohesive summary
+        # Generate the response
         response = llm.invoke(formatted_prompt)
 
-        # Store the final result in state["summation"]
+        # Extract and store the response content in the state
         if hasattr(response, "content") and response.content.strip():
             state["summation"] = response.content.strip()
         else:
@@ -524,9 +459,10 @@ def final_node(state: GraphState) -> GraphState:
         raise RuntimeError(f"Error in final_node: {e}")
 
 
-###
-# Build the workflow graph
-###
+
+
+
+
 workflow.add_node("classify_prompt", classify_prompt_node)
 workflow.add_node("fetch_rubric", fetch_rubric_node)
 workflow.add_node("retrieve_essays", retrieve_essays_node)
@@ -550,7 +486,8 @@ app = workflow.compile()
 
 
 def evaluate(prompt: str, essay: str) -> str:
-    # Define the initial state, with default numeric scores = 0
+  
+    # Define the initial state
     state = {
         "prompt": prompt,
         "prompt_type": None,
@@ -561,15 +498,9 @@ def evaluate(prompt: str, essay: str) -> str:
         "evidence_generation": None,
         "complexunderstanding_generation": None,
         "summation": None,
-
-        # Initialize numeric scores
-        "thesis_score": 0,
-        "context_score": 0,
-        "evidence_score": 0,
-        "analysis_score": 0,
     }
 
-    # Execute the workflow step by step
+    # Step-by-step workflow execution
     state = classify_prompt_node(state)
     state = fetch_rubric_node(state)
     state = retrieve_essays_node(state)
