@@ -720,59 +720,58 @@ def analysis_grading_node(state: GraphState) -> GraphState:
 
       
 
-
-
-
-def final_node(state: GraphState) -> GraphState:
+def evaluate(prompt: str, essay: str) -> Dict:
     """
-    Node 8: Compose the final summation from all partial sections.
-    Stores the final text in state["summation"].
+    Evaluate a student's essay based on the given prompt using the StateGraph workflow.
     """
     try:
-        logging.info("Generating final summation.")
+        initial_state: GraphState = {
+            "prompt": prompt,
+            "prompt_type": None,
+            "student_essay": essay,
+            "rubric": [],
+            "thesis_generation": None,
+            "contextualization_generation": None,
+            "evidence_generation": None,
+            "complexunderstanding_generation": None,
+            "summation": None,
+        }
 
-        # Extract required inputs from the state
-        thesis = state.get("thesis_generation", "")
-        cont = state.get("contextualization_generation", "")
-        evidence = state.get("evidence_generation", "")
-        complexu = state.get("complexunderstanding_generation", "")
-        ptype = state.get("prompt_type", "")
+        logging.info("Starting evaluation workflow.")
+        final_output = None
 
-        # Log the inputs to ensure they're populated
-        logging.debug(f"Summation inputs - Thesis: {thesis}, Context: {cont}, Evidence: {evidence}, Analysis: {complexu}")
+        # Run the workflow and collect output
+        for output in app.stream(initial_state):
+            logging.debug(f"Intermediate state: {output}")
+            final_output = output
 
-        # Check for empty inputs and log warnings
-        if not all([thesis, cont, evidence, complexu]):
-            logging.warning("One or more inputs to the summation are missing or empty.")
-        
-        # Prepare the summation prompt
-        formatted_prompt = summation_prompt.format(
-            thesis_generation=thesis.replace("\\", " ").strip(),
-            contextualization_generation=cont.replace("\\", " ").strip(),
-            evidence_generation=evidence.replace("\\", " ").strip(),
-            complexunderstanding_generation=complexu.replace("\\", " ").strip(),
-            prompt_type=ptype,
-        )
-        logging.debug(f"Formatted Summation Prompt: {formatted_prompt}")
+        # Validate the final output
+        if final_output and final_output.get("summation"):
+            logging.info("Evaluation completed successfully.")
+            return {
+                "status": "success",
+                "result": final_output["summation"],
+                "message": "Evaluation completed successfully.",
+                "details": None,
+            }
 
-        # Generate the response
-        response = llm.invoke(formatted_prompt)
-
-        # Extract and set the response content
-        if hasattr(response, "content") and response.content.strip():
-            clean_output = response.content.replace("\\", " ").strip()
-            state["summation"] = clean_output
-            logging.info("Final summation generated successfully.")
-        else:
-            logging.error("Summation response is invalid or empty.")
-            state["summation"] = None
+        # Handle missing summation
+        logging.warning("Summation not found in the final output.")
+        return {
+            "status": "error",
+            "result": None,
+            "message": "Evaluation workflow completed but did not generate a summation.",
+            "details": f"Final state: {final_output}",
+        }
 
     except Exception as e:
-        logging.error(f"Error in final_node: {e}")
-        state["summation"] = None
-        raise RuntimeError(f"Error in final_node: {e}")
-
-    return state
+        logging.error(f"Error during evaluation: {e}")
+        return {
+            "status": "error",
+            "result": None,
+            "message": "An error occurred during evaluation.",
+            "details": str(e),
+        }
 
 
 
