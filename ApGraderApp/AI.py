@@ -423,10 +423,10 @@ def analysis_grading_node(state: GraphState) -> GraphState:
     return state
 
 
-def final_node(state: GraphState) -> str:
+def final_node(state: GraphState) -> GraphState:
     """
     Node 8: Compose the final summation from all partial sections.
-    Directly returns the final summation as a string.
+    Updates the state with the final summation.
     """
     try:
         # Extract required inputs from the state
@@ -448,14 +448,16 @@ def final_node(state: GraphState) -> str:
         # Generate the response
         response = llm.invoke(formatted_prompt)
 
-        # Extract and return the response content
+        # Extract and store the response content in the state
         if hasattr(response, "content") and response.content.strip():
-            return response.content.strip()
+            state["summation"] = response.content.strip()
         else:
             raise ValueError("Summation generation failed.")
 
     except Exception as e:
         raise RuntimeError(f"Error in final_node: {e}")
+
+    return state  # Ensure the state is returned
 
 
 
@@ -486,7 +488,7 @@ app = workflow.compile()
 
 def evaluate(prompt: str, essay: str) -> str:
     """
-    Evaluate the given essay based on the prompt and directly return the summation.
+    Evaluate the given essay based on the prompt and return the summation.
     """
     initial_state = {
         "prompt": prompt,
@@ -497,12 +499,15 @@ def evaluate(prompt: str, essay: str) -> str:
         "contextualization_generation": None,
         "evidence_generation": None,
         "complexunderstanding_generation": None,
+        "summation": None,
     }
 
     # Run the workflow
     for output in app.stream(initial_state):
-        if isinstance(output, str):  # Final node returns the summation directly
-            return output
+        pass  # Let the workflow process to the final state
 
-    # If no summation is found, raise an error
+    # Extract the summation from the final state
+    if "summation" in output and output["summation"]:
+        return output["summation"]
+
     raise ValueError("Summation not found in the final state.")
