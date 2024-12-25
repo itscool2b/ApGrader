@@ -487,10 +487,12 @@ def evaluate(prompt: str, essay: str) -> str:
         "summation": None,
     }
 
-    # Run the workflow
+    # Run the workflow and capture the final state
     for output in app.stream(initial_state):
-        if "summation" in output and output["summation"]:  # Directly check for summation
-            return output["summation"]
+        # Log the output for debugging
+        logging.debug(f"Workflow state: {output}")
+        if "summation" in output and output["summation"]:
+            return output["summation"]  # Return as soon as summation is found
 
     # If no summation is found, raise an error
     raise ValueError("Summation not found in the final state.")
