@@ -684,12 +684,20 @@ def evidence_grading_node(state: GraphState) -> GraphState:
 
         # Generate the response
         response = llm.invoke(formatted_prompt)
-        state["evidence_generation"] = response.strip()
+
+        # Ensure the response content is extracted correctly
+        if hasattr(response, "content"):
+            state["evidence_generation"] = response.content.strip()
+        else:
+            raise ValueError("Invalid response format from LLM.")
+
         logging.info("Evidence grading completed.")
     except Exception as e:
         logging.error(f"Error in evidence_grading_node: {e}")
         raise RuntimeError(f"Error in evidence_grading_node: {e}")
     return state
+
+
 
 
 
