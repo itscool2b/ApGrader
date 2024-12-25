@@ -764,13 +764,21 @@ def final_node(state: GraphState) -> GraphState:
         )
         logging.debug(f"Formatted Summation Prompt: {formatted_prompt}")
 
+        # Generate the response
         response = llm.invoke(formatted_prompt)
-        state["summation"] = response.strip()
+
+        # Ensure the response content is extracted correctly
+        if hasattr(response, "content"):
+            state["summation"] = response.content.strip()
+        else:
+            raise ValueError("Invalid response format from LLM.")
+
         logging.info("Final summation generated.")
     except Exception as e:
         logging.error(f"Error in final_node: {e}")
         raise RuntimeError(f"Error in final_node: {e}")
     return state
+
 
 
 ###############################################################################
