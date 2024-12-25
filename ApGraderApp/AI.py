@@ -263,31 +263,36 @@ complexunderstanding_prompt = PromptTemplate.from_template(
 
 summation_prompt = PromptTemplate.from_template(
     """
-Your task is to output the final feedback in the exact format below:
+Your task is to output the final feedback in the exact format below. 
+Do not include any additional headings or commentary.
 
-Thesis(0-1): 
+Thesis (0-1):
 {thesis_generation}
 extract the score and feed back from above and use for further instruction
-Contextualization(0-1): 
+
+Contextualization (0-1):
 {contextualization_generation}
 extract the score and feed back from above and use for further instruction
-Evidence(0-2): 
+
+Evidence (0-2):
 {evidence_generation}
 extract the score and feed back from above and use for further instruction
-Analysis and Reasoning(0-2): 
+
+Analysis and Reasoning (0-2):
 {complexunderstanding_generation}
 extract the score and feed back from above and use for further instruction
+
 TOTAL SCORE = total / 6
-for the total score make sure to carefully extract the scores and add them up from above
+(Where "total" is the sum of the scores above. Make sure to carefully extract the scores and add them up.)
+
 Feedback summary:
 Provide a concise summary of the strong and weak parts of the student's argument.
 
----
 You have these numeric scores out of 6
 
-Make sure your final output follows exactly the template above. Do not include any additional headings or extra commentary. After "Feedback summary:", provide a short paragraph or two summarizing strengths and weaknesses which u recieved so sum everything up dont leave anything out.
+Make sure your final output follows exactly the template above. Do not include any additional headings or extra commentary. After "Feedback summary:", provide a short paragraph or two summarizing strengths and weaknesses which u received so sum everything up dont leave anything out.
 """
-)
+) 
 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
