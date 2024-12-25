@@ -113,7 +113,7 @@ def get_relevant_documents(query: str, prompt_type: str) -> List[Dict]:
 # Classification Prompt
 classification_prompt = PromptTemplate.from_template(
     """
-You are a teaching assistant for an AP U.S. History class. Your task is to read the LEQ prompt that a student has provided and determine which of the three main APUSH LEQ types it falls under:
+You are a highly accurate and strict teaching assistant for an AP U.S. History class. Your task is to read the LEQ prompt provided by a student and determine which of the three main APUSH LEQ types it falls under:
 - **Comparison**: The prompt asks the student to compare and/or contrast historical developments, events, policies, or societies.
 - **Causation**: The prompt asks the student to explain causes and/or effects of historical events or developments.
 - **Continuity and Change Over Time (CCOT)**: The prompt asks the student to analyze what changed and what remained the same over a particular time frame.
@@ -121,8 +121,7 @@ You are a teaching assistant for an AP U.S. History class. Your task is to read 
 **Instructions**:
 1. Read the provided LEQ prompt carefully.
 2. Identify whether the prompt is a **Comparison**, **Causation**, or **CCOT** prompt.
-3. Do not consider anything outside the prompt text itself—just classify it based on its wording and requirements.
-4. **Respond with only one of the three exact words**: "Comparison", "Causation", or "CCOT". Do not include any additional text, explanations, or characters.
+3. **Respond with only one of the three exact words**: "Comparison", "Causation", or "CCOT". **Do not include any additional text, explanations, or characters.**
 
 **Student’s Prompt to Classify**: {prompt}
 
@@ -275,26 +274,6 @@ Here is the essay and prompt type:
 Prompt Type: {prompt}
 Essay:
 {essay}
-"""
-)
-
-# Extra Classification Prompt (Remains Unchanged)
-classification_prompt_extra = PromptTemplate.from_template(
-    """
-You are a teaching assistant for an AP U.S. History class. Your task is to read the LEQ prompt provided by a student and classify it into one of the three main APUSH LEQ types:
-
-- **Comparison**: The prompt asks the student to compare and/or contrast historical developments, events, policies, or societies.
-- **Causation**: The prompt asks the student to explain causes and/or effects of historical events or developments.
-- **Continuity and Change Over Time (CCOT)**: The prompt asks the student to analyze what changed and what remained the same over a specific time frame.
-
-**Instructions**:
-1. Carefully read the provided LEQ prompt.
-2. Respond with only one of these three exact words: **"Comparison"**, **"Causation"**, or **"CCOT"**.
-3. Do not provide any additional text or explanation.
-
-**Student’s Prompt to Classify**: {prompt}
-
-**Your Response**:
 """
 )
 
@@ -515,7 +494,7 @@ def classify_prompt_node(state: GraphState) -> GraphState:
             raise ValueError("Prompt is empty or invalid.")
 
         # Define maximum number of attempts
-        max_attempts = 3
+        max_attempts = 5
         attempt = 0
         response_clean = None
 
@@ -538,13 +517,13 @@ def classify_prompt_node(state: GraphState) -> GraphState:
                 state["prompt_type"] = response_clean
                 break
             else:
-                logging.warning(f"Invalid type received on attempt {attempt + 1}: {response_clean}")
+                logging.warning(f"Invalid type received on attempt {attempt + 1}: '{response_clean}'")
                 attempt += 1
 
         if response_clean not in valid_types:
-            # If all attempts fail, handle gracefully
-            logging.error(f"Failed to classify prompt after {max_attempts} attempts. Response: {response_clean}")
-            raise ValueError(f"Got unknown type after {max_attempts} attempts: {response_clean}")
+            # If all attempts fail, handle gracefully by assigning 'Unknown' type
+            logging.error(f"Failed to classify prompt after {max_attempts} attempts. Response: '{response_clean}'")
+            state["prompt_type"] = "Unknown"
 
     except Exception as e:
         logging.error(f"Error in classify_prompt_node: {e}")
@@ -580,13 +559,13 @@ def retrieve_essays_node(state: GraphState) -> GraphState:
     """
     try:
         prompt_type = state.get("prompt_type", "").strip()
-        if prompt_type:
+        if prompt_type and prompt_type != "Unknown":
             logging.info(f"Retrieving essays for prompt type: {prompt_type}")
             docs = get_relevant_documents(None, prompt_type)
             state["documents"] = docs
             logging.info(f"Retrieved {len(docs)} essays for prompt type {prompt_type}.")
         else:
-            logging.warning("Prompt type is empty. Skipping essay retrieval.")
+            logging.warning("Prompt type is 'Unknown' or empty. Skipping essay retrieval.")
     except Exception as e:
         logging.error(f"Error in retrieve_essays_node: {e}")
         raise RuntimeError(f"Error in retrieve_essays_node: {e}")
