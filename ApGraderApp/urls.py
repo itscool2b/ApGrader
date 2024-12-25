@@ -1,7 +1,7 @@
 from django.urls import path
-from .views import process
+from .views import ApushLEQ
 
 urlpatterns = [
-    path("process", process, name='process'),
+    path("ApushLEQ", ApushLEQ, name='ApushLEQ'),
     
 ]

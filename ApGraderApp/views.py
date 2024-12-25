@@ -7,11 +7,11 @@ from asgiref.sync import sync_to_async
 import logging
 from io import BytesIO
 import json
-from .AI import evaluate  # Updated import
+from .ApushLEQ import evaluate  # Updated import
 logger = logging.getLogger(__name__)
 
 @csrf_exempt
-async def process(request):
+async def ApushLEQ(request):
     if request.method != "POST":
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
