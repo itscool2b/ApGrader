@@ -37,11 +37,7 @@ async def process(request):
             return JsonResponse({'error': 'PDF file is required'}, status=400)
 
         # Evaluate the essay using the prompt
-        try:
-            response = await sync_to_async(evaluate)(prompt, essay_text)
-        except ValueError as e:
-            logger.error(f"Evaluation failed: {e}")
-            return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
+        response = await sync_to_async(evaluate)(prompt, essay_text)
 
         # Return response in the specified JSON format
         return JsonResponse({
