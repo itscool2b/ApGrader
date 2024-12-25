@@ -13,9 +13,6 @@ from langchain.chat_models import ChatOpenAI
 
 from ApGraderApp.p import pc, setup_index, get_index
 
-
-
-
 from typing import List, Dict
 from typing_extensions import TypedDict
 
@@ -48,11 +45,11 @@ def get_relevant_documents(query: str, prompt_type: str) -> List[Dict]:
     Retrieve relevant documents from Pinecone based on:
     1) The query embedding (unless query is None, in which case we do a 'dummy' query).
     2) The prompt_type filter (unless prompt_type is None, then we skip startswith check).
-    
+
     Args:
         query (str): The search query for embeddings.
         prompt_type (str): The type of prompt to filter documents.
-    
+
     Returns:
         List[Dict]: A list of filtered documents with 'text', 'prompt_type', and 'grade'.
     """
@@ -87,7 +84,7 @@ def get_relevant_documents(query: str, prompt_type: str) -> List[Dict]:
                 essay_metadata = metadata.get("essay_type_grad_received", "")  # Corrected key
 
                 # If prompt_type is None, skip the startswith filter
-                if prompt_type is None or essay_metadata.startswith(prompt_type):
+                if prompt_type is None or essay_metadata.lower().startswith(prompt_type.lower()):
                     type_grade = essay_metadata.split("(")
                     if len(type_grade) == 2:
                         grade = type_grade[1].rstrip(")")
@@ -116,8 +113,6 @@ def get_relevant_documents(query: str, prompt_type: str) -> List[Dict]:
 # Classification Prompt
 classification_prompt = PromptTemplate.from_template(
     """
-Here is the prompt for classification:
-
 You are a teaching assistant for an AP U.S. History class. Your task is to read the LEQ prompt that a student has provided and determine which of the three main APUSH LEQ types it falls under:
 - **Comparison**: The prompt asks the student to compare and/or contrast historical developments, events, policies, or societies.
 - **Causation**: The prompt asks the student to explain causes and/or effects of historical events or developments.
@@ -127,14 +122,15 @@ You are a teaching assistant for an AP U.S. History class. Your task is to read 
 1. Read the provided LEQ prompt carefully.
 2. Identify whether the prompt is a **Comparison**, **Causation**, or **CCOT** prompt.
 3. Do not consider anything outside the prompt text itself—just classify it based on its wording and requirements.
-4. Respond with only one of the three words: "Comparison", "Causation", or "CCOT" depending on which category best matches the prompt.
+4. **Respond with only one of the three exact words**: "Comparison", "Causation", or "CCOT". Do not include any additional text, explanations, or characters.
 
 **Student’s Prompt to Classify**: {prompt}
-The output should be one word: "Comparison", "Causation", or "CCOT".
+
+**Your Response**:
 """
 )
 
-# Main Evaluation Prompt
+# Main Evaluation Prompt (Remains Unchanged)
 evaluation_prompt = PromptTemplate.from_template(
     """
 You are an AP US History essay grader using the College Board's updated LEQ rubric from 2023. 
@@ -233,7 +229,7 @@ Provide a strict summary of strengths, weaknesses, and areas for improvement. Dr
 """
 )
 
-# Formatting Prompt
+# Formatting Prompt (Remains Unchanged)
 formatting_prompt = PromptTemplate.from_template(
     """
 Your sole task is to format the response to ensure it is well-structured and broken into clear sections. 
@@ -282,8 +278,8 @@ Essay:
 """
 )
 
-# Extra Classification Prompt (not always used)
-classification_prompt = PromptTemplate.from_template(
+# Extra Classification Prompt (Remains Unchanged)
+classification_prompt_extra = PromptTemplate.from_template(
     """
 You are a teaching assistant for an AP U.S. History class. Your task is to read the LEQ prompt provided by a student and classify it into one of the three main APUSH LEQ types:
 
@@ -302,9 +298,7 @@ You are a teaching assistant for an AP U.S. History class. Your task is to read 
 """
 )
 
-
-
-# Smaller Rubrics for Partial Grading
+# Smaller Rubrics for Partial Grading (Remains Unchanged)
 thesis_prompt = PromptTemplate.from_template(
     """Evaluate the thesis statement in the following essay based on the provided rubric and evaluation standards:
 
@@ -470,7 +464,7 @@ Carefully sum up the scores from each section and sum up the feedback from each 
   - **Strengths**
   - **Weaknesses**
   - **Suggestions for Improvement**
-  
+
 *Do not mention the prompt type. It is the prompt type: {prompt_type}*
 """
 )
@@ -485,7 +479,6 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4")
 
 # Define tools if needed (currently not integrated into the workflow)
-
 
 ###############################################################################
 # 5) State Definition and Workflow
@@ -505,7 +498,6 @@ class GraphState(TypedDict):
     complexunderstanding_generation: str
     summation: str
 
-
 # Initialize the workflow
 workflow = StateGraph(GraphState)
 
@@ -518,36 +510,46 @@ def classify_prompt_node(state: GraphState) -> GraphState:
         logging.info("Classifying prompt.")
 
         # Validate input
-        if not state.get("prompt"):
+        prompt = state.get("prompt", "").strip()
+        if not prompt:
             raise ValueError("Prompt is empty or invalid.")
 
-        # Format the prompt
-        formatted_prompt = classification_prompt.format(prompt=state["prompt"])
-        logging.debug(f"Formatted Prompt Sent to LLM: {formatted_prompt}")
+        # Define maximum number of attempts
+        max_attempts = 3
+        attempt = 0
+        response_clean = None
 
-        # Get response from LLM
-        response = llm(formatted_prompt).strip()
-        logging.debug(f"Raw LLM Response: {response}")
-
-        # Sanitize the response
-        response_clean = response.splitlines()[0].strip()  # Take the first line and clean whitespace
         valid_types = {"Comparison", "Causation", "CCOT"}
 
-        # Validate the response
-        if response_clean not in valid_types:
-            logging.error(f"Unexpected LLM response: {response_clean}")
-            raise ValueError(f"Got unknown type: {response_clean}")
+        while attempt < max_attempts and response_clean not in valid_types:
+            # Format the prompt
+            formatted_prompt = classification_prompt.format(prompt=prompt)
+            logging.debug(f"Formatted Prompt Sent to LLM (Attempt {attempt + 1}): {formatted_prompt}")
 
-        # Store the valid response
-        state["prompt_type"] = response_clean
-        logging.info(f"Prompt classified as: {state['prompt_type']}")
+            # Get response from LLM
+            response = llm(formatted_prompt).strip()
+            logging.debug(f"Raw LLM Response (Attempt {attempt + 1}): {response}")
+
+            # Sanitize the response
+            response_clean = response.splitlines()[0].strip()
+
+            if response_clean in valid_types:
+                logging.info(f"Prompt classified as: {response_clean}")
+                state["prompt_type"] = response_clean
+                break
+            else:
+                logging.warning(f"Invalid type received on attempt {attempt + 1}: {response_clean}")
+                attempt += 1
+
+        if response_clean not in valid_types:
+            # If all attempts fail, handle gracefully
+            logging.error(f"Failed to classify prompt after {max_attempts} attempts. Response: {response_clean}")
+            raise ValueError(f"Got unknown type after {max_attempts} attempts: {response_clean}")
 
     except Exception as e:
         logging.error(f"Error in classify_prompt_node: {e}")
         raise RuntimeError(f"Error in classify_prompt_node: {e}")
     return state
-
- 
 
 
 def fetch_rubric_node(state: GraphState) -> GraphState:
@@ -570,24 +572,26 @@ def fetch_rubric_node(state: GraphState) -> GraphState:
         raise RuntimeError(f"Error in fetch_rubric_node: {e}")
     return state
 
+
 def retrieve_essays_node(state: GraphState) -> GraphState:
     """
     Node 3: Retrieve relevant essays based on 'prompt_type'.
     Optional if you want extra essay or rubric data for final LLM context.
     """
     try:
-        prompt_type = state["prompt_type"]
+        prompt_type = state.get("prompt_type", "").strip()
         if prompt_type:
             logging.info(f"Retrieving essays for prompt type: {prompt_type}")
             docs = get_relevant_documents(None, prompt_type)
             state["documents"] = docs
             logging.info(f"Retrieved {len(docs)} essays for prompt type {prompt_type}.")
         else:
-            logging.warning("Prompt type is None. Skipping essay retrieval.")
+            logging.warning("Prompt type is empty. Skipping essay retrieval.")
     except Exception as e:
         logging.error(f"Error in retrieve_essays_node: {e}")
         raise RuntimeError(f"Error in retrieve_essays_node: {e}")
     return state
+
 
 def thesis_grading_node(state: GraphState) -> GraphState:
     """
@@ -595,9 +599,12 @@ def thesis_grading_node(state: GraphState) -> GraphState:
     """
     try:
         logging.info("Grading thesis statement.")
-        rubric = state["rubric"]  # Retrieve the rubric as a list of dictionaries
-        essay = state["student_essay"]
-        ptype = state["prompt_type"]
+        rubric = state.get("rubric", [])
+        essay = state.get("student_essay", "")
+        ptype = state.get("prompt_type", "")
+
+        if not rubric:
+            raise ValueError("Rubric is missing in state.")
 
         # Convert rubric into a formatted JSON string for the LLM prompt
         formatted_rubric = json.dumps(rubric, indent=2)
@@ -606,6 +613,8 @@ def thesis_grading_node(state: GraphState) -> GraphState:
             essay=essay,
             prompt_type=ptype
         )
+
+        logging.debug(f"Formatted Thesis Grading Prompt: {formatted_prompt}")
 
         # Generate the response using the LLM
         response = llm(formatted_prompt)
@@ -616,15 +625,19 @@ def thesis_grading_node(state: GraphState) -> GraphState:
         raise RuntimeError(f"Error in thesis_grading_node: {e}")
     return state
 
+
 def contextualization_grading_node(state: GraphState) -> GraphState:
     """
     Node 5: Grade the contextualization section.
     """
     try:
         logging.info("Grading contextualization.")
-        rubric = state["rubric"]  # List of dictionaries
-        essay = state["student_essay"]
-        ptype = state["prompt_type"]
+        rubric = state.get("rubric", [])
+        essay = state.get("student_essay", "")
+        ptype = state.get("prompt_type", "")
+
+        if not rubric:
+            raise ValueError("Rubric is missing in state.")
 
         # Convert rubric into JSON string
         formatted_rubric = json.dumps(rubric, indent=2)
@@ -633,6 +646,8 @@ def contextualization_grading_node(state: GraphState) -> GraphState:
             essay=essay,
             prompt_type=ptype
         )
+
+        logging.debug(f"Formatted Contextualization Grading Prompt: {formatted_prompt}")
 
         # Generate the response
         response = llm(formatted_prompt)
@@ -650,9 +665,12 @@ def evidence_grading_node(state: GraphState) -> GraphState:
     """
     try:
         logging.info("Grading evidence.")
-        rubric = state["rubric"]  # Simple list of dictionaries
-        essay = state["student_essay"]
-        ptype = state["prompt_type"]
+        rubric = state.get("rubric", [])
+        essay = state.get("student_essay", "")
+        ptype = state.get("prompt_type", "")
+
+        if not rubric:
+            raise ValueError("Rubric is missing in state.")
 
         # Format the rubric into JSON string
         formatted_rubric = json.dumps(rubric, indent=2)
@@ -661,6 +679,8 @@ def evidence_grading_node(state: GraphState) -> GraphState:
             essay=essay,
             prompt_type=ptype
         )
+
+        logging.debug(f"Formatted Evidence Grading Prompt: {formatted_prompt}")
 
         # Generate the response
         response = llm(formatted_prompt)
@@ -671,15 +691,19 @@ def evidence_grading_node(state: GraphState) -> GraphState:
         raise RuntimeError(f"Error in evidence_grading_node: {e}")
     return state
 
+
 def analysis_grading_node(state: GraphState) -> GraphState:
     """
     Node 7: Grade the analysis and reasoning section.
     """
     try:
         logging.info("Grading analysis and reasoning.")
-        rubric = state["rubric"]  # Simple list of dictionaries
-        essay = state["student_essay"]
-        ptype = state["prompt_type"]
+        rubric = state.get("rubric", [])
+        essay = state.get("student_essay", "")
+        ptype = state.get("prompt_type", "")
+
+        if not rubric:
+            raise ValueError("Rubric is missing in state.")
 
         # Format the rubric into JSON string
         formatted_rubric = json.dumps(rubric, indent=2)
@@ -689,6 +713,8 @@ def analysis_grading_node(state: GraphState) -> GraphState:
             prompt_type=ptype
         )
 
+        logging.debug(f"Formatted Analysis Grading Prompt: {formatted_prompt}")
+
         # Generate the response
         response = llm(formatted_prompt)
         state["complexunderstanding_generation"] = response.strip()
@@ -697,6 +723,7 @@ def analysis_grading_node(state: GraphState) -> GraphState:
         logging.error(f"Error in analysis_grading_node: {e}")
         raise RuntimeError(f"Error in analysis_grading_node: {e}")
     return state
+
 
 def final_node(state: GraphState) -> GraphState:
     """
@@ -718,6 +745,8 @@ def final_node(state: GraphState) -> GraphState:
             complexunderstanding_generation=complexu,
             prompt_type=ptype
         )
+        logging.debug(f"Formatted Summation Prompt: {formatted_prompt}")
+
         response = llm(formatted_prompt)
         state["summation"] = response.strip()
         logging.info("Final summation generated.")
