@@ -9,6 +9,7 @@ from io import BytesIO
 import json
 from .ApushLEQ import evaluate  # Updated import
 from .ApushSAQ import evaluate1
+import io
 logger = logging.getLogger(__name__)
 
 @csrf_exempt
