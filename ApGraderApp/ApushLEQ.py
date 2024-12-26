@@ -31,12 +31,13 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 index = get_index()
 
 
-def get_relevant_documents(query: str) -> List[Dict]:
+def retriever(query: str, top_k: int = 100) -> List[Dict]:
     """
-    Retrieve relevant documents from Pinecone based on the query embedding.
+    Generalized function to retrieve relevant documents from Pinecone based on a query.
 
     Args:
-        query (str): The search query for embeddings.
+        query (str): The search query.
+        top_k (int): Number of top results to retrieve. Default is 100.
 
     Returns:
         List[Dict]: A list of retrieved documents with 'text' and 'metadata'.
@@ -52,25 +53,20 @@ def get_relevant_documents(query: str) -> List[Dict]:
         # Query the Pinecone index
         results = index.query(
             vector=query_embedding,
-            top_k=100,
+            top_k=top_k,
             include_metadata=True
         )
 
-        
-        retrieved_results = []
-        if "matches" in results:
-            for match in results["matches"]:
-                metadata = match.get("metadata", {})
-                retrieved_results.append({
-                    "text": metadata.get("text", ""),
-                    "metadata": metadata
-                })
-
-        return retrieved_results
-
+        return [
+            {
+                "text": match.get("metadata", {}).get("text", ""),
+                "metadata": match.get("metadata", {})
+            }
+            for match in results.get("matches", [])
+        ]
     except Exception as e:
-        logging.error(f"Error in embedding or querying Pinecone: {e}")
-        raise RuntimeError("Error in embedding or querying Pinecone.") from e
+        logging.error(f"Error in retriever: {e}")
+        raise RuntimeError("Error in retriever function.") from e
 
 
 
@@ -257,30 +253,56 @@ Analysis and Reasoning (0-2):
 {complexunderstanding_generation}
 extract the score and feed back from above and use for further instruction. ONLY USE THIS FOR THE OUTPUT FORMAT BELOW
 
+Fact-Checking Feedback:
+{fact_checking_feedback}
+ONLY INCLUDE THIS IF FACT-CHECKING FEEDBACK EXISTS. Do not change any of the above formats unless explicitly stated.
 
 
 Make sure your final output follows exactly the data above. Do not include any additional headings or extra commentary. After "Feedback summary:", provide a short paragraph or two summarizing strengths and weaknesses which u received so sum everything up dont leave anything out.
 
 So here is what u shoud be outputing based on all the data u have been given
 
-**output format**
+output format
 MAKE SURE TO ADD EVERYTHING UP PROPERLY AND MAKE SURE THE EXTRACTION OF DATA IS ACCURATE AND COMPLETE. I GAVE U ALL THE DATA ABOVE BEFORE
-**Thesis score** - 
-****contextualization score** - 
-evidence score** - 
-**complex understanding score** - 
-**total summed up score out of 6. For examples 3/6 or 2/6 just insert the score/6** - 
+Thesis score - 
+**contextualization score - 
+evidence score - 
+complex understanding score - 
+total summed up score out of 6. For examples 3/6 or 2/6 just insert the score/6 - 
 
-**FEEDBACK** - 
-**Thesis feedback** - 
-****contextualization feedback** - 
-evidence feedback** - 
-**complex understanding feedback** - 
-**overall feedback** - 
+FEEDBACK - 
+Thesis feedback - 
+**contextualization feedback - 
+evidence feedback - 
+complex understanding feedback - 
+fact-checking feedback - (Include only if exists; summarize any content mistakes and corrections.)
+overall feedback - 
 Be thorough with the feed back, explain why they earned or lost the point in each section. Again this data has been given to u above before.
 """
-) 
+)
 
+
+factchecking_prompt = PromptTemplate.from_template("""You are an expert AP US History essay fact-checker. Your task is to fact-check the content of a student's essay based on the chapters and topics retrieved from a vector database. Follow these instructions carefully:
+
+Fact-Check the Essay: Review the essay for historical accuracy. Cross-reference claims and information in the essay with the content provided in the {chapters} from the vector database. Focus on ensuring the essay aligns with the correct historical events, dates, figures, and interpretations.
+
+
+Here is the essay - {essay}
+
+Feedback on Mistakes:
+
+If the student makes a factual error, do not deduct points. Instead, provide constructive feedback.
+Highlight the specific part of the essay where the mistake occurs.
+Explain the correct historical information in a clear and concise manner.
+Use positive and educational language to encourage learning.
+General Comments:
+
+Summarize the overall accuracy of the essay.
+Mention areas where the student demonstrated accurate historical understanding and areas for improvement.
+Example Structure for Your Feedback:
+Identified Mistake: "In your essay, you stated that [incorrect information]. However, according to [chapter/topic], the correct information is [correct information]."
+General Accuracy: "Overall, your essay is accurate in its portrayal of [topic], but keep an eye on [specific areas]."
+Focus on being supportive and informative. Your goal is to help the student learn and improve their historical understanding without penalizing them for mistakes.""")
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -295,12 +317,16 @@ class GraphState(TypedDict):
     prompt: str
     prompt_type: str
     student_essay: str
+    relevant_essays: List[Dict]
     rubric: List[Dict]  
     thesis_generation: str
+    relevant_chapters: List[Dict]
     contextualization_generation: str
     evidence_generation: str
     complexunderstanding_generation: str
+    factchecking_generation: str
     summation: str
+    
 
 
 workflow = StateGraph(GraphState)
@@ -319,52 +345,62 @@ def classify_prompt_node(state: GraphState) -> GraphState:
     return state
    
 
-   
+def retrieve_essays_node(state):
 
+    prompt_type = state["prompt_type"]
+    query = f"all essays of this prompt type {prompt_type}"
+    state["relevant_essays"] = retriever(query)
 
+    return state
+
+    
 
 def fetch_rubric_node(state: GraphState) -> GraphState:
     """
-    Node 2: Fetch the rubric documents from Pinecone.
+    Node to fetch rubric documents using the retriever function.
+
+    Args:
+        state (GraphState): The current state of the graph.
+
+    Returns:
+        GraphState: Updated state with fetched rubric documents.
     """
     try:
         logging.info("Fetching rubric documents.")
-        query = "LEQ Rubric"  # The query to fetch rubric data
-        docs = get_relevant_documents(query)  # Retrieve documents
-
-        if not docs:
-            raise ValueError("No rubric documents found in Pinecone.")
-
-        # Store the documents directly in the state as a list of dictionaries
-        state["rubric"] = docs
-        logging.info(f"Fetched {len(docs)} rubric documents.")
+        state["rubric"] = retriever("LEQ Rubric")
+        logging.info(f"Fetched {len(state['rubric'])} rubric documents.")
     except Exception as e:
         logging.error(f"Error in fetch_rubric_node: {e}")
         raise RuntimeError(f"Error in fetch_rubric_node: {e}")
     return state
 
 
-def retrieve_essays_node(state: GraphState) -> GraphState:
-    """
-    Node 3: Retrieve relevant essays based on 'prompt_type'.
-    Optional if you want extra essay or rubric data for final LLM context.
-    """
-    try:
-        prompt_type = state.get("prompt_type", "").strip()
-        if prompt_type and prompt_type != "Unknown":
-            logging.info(f"Retrieving essays for prompt type: {prompt_type}")
-            docs = get_relevant_documents(prompt_type)
-            state["documents"] = docs
-            logging.info(f"Retrieved {len(docs)} essays for prompt type {prompt_type}.")
-        else:
-            logging.warning("Prompt type is 'Unknown' or empty. Skipping essay retrieval.")
-    except Exception as e:
-        logging.error(f"Error in retrieve_essays_node: {e}")
-        raise RuntimeError(f"Error in retrieve_essays_node: {e}")
+ch_prompt = PromptTemplate.from_template("""
+
+This is the student essay - {essay}
+
+Write a query that i could put in a vector db to find relevant chapters to fact check the content of the essay. I already have anoth4r prompt to fact check and i also pass in chapters.
+
+So here should be your output
+
+**ouput**
+
+A thorough query to find relevant chpaters based off the student essay to fact check. Your output should only consist of the query, that is it. thats it
+
+""")
+
+def retrieve_chapters_node(state: GraphState) -> GraphState:
+    essay = state["student_essay"]
+
+    # Generate a query for the vector database
+    formatted_prompt = ch_prompt.format(essay=essay)
+    response = llm.invoke(formatted_prompt)
+
+    query = response.content.strip()
+    state["relevant_chapters"] = retriever(query)
+
     return state
 
-def retrieve_chapters_node(state):
-    pass
 
 
 def thesis_grading_node(state: GraphState) -> GraphState:
@@ -419,27 +455,36 @@ def analysis_grading_node(state: GraphState) -> GraphState:
 
 
 def fact_check_node(state):
-    pass
+    
+    essay = state["student_essay"]
+    chapters = state["relevant_chapters"]
+
+    formatted_prompt = factchecking_prompt.format(essay=essay,chapters=chapters)
+    response = llm.invoke(formatted_prompt)
+
+    state["factchecking_generation"] = response.content.strip()
+
+    return state
 
 def final_node(state: dict) -> dict:
     """
     Final node to compute the summation and update the state.
     """
     try:
-        # Extract required inputs from the state
+        
         thesis = state["thesis_generation"]
         cont = state["contextualization_generation"]
         evidence = state["evidence_generation"]
         complexu = state["complexunderstanding_generation"]
         ptype = state["prompt_type"]
-
-        # Prepare the summation prompt
+        fact = state["factchecking_generation"]
+        
         formatted_prompt = summation_prompt.format(
             thesis_generation=thesis,
             contextualization_generation=cont,
             evidence_generation=evidence,
             complexunderstanding_generation=complexu,
-            prompt_type=ptype,
+            fact_checking_feedback=fact,
         )
 
         # Generate the response
@@ -462,53 +507,64 @@ def final_node(state: dict) -> dict:
 
 
 workflow.add_node("classify_prompt", classify_prompt_node)
-workflow.add_node("fetch_rubric", fetch_rubric_node)
 workflow.add_node("retrieve_essays", retrieve_essays_node)
+workflow.add_node("fetch_rubric", fetch_rubric_node)
+workflow.add_node("retrieve_chapters", retrieve_chapters_node)
 workflow.add_node("thesis_grading", thesis_grading_node)
 workflow.add_node("contextualization_grading", contextualization_grading_node)
 workflow.add_node("evidence_grading", evidence_grading_node)
 workflow.add_node("analysis_grading", analysis_grading_node)
+workflow.add_node("factchecking_grading", fact_check_node)
 workflow.add_node("final_node", final_node)
 
-workflow.add_edge(START, "classify_prompt")
-workflow.add_edge("classify_prompt", "fetch_rubric")
-workflow.add_edge("fetch_rubric", "retrieve_essays")
-workflow.add_edge("retrieve_essays", "thesis_grading")
-workflow.add_edge("thesis_grading", "contextualization_grading")
-workflow.add_edge("contextualization_grading", "evidence_grading")
-workflow.add_edge("evidence_grading", "analysis_grading")
-workflow.add_edge("analysis_grading", "final_node")
-workflow.add_edge("final_node", END)
+# Define Workflow Edges
+workflow.add_edge(START, "classify_prompt")  # Start with classification
+workflow.add_edge("classify_prompt", "retrieve_essays")  # Retrieve relevant essays
+workflow.add_edge("retrieve_essays", "fetch_rubric")  # Fetch rubric
+workflow.add_edge("fetch_rubric", "retrieve_chapters")  # Retrieve relevant chapters
+workflow.add_edge("retrieve_chapters", "thesis_grading")  # Start grading
+workflow.add_edge("thesis_grading", "contextualization_grading")  # Contextualization grading
+workflow.add_edge("contextualization_grading", "evidence_grading")  # Evidence grading
+workflow.add_edge("evidence_grading", "analysis_grading")  # Analysis grading
+workflow.add_edge("analysis_grading", "factchecking_grading")  # Fact-checking
+workflow.add_edge("factchecking_grading", "final_node")  # Final node
+workflow.add_edge("final_node", END)  # End of workflow
+
+
 
 app = workflow.compile()
 
 
 def evaluate(prompt: str, essay: str) -> str:
-  
     # Define the initial state
     state = {
         "prompt": prompt,
         "prompt_type": None,
         "student_essay": essay,
         "rubric": [],
+        "relevant_essays": [],
+        "relevant_chapters": [],
         "thesis_generation": None,
         "contextualization_generation": None,
         "evidence_generation": None,
         "complexunderstanding_generation": None,
+        "factchecking_generation": None,
         "summation": None,
     }
 
     # Step-by-step workflow execution
-    state = classify_prompt_node(state)
-    state = fetch_rubric_node(state)
-    state = retrieve_essays_node(state)
-    state = thesis_grading_node(state)
-    state = contextualization_grading_node(state)
-    state = evidence_grading_node(state)
-    state = analysis_grading_node(state)
-    state = final_node(state)
+    state = classify_prompt_node(state)  # Classify the prompt
+    state = retrieve_essays_node(state)  # Retrieve relevant essays
+    state = fetch_rubric_node(state)  # Fetch rubric documents
+    state = retrieve_chapters_node(state)  # Retrieve relevant chapters
+    state = thesis_grading_node(state)  # Grade the thesis
+    state = contextualization_grading_node(state)  # Grade contextualization
+    state = evidence_grading_node(state)  # Grade evidence
+    state = analysis_grading_node(state)  # Grade analysis and reasoning
+    state = fact_check_node(state)  # Perform fact-checking
+    state = final_node(state)  # Compute summation and finalize
 
-    # Check if the summation exists and return it
+    # Return the final summation if available
     if "summation" in state and state["summation"]:
         return state["summation"]
     else:
