@@ -1,5 +1,3 @@
-
-
 import os
 import openai
 import json
@@ -13,46 +11,30 @@ import ApGraderApp.p as p
 from ApGraderApp.p import pc, setup_index, get_index
 
 from typing import List, Dict
-from typing_extensions import TypedDict
+from typing import TypedDict  # Corrected import
 
 from langgraph.graph import END, StateGraph, START
-
 
 load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-#k
 if not OPENAI_API_KEY:
     raise ValueError("OPENAI_API_KEY not found. Please set it in your environment.")
-
 
 openai.api_key = OPENAI_API_KEY
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 index = get_index()
 
-
 def retriever(query: str, top_k: int = 100) -> List[Dict]:
-    """
-    Generalized function to retrieve relevant documents from Pinecone based on a query.
-
-    Args:
-        query (str): The search query.
-        top_k (int): Number of top results to retrieve. Default is 100.
-
-    Returns:
-        List[Dict]: A list of retrieved documents with 'text' and 'metadata'.
-    """
     try:
-        # Create embedding for the query
         response = client.embeddings.create(
             input=query,
             model="text-embedding-ada-002"
         )
         query_embedding = response.data[0].embedding
 
-        # Query the Pinecone index
         results = index.query(
             vector=query_embedding,
             top_k=top_k,
@@ -72,8 +54,6 @@ def retriever(query: str, top_k: int = 100) -> List[Dict]:
 
 llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4o")
 
-
-#prompts
 case1 = PromptTemplate.from_template("""You are an AP U.S. History SAQ grader. You will evaluate the provided essay response for a specific SAQ question. Each question may contain multiple subparts (e.g., A, B, C), and you must analyze and grade each subpart individually.
 
 Steps for Grading:
@@ -190,13 +170,13 @@ ch_prompt = PromptTemplate.from_template("""
 
 This is the student essay - {essay}
 
-Write a query that i could put in a vector db to find relevant chapters to fact check the content of the essay. I already have anoth4r prompt to fact check and i also pass in chapters.
+Write a query that i could put in a vector db to find relevant chapters to fact check the content of the essay. I already have another prompt to fact check and i also pass in chapters.
 
 So here should be your output
 
-**ouput**
+**output**
 
-A thorough query to find relevant chpaters based off the student essay to fact check. Your output should only consist of the query, that is it. thats it
+A thorough query to find relevant chapters based off the student essay to fact check. Your output should only consist of the query, that is it. that's it
 
 """)
 
@@ -250,8 +230,7 @@ List all factual inaccuracies detected in the student’s response, with correct
 
 from typing import List, Optional, Union
 
-
-class Graphstate(TypeDict):
+class Graphstate(TypedDict):  # Corrected TypedDict import
     questions: str
     case1_generation: str
     case2_generation: str
@@ -259,9 +238,7 @@ class Graphstate(TypeDict):
     factchecking_generation: str
     relevant_chapters: List[dict]
     summation: str
-    image: Optional[Union[str, bytes]] 
-
-#nodes
+    image: Optional[Union[str, bytes]]
 
 def if_img(state):
     if state["image"] == None:
@@ -274,14 +251,13 @@ def chapters(state):
     formatted_prompt = ch_prompt.format(essay=essay)
     query = llm.invoke(formatted_prompt)
     state["relevant_chapters"] = retriever(query)
-
     return state
 
 def grading_node1(state):
     essay = state["student_essay"]
     questions = state["questions"]
 
-    formatted_prompt = case1.format(essay=essay,questions=questions)
+    formatted_prompt = case1.format(essay=essay, questions=questions)
     response = llm.invoke(formatted_prompt)
     state["case1_generation"] = response.content.strip()
 
@@ -292,7 +268,7 @@ def grading_node2(state):
     questions = state["questions"]
     stimulus = state["image"]
 
-    formatted_prompt = case2.format(essay=essay,questions=questions,stimulus=stimulus)
+    formatted_prompt = case2.format(essay=essay, questions=questions, stimulus=stimulus)
     response = llm.invoke(formatted_prompt)
 
     state["case2_generation"] = response.content.strip()
@@ -302,7 +278,7 @@ def grading_node2(state):
 def factchecking_node(state):
     essay = state["student_essay"]
     chapters = state["relevant_chapters"]
-    formatted_prompt = factchecking_prompt(essay=essay,chapters=chapters)
+    formatted_prompt = factchecking_prompt.format(essay=essay, chapters=chapters)
     response = llm.invoke(formatted_prompt)
 
     state["factchecking_generation"] = response.content.strip()
@@ -312,48 +288,47 @@ def factchecking_node(state):
 def summation1(state):
     generation = state["case1_generation"]
     feedback = state["factchecking_generation"]
-    formatted_prompt = summation_prompt.format(generation=generation,feedback=feedback)
+    formatted_prompt = summation_prompt.format(generation=generation, feedback=feedback)
     response = llm.invoke(formatted_prompt)
-    state["summation"] = response.content.strip
+    state["summation"] = response.content.strip()
 
     return state
 
 def summation2(state):
     generation = state["case2_generation"]
     feedback = state["factchecking_generation"]
-    formatted_prompt = summation_prompt.format(generation=generation,feedback=feedback)
+    formatted_prompt = summation_prompt.format(generation=generation, feedback=feedback)
     response = llm.invoke(formatted_prompt)
-    state["summation"] = response.content.strip
+    state["summation"] = response.content.strip()
 
     return state
 
 workflow = StateGraph(Graphstate)
 
 workflow.add_node("chapters", chapters)
-workflow.add_node("if_img", if_img, conditional=True)  
-workflow.add_node("grading_node1", grading_node1)  
-workflow.add_node("grading_node2", grading_node2)  
-workflow.add_node("factchecking_node", factchecking_node)  
-workflow.add_node("if_summation", lambda state: "summation1" if state["case1_generation"] else "summation2", conditional=True)  # Conditional node for summation
-workflow.add_node("summation1", summation1)  
-workflow.add_node("summation2", summation2)  
+workflow.add_node("if_img", if_img, conditional=True)
+workflow.add_node("grading_node1", grading_node1)
+workflow.add_node("grading_node2", grading_node2)
+workflow.add_node("factchecking_node", factchecking_node)
+workflow.add_node("if_summation", lambda state: "summation1" if state["case1_generation"] else "summation2", conditional=True)
+workflow.add_node("summation1", summation1)
+workflow.add_node("summation2", summation2)
 
-
-workflow.add_edge(START, "chapters")  
-workflow.add_edge("chapters", "if_img")  
-workflow.add_edge("if_img", "grading_node1", condition="case1")  
-workflow.add_edge("if_img", "grading_node2", condition="case2")  
-workflow.add_edge("grading_node1", "factchecking_node")  
-workflow.add_edge("grading_node2", "factchecking_node")  
-workflow.add_edge("factchecking_node", "if_summation")  
-workflow.add_edge("if_summation", "summation1", condition="summation1")  
-workflow.add_edge("if_summation", "summation2", condition="summation2")  
-workflow.add_edge("summation1", END)  
-workflow.add_edge("summation2", END)  
+workflow.add_edge(START, "chapters")
+workflow.add_edge("chapters", "if_img")
+workflow.add_edge("if_img", "grading_node1", condition="case1")
+workflow.add_edge("if_img", "grading_node2", condition="case2")
+workflow.add_edge("grading_node1", "factchecking_node")
+workflow.add_edge("grading_node2", "factchecking_node")
+workflow.add_edge("factchecking_node", "if_summation")
+workflow.add_edge("if_summation", "summation1", condition="summation1")
+workflow.add_edge("if_summation", "summation2", condition="summation2")
+workflow.add_edge("summation1", END)
+workflow.add_edge("summation2", END)
 
 app = workflow.compile()
 
-def evaluate1(questions,essay,image):
+def evaluate1(questions, essay, image):
 
     state = {
         "questions": questions,
@@ -366,7 +341,7 @@ def evaluate1(questions,essay,image):
         "image": image
     }
 
-
+    app.run(state)
 
     if "summation" in state and state["summation"]:
         return state["summation"]
