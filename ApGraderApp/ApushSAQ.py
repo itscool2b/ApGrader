@@ -28,7 +28,7 @@ index = get_index()
 
 def retriever(query: str, top_k: int = 100) -> List[Dict]:
     """
-    Generalized function to retrieve relevant documents from Pinecone based on a query.
+    Retrieves relevant documents from Pinecone based on a query.
 
     Args:
         query (str): The search query.
@@ -38,12 +38,24 @@ def retriever(query: str, top_k: int = 100) -> List[Dict]:
         List[Dict]: A list of retrieved documents with 'text' and 'metadata'.
     """
     try:
+        # Validate query input
+        if not query or not isinstance(query, str):
+            raise ValueError(f"Query must be a non-empty string. Received: {query}")
+
+        # Debug: Log query input
+        logging.debug(f"Query received: {query}")
+
         # Create embedding for the query
         response = client.embeddings.create(
-            input=query,
-            model="text-embedding-ada-002"
+            model="text-embedding-ada-002",
+            input=query
         )
+
+        # Extract query embedding using the proper structure
         query_embedding = response.data[0].embedding
+
+        # Debug: Log query embedding
+        logging.debug(f"Query embedding: {query_embedding}")
 
         # Query the Pinecone index
         results = index.query(
@@ -52,6 +64,10 @@ def retriever(query: str, top_k: int = 100) -> List[Dict]:
             include_metadata=True
         )
 
+        # Debug: Log Pinecone query results
+        logging.debug(f"Pinecone query results: {results}")
+
+        # Process and return the results
         return [
             {
                 "text": match.get("metadata", {}).get("text", ""),
@@ -59,9 +75,13 @@ def retriever(query: str, top_k: int = 100) -> List[Dict]:
             }
             for match in results.get("matches", [])
         ]
+    except ValueError as ve:
+        logging.error(f"Input Validation Error: {ve}")
+        raise
     except Exception as e:
-        logging.error(f"Error in retriever: {e}")
+        logging.error(f"Error in retriever: {str(e)}")
         raise RuntimeError("Error in retriever function.") from e
+
 
 llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4o")
 
@@ -186,7 +206,7 @@ So here should be your output:
 
 **output**
 
-A thorough query to find relevant chapters based on the student essay to fact-check. Your output should only consist of the query, that is it. that's it
+A thorough query to find relevant chapters based on the student essay to fact-check. Your output should only consist of the query, that is it. that's it. it should be thorowough but nor paragraphgs.
 
 """)
 
@@ -251,9 +271,17 @@ class Graphstate(TypedDict):
 def chapters(state):
     essay = state["student_essay"]
     formatted_prompt = ch_prompt.format(essay=essay)
-    query = llm.invoke(formatted_prompt)
-    state["relevant_chapters"] = retriever(query)
+    response = llm.invoke(formatted_prompt)
+    query = response.content.strip()
+
+    # Pass the query to retriever
+    relevant_chapters = retriever(query)
+    if not relevant_chapters:
+        raise ValueError("No relevant chapters found. Ensure the retriever is working correctly.")
+
+    state["relevant_chapters"] = relevant_chapters
     return state
+
 
 # Node for grading (handles both case1 and case2 internally)
 def grading_node(state):
@@ -275,12 +303,21 @@ def grading_node(state):
 # Node for fact-checking
 def factchecking_node(state):
     essay = state["student_essay"]
-    chapters = state["relevant_chapters"]
+    chapters = state.get("relevant_chapters", [])
+
+    if not chapters:
+        raise ValueError("Fact-checking requires relevant chapters, but none were retrieved.")
+
     formatted_prompt = factchecking_prompt.format(essay=essay, chapters=chapters)
     response = llm.invoke(formatted_prompt)
-    state["factchecking_generation"] = response.content.strip()
 
+    # Validate response content
+    if not response or not response.content.strip():
+        raise ValueError("Fact-checking node received an invalid response.")
+    
+    state["factchecking_generation"] = response.content.strip()
     return state
+
 
 # Node for summation (handles both case1 and case2 internally)
 def summation_node(state):
@@ -289,12 +326,18 @@ def summation_node(state):
     else:
         generation = state["case2_generation"]
 
-    feedback = state["factchecking_generation"]
-    formatted_prompt = summation_prompt.format(generation=generation, feedback=feedback)
+    feedback = state.get("factchecking_generation", "")
+    if not feedback:
+        raise ValueError("Fact-checking generation is missing. Ensure factchecking_node worked correctly.")
+
+    # Log the formatted prompt for debugging
+    formatted_prompt = summation_prompt.format(generation=generation, factchecking=feedback)
+    logging.debug(f"Summation Prompt: {formatted_prompt}")
+    
     response = llm.invoke(formatted_prompt)
     state["summation"] = response.content.strip()
-
     return state
+
 
 # Workflow configuration
 workflow = StateGraph(Graphstate)
