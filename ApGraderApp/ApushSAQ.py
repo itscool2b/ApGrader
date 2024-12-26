@@ -304,7 +304,8 @@ workflow.add_edge("summation_node", END)
 app = workflow.compile()
 
 # Evaluation function
-def evaluate1(questions, essay, image):
+def evaluate1(questions: str, essay: str, image: Optional[Union[str, bytes]]) -> str:
+    # Define the initial state
     state = {
         "questions": questions,
         "case1_generation": None,
@@ -313,12 +314,18 @@ def evaluate1(questions, essay, image):
         "factchecking_generation": None,
         "relevant_chapters": [],
         "summation": None,
-        "image": image
+        "image": image,
     }
 
-    app.run(state)
+    # Step-by-step workflow execution
+    state = chapters(state)  # Retrieve relevant chapters
+    state = grading_node(state)  # Grade based on the presence of an image
+    state = factchecking_node(state)  # Perform fact-checking
+    state = summation_node(state)  # Compute summation and finalize
 
+    # Return the final summation if available
     if "summation" in state and state["summation"]:
         return state["summation"]
     else:
         raise ValueError("Summation not found in the final state.")
+
