@@ -10,8 +10,7 @@ from langchain.chat_models import ChatOpenAI
 import ApGraderApp.p as p
 from ApGraderApp.p import pc, setup_index, get_index
 
-from typing import List, Dict
-from typing import TypedDict  
+from typing import List, Dict, Optional, Union, TypedDict
 
 from langgraph.graph import END, StateGraph, START
 
@@ -167,23 +166,21 @@ Strengths: Highlight what the student did well.
 Areas for Improvement: Suggest specific ways to improve their response.""")
 
 ch_prompt = PromptTemplate.from_template("""
-
 This is the student essay - {essay}
 
-Write a query that i could put in a vector db to find relevant chapters to fact check the content of the essay. I already have another prompt to fact check and i also pass in chapters.
+Write a query that I could put in a vector db to find relevant chapters to fact-check the content of the essay. I already have another prompt to fact-check, and I also pass in chapters.
 
-So here should be your output
+So here should be your output:
 
 **output**
 
-A thorough query to find relevant chapters based off the student essay to fact check. Your output should only consist of the query, that is it. that's it
+A thorough query to find relevant chapters based on the student essay to fact-check. Your output should only consist of the query, that is it. that's it
 
 """)
 
 factchecking_prompt = PromptTemplate.from_template("""You are an expert AP US History essay fact-checker. Your task is to fact-check the content of a student's essay based on the chapters and topics retrieved from a vector database. Follow these instructions carefully:
 
 Fact-Check the Essay: Review the essay for historical accuracy. Cross-reference claims and information in the essay with the content provided in the {chapters} from the vector database. Focus on ensuring the essay aligns with the correct historical events, dates, figures, and interpretations.
-
 
 Here is the essay - {essay}
 
@@ -219,7 +216,7 @@ Include any factual inaccuracies from the student response, as identified by the
 Emphasize that these mistakes do not impact the score but should be reviewed for learning purposes.
 Output Format
 Total Score and General Feedback:
-{factchecking} - this is factchecking. put it in the feedback
+{factchecking} - this is factchecking. Put it in the feedback
 Total Score: X/Y
 Strengths: Summarize key areas where the student performed well.
 Areas for Improvement: Provide actionable suggestions for improvement.
@@ -227,8 +224,6 @@ Fact-Checking Node Feedback:
 
 Mistakes Identified:
 List all factual inaccuracies detected in the student’s response, with corrections.""")
-
-from typing import List, Optional, Union
 
 class Graphstate(TypedDict):
     questions: str
@@ -240,12 +235,8 @@ class Graphstate(TypedDict):
     summation: str
     image: Optional[Union[str, bytes]]
 
-
 def if_img(state):
-    if state["image"] == None:
-        return "case1"
-    else:
-        return "case2"
+    return "case1" if state["image"] is None else "case2"
 
 def chapters(state):
     essay = state["student_essay"]
@@ -307,30 +298,27 @@ def summation2(state):
 workflow = StateGraph(Graphstate)
 
 workflow.add_node("chapters", chapters)
-workflow.add_node("if_img", if_img, conditional=True)
+workflow.add_node("if_img", if_img)
 workflow.add_node("grading_node1", grading_node1)
 workflow.add_node("grading_node2", grading_node2)
 workflow.add_node("factchecking_node", factchecking_node)
-workflow.add_node("if_summation", lambda state: "summation1" if state["case1_generation"] else "summation2", conditional=True)
 workflow.add_node("summation1", summation1)
 workflow.add_node("summation2", summation2)
 
 workflow.add_edge(START, "chapters")
 workflow.add_edge("chapters", "if_img")
-workflow.add_edge("if_img", "grading_node1", condition="case1")
-workflow.add_edge("if_img", "grading_node2", condition="case2")
+workflow.add_edge("if_img", "grading_node1", condition=lambda state: state["image"] is None)
+workflow.add_edge("if_img", "grading_node2", condition=lambda state: state["image"] is not None)
 workflow.add_edge("grading_node1", "factchecking_node")
 workflow.add_edge("grading_node2", "factchecking_node")
-workflow.add_edge("factchecking_node", "if_summation")
-workflow.add_edge("if_summation", "summation1", condition="summation1")
-workflow.add_edge("if_summation", "summation2", condition="summation2")
+workflow.add_edge("factchecking_node", "summation1", condition=lambda state: state["case1_generation"] is not None)
+workflow.add_edge("factchecking_node", "summation2", condition=lambda state: state["case2_generation"] is not None)
 workflow.add_edge("summation1", END)
 workflow.add_edge("summation2", END)
 
 app = workflow.compile()
 
 def evaluate1(questions, essay, image):
-
     state = {
         "questions": questions,
         "case1_generation": None,
