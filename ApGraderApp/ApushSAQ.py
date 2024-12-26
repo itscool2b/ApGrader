@@ -305,6 +305,7 @@ workflow.add_node("factchecking_node", factchecking_node)
 workflow.add_node("summation1", summation1)
 workflow.add_node("summation2", summation2)
 
+# Conditional logic handled in add_edge
 workflow.add_edge(START, "chapters")
 workflow.add_edge("chapters", "if_img")
 workflow.add_edge("if_img", "grading_node1", condition=lambda state: state["image"] is None)
