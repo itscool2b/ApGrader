@@ -344,6 +344,7 @@ def summation_node(state):
         formatted_prompt = summation_prompt.format(generation=generation, factchecking=feedback)
         response = llm.invoke(formatted_prompt)
         state["summation"] = response.content.strip()
+        print(state["summation"])
         return state
     except Exception as e:
         raise ValueError(f"Error in summation_node: {e}")
