@@ -7,8 +7,8 @@ from openai import OpenAI
 from langchain.prompts import PromptTemplate
 from langchain.chat_models import ChatOpenAI
 
-import ApGraderApp.p as p
-from ApGraderApp.p import pc, setup_index, get_index
+import p as p
+from p import pc, setup_index, get_index
 
 from typing import List, Dict, Optional, Union, TypedDict
 
@@ -266,90 +266,97 @@ class Graphstate(TypedDict):
     relevant_chapters: List[dict]
     summation: str
     image: Optional[Union[str, bytes]]
+    stimulus_description: str
 
-# Node for retrieving chapters
+# Node definitions
 def chapters(state):
-    essay = state["student_essay"]
-    formatted_prompt = ch_prompt.format(essay=essay)
-    response = llm.invoke(formatted_prompt)
-    query = response.content.strip()
+    try:
+        essay = state["student_essay"]
+        formatted_prompt = ch_prompt.format(essay=essay)
+        response = llm.invoke(formatted_prompt)
+        query = response.content.strip()
+        relevant_chapters = retriever(query)
+        if not relevant_chapters:
+            raise ValueError("No relevant chapters found.")
+        state["relevant_chapters"] = relevant_chapters
+        return state
+    except Exception as e:
+        raise ValueError(f"Error in chapters: {e}")
 
-    # Pass the query to retriever
-    relevant_chapters = retriever(query)
-    if not relevant_chapters:
-        raise ValueError("No relevant chapters found. Ensure the retriever is working correctly.")
+def vision_node(state):
+    try:
+        image_data = state["image"]
+        if not image_data:
+            state["stimulus_description"] = None
+            return state
+        image_file = io.BytesIO(image_data)
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "Describe this image in detail."},
+                {"role": "user", "content": "Please describe this image."}
+            ],
+            files={"image": image_file}
+        )
+        state["stimulus_description"] = response.choices[0].message["content"].strip()
+        return state
+    except Exception as e:
+        raise ValueError(f"Error in vision_node: {e}")
 
-    state["relevant_chapters"] = relevant_chapters
-    return state
-
-
-# Node for grading (handles both case1 and case2 internally)
 def grading_node(state):
-    essay = state["student_essay"]
-    questions = state["questions"]
-    
-    if state["image"] is None:
-        formatted_prompt = case1.format(essay=essay, questions=questions)
-        response = llm.invoke(formatted_prompt)
-        state["case1_generation"] = response.content.strip()
-    else:
-        stimulus = state["image"]
-        formatted_prompt = case2.format(essay=essay, questions=questions, stimulus=stimulus)
-        response = llm.invoke(formatted_prompt)
-        state["case2_generation"] = response.content.strip()
+    try:
+        essay = state["student_essay"]
+        questions = state["questions"]
+        stimulus_description = state.get("stimulus_description")
+        if stimulus_description:
+            formatted_prompt = case2.format(essay=essay, questions=questions, stimulus=stimulus_description)
+            response = llm.invoke(formatted_prompt)
+            state["case2_generation"] = response.content.strip()
+        else:
+            formatted_prompt = case1.format(essay=essay, questions=questions)
+            response = llm.invoke(formatted_prompt)
+            state["case1_generation"] = response.content.strip()
+        return state
+    except Exception as e:
+        raise ValueError(f"Error in grading_node: {e}")
 
-    return state
-
-# Node for fact-checking
 def factchecking_node(state):
-    essay = state["student_essay"]
-    chapters = state.get("relevant_chapters", [])
+    try:
+        essay = state["student_essay"]
+        chapters = state.get("relevant_chapters", [])
+        if not chapters:
+            raise ValueError("Fact-checking requires relevant chapters.")
+        formatted_prompt = factchecking_prompt.format(essay=essay, chapters=chapters)
+        response = llm.invoke(formatted_prompt)
+        if not response or not response.content.strip():
+            raise ValueError("Invalid response from fact-checking node.")
+        state["factchecking_generation"] = response.content.strip()
+        return state
+    except Exception as e:
+        raise ValueError(f"Error in factchecking_node: {e}")
 
-    if not chapters:
-        raise ValueError("Fact-checking requires relevant chapters, but none were retrieved.")
-
-    formatted_prompt = factchecking_prompt.format(essay=essay, chapters=chapters)
-    response = llm.invoke(formatted_prompt)
-
-    # Validate response content
-    if not response or not response.content.strip():
-        raise ValueError("Fact-checking node received an invalid response.")
-    
-    state["factchecking_generation"] = response.content.strip()
-    return state
-
-
-# Node for summation (handles both case1 and case2 internally)
 def summation_node(state):
-    if state["case1_generation"]:
-        generation = state["case1_generation"]
-    else:
-        generation = state["case2_generation"]
+    try:
+        generation = state["case1_generation"] or state["case2_generation"]
+        feedback = state.get("factchecking_generation", "")
+        if not feedback:
+            raise ValueError("Fact-checking feedback is missing.")
+        formatted_prompt = summation_prompt.format(generation=generation, factchecking=feedback)
+        response = llm.invoke(formatted_prompt)
+        state["summation"] = response.content.strip()
+        return state
+    except Exception as e:
+        raise ValueError(f"Error in summation_node: {e}")
 
-    feedback = state.get("factchecking_generation", "")
-    if not feedback:
-        raise ValueError("Fact-checking generation is missing. Ensure factchecking_node worked correctly.")
-
-    # Log the formatted prompt for debugging
-    formatted_prompt = summation_prompt.format(generation=generation, factchecking=feedback)
-    logging.debug(f"Summation Prompt: {formatted_prompt}")
-    
-    response = llm.invoke(formatted_prompt)
-    state["summation"] = response.content.strip()
-    return state
-
-
-# Workflow configuration
+# Workflow setup
 workflow = StateGraph(Graphstate)
-
-# Add nodes
+workflow.add_node("vision_node", vision_node)
 workflow.add_node("chapters", chapters)
 workflow.add_node("grading_node", grading_node)
 workflow.add_node("factchecking_node", factchecking_node)
 workflow.add_node("summation_node", summation_node)
-
-# Add edges (sequential workflow, no conditions needed)
-workflow.add_edge(START, "chapters")
+workflow.add_edge(START, "vision_node")
+workflow.add_edge("vision_node", "chapters")
 workflow.add_edge("chapters", "grading_node")
 workflow.add_edge("grading_node", "factchecking_node")
 workflow.add_edge("factchecking_node", "summation_node")
@@ -358,9 +365,7 @@ workflow.add_edge("summation_node", END)
 # Compile the workflow
 app = workflow.compile()
 
-# Evaluation function
 def evaluate1(questions: str, essay: str, image: Optional[Union[str, bytes]]) -> str:
-    # Define the initial state
     state = {
         "questions": questions,
         "case1_generation": None,
@@ -370,17 +375,12 @@ def evaluate1(questions: str, essay: str, image: Optional[Union[str, bytes]]) ->
         "relevant_chapters": [],
         "summation": None,
         "image": image,
+        "stimulus_description": None,
     }
-
-    # Step-by-step workflow execution
-    state = chapters(state)  # Retrieve relevant chapters
-    state = grading_node(state)  # Grade based on the presence of an image
-    state = factchecking_node(state)  # Perform fact-checking
-    state = summation_node(state)  # Compute summation and finalize
-
-    # Return the final summation if available
-    if "summation" in state and state["summation"]:
-        return state["summation"]
-    else:
-        raise ValueError("Summation not found in the final state.")
+    state = vision_node(state)
+    state = chapters(state)
+    state = grading_node(state)
+    state = factchecking_node(state)
+    state = summation_node(state)
+    return state["summation"]
 

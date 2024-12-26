@@ -63,44 +63,40 @@ async def ApushLEQ(request):
 @csrf_exempt
 async def saq_view(request):
     """
-    View to handle SAQ submissions with JSON questions, PDF essay, and optional image.
+    Handles SAQ submissions with JSON questions, PDF essay, and optional image.
     """
-    if request.method == "POST":
-        
-        try:
-            questions_json = request.POST.get("questions")
-            if not questions_json:
-                raise ValueError("Missing 'questions' in the request.")
-            questions = json.loads(questions_json)  
-        except Exception as e:
-            return JsonResponse({"error": f"Invalid or missing JSON questions: {str(e)}"}, status=400)
+    if request.method != "POST":
+        return JsonResponse({"error": "Only POST method is allowed."}, status=405)
 
-        
+    try:
+        # Extract and validate questions
+        questions_json = request.POST.get("questions")
+        if not questions_json:
+            raise ValueError("Missing 'questions' in the request.")
+        questions = json.loads(questions_json)
+
+        # Extract and validate essay file
         essay_file = request.FILES.get("essay_file")
         if not essay_file:
-            return JsonResponse({"error": "The 'essay_file' (PDF) is required."}, status=400)
+            raise ValueError("The 'essay_file' (PDF) is required.")
 
-        try:
-            
-            pdf_reader = PdfReader(io.BytesIO(essay_file.read()))
-            essay_text = " ".join([page.extract_text() for page in pdf_reader.pages]).strip()
-            if not essay_text:
-                raise ValueError("The provided PDF is empty or cannot be processed.")
-        except Exception as e:
-            return JsonResponse({"error": f"Error reading PDF: {str(e)}"}, status=400)
+        # Extract text from PDF
+        pdf_reader = PdfReader(io.BytesIO(essay_file.read()))
+        essay_text = " ".join([page.extract_text() for page in pdf_reader.pages]).strip()
+        if not essay_text:
+            raise ValueError("The provided PDF is empty or cannot be processed.")
 
-        
+        # Extract optional image
         image = request.FILES.get("image")
         image_data = image.read() if image else None
 
-        try:
-            
+        # Call evaluation function
+        response = await sync_to_async(evaluate1)(questions, essay_text, image_data)
+        return JsonResponse({"message": "Evaluation completed successfully.", "result": response})
 
-            response = await sync_to_async(evaluate1)(questions,essay_text,image_data)
-            return JsonResponse({"message": "Evaluation completed successfully.", "result": response})
-        except Exception as e:
-            return JsonResponse({"error": f"Error during evaluation: {str(e)}"}, status=500)
-
-    return JsonResponse({"error": "Only POST method is allowed."}, status=405)
-
-
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON format for 'questions'."}, status=400)
+    except ValueError as ve:
+        return JsonResponse({"error": str(ve)}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": f"An internal error occurred: {str(e)}"}, status=500)
