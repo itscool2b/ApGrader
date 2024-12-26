@@ -330,7 +330,7 @@ def fetch_rubric_node(state: GraphState) -> GraphState:
     try:
         logging.info("Fetching rubric documents.")
         query = "LEQ Rubric"  # The query to fetch rubric data
-        docs = get_relevant_documents(query, None)  # Retrieve documents
+        docs = get_relevant_documents(query)  # Retrieve documents
 
         if not docs:
             raise ValueError("No rubric documents found in Pinecone.")
@@ -353,7 +353,7 @@ def retrieve_essays_node(state: GraphState) -> GraphState:
         prompt_type = state.get("prompt_type", "").strip()
         if prompt_type and prompt_type != "Unknown":
             logging.info(f"Retrieving essays for prompt type: {prompt_type}")
-            docs = get_relevant_documents(None, prompt_type)
+            docs = get_relevant_documents(prompt_type)
             state["documents"] = docs
             logging.info(f"Retrieved {len(docs)} essays for prompt type {prompt_type}.")
         else:
