@@ -235,11 +235,6 @@ class Graphstate(TypedDict):
     summation: str
     image: Optional[Union[str, bytes]]
 
-def route_if_img(state):
-    if state["image"] is None:
-        return "grading_node1"
-    return "grading_node2"
-
 def chapters(state):
     essay = state["student_essay"]
     formatted_prompt = ch_prompt.format(essay=essay)
@@ -247,25 +242,19 @@ def chapters(state):
     state["relevant_chapters"] = retriever(query)
     return state
 
-def grading_node1(state):
+def grading_node(state):
     essay = state["student_essay"]
     questions = state["questions"]
-
-    formatted_prompt = case1.format(essay=essay, questions=questions)
-    response = llm.invoke(formatted_prompt)
-    state["case1_generation"] = response.content.strip()
-
-    return state
-
-def grading_node2(state):
-    essay = state["student_essay"]
-    questions = state["questions"]
-    stimulus = state["image"]
-
-    formatted_prompt = case2.format(essay=essay, questions=questions, stimulus=stimulus)
-    response = llm.invoke(formatted_prompt)
-
-    state["case2_generation"] = response.content.strip()
+    
+    if state["image"] is None:
+        formatted_prompt = case1.format(essay=essay, questions=questions)
+        response = llm.invoke(formatted_prompt)
+        state["case1_generation"] = response.content.strip()
+    else:
+        stimulus = state["image"]
+        formatted_prompt = case2.format(essay=essay, questions=questions, stimulus=stimulus)
+        response = llm.invoke(formatted_prompt)
+        state["case2_generation"] = response.content.strip()
 
     return state
 
@@ -274,22 +263,16 @@ def factchecking_node(state):
     chapters = state["relevant_chapters"]
     formatted_prompt = factchecking_prompt.format(essay=essay, chapters=chapters)
     response = llm.invoke(formatted_prompt)
-
     state["factchecking_generation"] = response.content.strip()
 
     return state
 
-def summation1(state):
-    generation = state["case1_generation"]
-    feedback = state["factchecking_generation"]
-    formatted_prompt = summation_prompt.format(generation=generation, feedback=feedback)
-    response = llm.invoke(formatted_prompt)
-    state["summation"] = response.content.strip()
+def summation_node(state):
+    if state["case1_generation"]:
+        generation = state["case1_generation"]
+    else:
+        generation = state["case2_generation"]
 
-    return state
-
-def summation2(state):
-    generation = state["case2_generation"]
     feedback = state["factchecking_generation"]
     formatted_prompt = summation_prompt.format(generation=generation, feedback=feedback)
     response = llm.invoke(formatted_prompt)
@@ -300,28 +283,15 @@ def summation2(state):
 workflow = StateGraph(Graphstate)
 
 workflow.add_node("chapters", chapters)
-workflow.add_node("if_img", route_if_img)
-workflow.add_node("grading_node1", grading_node1)
-workflow.add_node("grading_node2", grading_node2)
+workflow.add_node("grading_node", grading_node)
 workflow.add_node("factchecking_node", factchecking_node)
-workflow.add_node("summation1", summation1)
-workflow.add_node("summation2", summation2)
+workflow.add_node("summation_node", summation_node)
 
 workflow.add_edge(START, "chapters")
-workflow.add_edge("chapters", "if_img")
-workflow.add_conditional_edges(
-    source="if_img",
-    conditions={
-        "grading_node1": lambda state: state["image"] is None,
-        "grading_node2": lambda state: state["image"] is not None,
-    }
-)
-workflow.add_edge("grading_node1", "factchecking_node")
-workflow.add_edge("grading_node2", "factchecking_node")
-workflow.add_edge("factchecking_node", "summation1", condition=lambda state: state["case1_generation"] is not None)
-workflow.add_edge("factchecking_node", "summation2", condition=lambda state: state["case2_generation"] is not None)
-workflow.add_edge("summation1", END)
-workflow.add_edge("summation2", END)
+workflow.add_edge("chapters", "grading_node")
+workflow.add_edge("grading_node", "factchecking_node")
+workflow.add_edge("factchecking_node", "summation_node")
+workflow.add_edge("summation_node", END)
 
 app = workflow.compile()
 
