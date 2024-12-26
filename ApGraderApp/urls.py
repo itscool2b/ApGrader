@@ -1,7 +1,7 @@
 from django.urls import path
-from .views import ApushLEQ, saq_view
+from . import views
 
 urlpatterns = [
-    path("ApushLEQ", ApushLEQ, name='ApushLEQ'),
-    path("ApushSAQ", saq_view , name='ApushSAQ')
+    path("ApushLEQ", views.ApushLEQ, name='ApushLEQ'),
+    path("ApushSAQ", views.saq_view , name='ApushSAQ')
 ]
