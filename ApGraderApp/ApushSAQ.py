@@ -27,13 +27,25 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 index = get_index()
 
 def retriever(query: str, top_k: int = 100) -> List[Dict]:
+    """
+    Generalized function to retrieve relevant documents from Pinecone based on a query.
+
+    Args:
+        query (str): The search query.
+        top_k (int): Number of top results to retrieve. Default is 100.
+
+    Returns:
+        List[Dict]: A list of retrieved documents with 'text' and 'metadata'.
+    """
     try:
+        # Create embedding for the query
         response = client.embeddings.create(
             input=query,
             model="text-embedding-ada-002"
         )
         query_embedding = response.data[0].embedding
 
+        # Query the Pinecone index
         results = index.query(
             vector=query_embedding,
             top_k=top_k,
