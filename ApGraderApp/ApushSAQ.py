@@ -235,6 +235,7 @@ class Graphstate(TypedDict):
     summation: str
     image: Optional[Union[str, bytes]]
 
+# Node for retrieving chapters
 def chapters(state):
     essay = state["student_essay"]
     formatted_prompt = ch_prompt.format(essay=essay)
@@ -242,6 +243,7 @@ def chapters(state):
     state["relevant_chapters"] = retriever(query)
     return state
 
+# Node for grading (handles both case1 and case2 internally)
 def grading_node(state):
     essay = state["student_essay"]
     questions = state["questions"]
@@ -258,6 +260,7 @@ def grading_node(state):
 
     return state
 
+# Node for fact-checking
 def factchecking_node(state):
     essay = state["student_essay"]
     chapters = state["relevant_chapters"]
@@ -267,6 +270,7 @@ def factchecking_node(state):
 
     return state
 
+# Node for summation (handles both case1 and case2 internally)
 def summation_node(state):
     if state["case1_generation"]:
         generation = state["case1_generation"]
@@ -280,21 +284,26 @@ def summation_node(state):
 
     return state
 
+# Workflow configuration
 workflow = StateGraph(Graphstate)
 
+# Add nodes
 workflow.add_node("chapters", chapters)
 workflow.add_node("grading_node", grading_node)
 workflow.add_node("factchecking_node", factchecking_node)
 workflow.add_node("summation_node", summation_node)
 
+# Add edges (sequential workflow, no conditions needed)
 workflow.add_edge(START, "chapters")
 workflow.add_edge("chapters", "grading_node")
 workflow.add_edge("grading_node", "factchecking_node")
 workflow.add_edge("factchecking_node", "summation_node")
 workflow.add_edge("summation_node", END)
 
+# Compile the workflow
 app = workflow.compile()
 
+# Evaluation function
 def evaluate1(questions, essay, image):
     state = {
         "questions": questions,
