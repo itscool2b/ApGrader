@@ -31,72 +31,47 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 index = get_index()
 
 
-def get_relevant_documents(query: str, prompt_type: str) -> List[Dict]:
+def get_relevant_documents(query: str) -> List[Dict]:
     """
-    Retrieve relevant documents from Pinecone based on:
-    1) The query embedding (unless query is None, in which case we do a 'dummy' query).
-    2) The prompt_type filter (unless prompt_type is None, then we skip startswith check).
+    Retrieve relevant documents from Pinecone based on the query embedding.
 
     Args:
         query (str): The search query for embeddings.
-        prompt_type (str): The type of prompt to filter documents.
 
     Returns:
-        List[Dict]: A list of filtered documents with 'text', 'prompt_type', and 'grade'.
+        List[Dict]: A list of retrieved documents with 'text' and 'metadata'.
     """
     try:
-        # CASE A: If query is None => skip embedding by using a dummy vector
-        if query is None:
-            # For text-embedding-ada-002, vector dimension is 1536
-            dummy_vector = [0.0] * 1536
-            results = index.query(
-                vector=dummy_vector,
-                top_k=10,
-                include_metadata=True
-            )
-        else:
-            # Normal embedding logic
-            response = client.embeddings.create(
-                input=query,
-                model="text-embedding-ada-002"
-            )
-            query_embedding = response.data[0].embedding
+        # Create embedding for the query
+        response = client.embeddings.create(
+            input=query,
+            model="text-embedding-ada-002"
+        )
+        query_embedding = response.data[0].embedding
 
-            results = index.query(
-                vector=query_embedding,
-                top_k=5,
-                include_metadata=True
-            )
+        # Query the Pinecone index
+        results = index.query(
+            vector=query_embedding,
+            top_k=100,
+            include_metadata=True
+        )
 
-        filtered_results = []
+        
+        retrieved_results = []
         if "matches" in results:
             for match in results["matches"]:
                 metadata = match.get("metadata", {})
-                essay_metadata = metadata.get("essay_type_grad_received", "")  # Corrected key
+                retrieved_results.append({
+                    "text": metadata.get("text", ""),
+                    "metadata": metadata
+                })
 
-                # If prompt_type is None, skip the startswith filter
-                if prompt_type is None or essay_metadata.lower().startswith(prompt_type.lower()):
-                    type_grade = essay_metadata.split("(")
-                    if len(type_grade) == 2:
-                        grade = type_grade[1].rstrip(")")
-                        filtered_results.append({
-                            "text": metadata.get("text", ""),
-                            "prompt_type": type_grade[0].strip(),
-                            "grade": grade.strip()
-                        })
-                    else:
-                        # If there's no (grade) pattern, store gracefully
-                        filtered_results.append({
-                            "text": metadata.get("text", ""),
-                            "prompt_type": essay_metadata.strip(),
-                            "grade": ""
-                        })
-
-        return filtered_results
+        return retrieved_results
 
     except Exception as e:
         logging.error(f"Error in embedding or querying Pinecone: {e}")
         raise RuntimeError("Error in embedding or querying Pinecone.") from e
+
 
 
 classification_prompt = PromptTemplate.from_template(
@@ -294,7 +269,7 @@ MAKE SURE TO ADD EVERYTHING UP PROPERLY AND MAKE SURE THE EXTRACTION OF DATA IS 
 ****contextualization score** - 
 evidence score** - 
 **complex understanding score** - 
-**total summed up score** - 
+**total summed up score out of 6. For examples 3/6 or 2/6 just insert the score/6** - 
 
 **FEEDBACK** - 
 **Thesis feedback** - 
@@ -388,6 +363,9 @@ def retrieve_essays_node(state: GraphState) -> GraphState:
         raise RuntimeError(f"Error in retrieve_essays_node: {e}")
     return state
 
+def retrieve_chapters_node(state):
+    pass
+
 
 def thesis_grading_node(state: GraphState) -> GraphState:
     """
@@ -439,6 +417,9 @@ def analysis_grading_node(state: GraphState) -> GraphState:
 
     return state
 
+
+def fact_check_node(state):
+    pass
 
 def final_node(state: dict) -> dict:
     """
