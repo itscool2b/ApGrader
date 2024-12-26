@@ -382,5 +382,8 @@ def evaluate1(questions: str, essay: str, image: Optional[Union[str, bytes]]) ->
     state = grading_node(state)
     state = factchecking_node(state)
     state = summation_node(state)
-    return state["summation"]
+    if "summation" in state and state["summation"]:
+        return state["summation"]
+    else:
+        raise ValueError("Summation not found in the final state.")
 
