@@ -11,7 +11,7 @@ import ApGraderApp.p as p
 from ApGraderApp.p import pc, setup_index, get_index
 
 from typing import List, Dict
-from typing import TypedDict  # Corrected import
+from typing import TypedDict  
 
 from langgraph.graph import END, StateGraph, START
 
@@ -230,7 +230,7 @@ List all factual inaccuracies detected in the student’s response, with correct
 
 from typing import List, Optional, Union
 
-class Graphstate(TypedDict):  # Corrected TypedDict import
+class Graphstate(TypedDict):
     questions: str
     case1_generation: str
     case2_generation: str
@@ -239,6 +239,7 @@ class Graphstate(TypedDict):  # Corrected TypedDict import
     relevant_chapters: List[dict]
     summation: str
     image: Optional[Union[str, bytes]]
+
 
 def if_img(state):
     if state["image"] == None:
