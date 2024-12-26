@@ -268,7 +268,7 @@ def if_img(state):
         return "case2"
 
 def chapters(state):
-    essay = state["student_essat"]
+    essay = state["student_essay"]
     formatted_prompt = ch_prompt.format(essay=essay)
     query = llm.invoke(formatted_prompt)
     state["relevant_chapters"] = retriever(query)
