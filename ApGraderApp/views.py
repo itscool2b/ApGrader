@@ -79,28 +79,32 @@ async def saq_view(request):
         essay_file = request.FILES.get("essay_file")
         if not essay_file:
             raise ValueError("The 'essay_file' (PDF) is required.")
+        if not essay_file.name.endswith('.pdf'):
+            raise ValueError("The 'essay_file' must be a PDF.")
 
         # Extract text from PDF
         pdf_reader = PdfReader(io.BytesIO(essay_file.read()))
         essay_text = " ".join([page.extract_text() for page in pdf_reader.pages]).strip()
-        if not essay_text:
-            raise ValueError("The provided PDF is empty or cannot be processed.")
+        if not essay_text or len(essay_text) < 50:  # Validate PDF content length
+            raise ValueError("The provided PDF has insufficient content to process.")
 
         # Extract optional image
         image = request.FILES.get("image")
+        if image and not image.name.lower().endswith(('.png', '.jpg', '.jpeg')):
+            raise ValueError("The 'image' must be a PNG, JPG, or JPEG file.")
         image_data = image.read() if image else None
 
-        # Call evaluation function
-        response = await sync_to_async(evaluate1)(questions, essay_text, image_data)
-        return JsonResponse({
-            "response": {
-                "output": response
-            }
-        }, status=200)
+        # Call evaluation function with timeout
+        response = await asyncio.wait_for(sync_to_async(evaluate1)(questions, essay_text, image_data), timeout=60)
+
+        return JsonResponse({"message": "Evaluation completed successfully.", "result": response})
 
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON format for 'questions'."}, status=400)
+    except asyncio.TimeoutError:
+        return JsonResponse({"error": "Evaluation timed out. Please try again later."}, status=504)
     except ValueError as ve:
         return JsonResponse({"error": str(ve)}, status=400)
     except Exception as e:
+        logging.error(f"An error occurred in saq_view: {str(e)}")
         return JsonResponse({"error": f"An internal error occurred: {str(e)}"}, status=500)
