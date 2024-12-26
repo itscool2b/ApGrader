@@ -92,7 +92,11 @@ async def saq_view(request):
 
         # Call evaluation function
         response = await sync_to_async(evaluate1)(questions, essay_text, image_data)
-        return JsonResponse({"message": "Evaluation completed successfully.", "result": response})
+        return JsonResponse({
+            "response": {
+                "output": response
+            }
+        }, status=200)
 
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON format for 'questions'."}, status=400)
