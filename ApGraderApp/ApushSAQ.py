@@ -235,8 +235,10 @@ class Graphstate(TypedDict):
     summation: str
     image: Optional[Union[str, bytes]]
 
-def if_img(state):
-    return "case1" if state["image"] is None else "case2"
+def route_if_img(state):
+    if state["image"] is None:
+        return "grading_node1"
+    return "grading_node2"
 
 def chapters(state):
     essay = state["student_essay"]
@@ -298,18 +300,22 @@ def summation2(state):
 workflow = StateGraph(Graphstate)
 
 workflow.add_node("chapters", chapters)
-workflow.add_node("if_img", if_img)
+workflow.add_node("if_img", route_if_img)
 workflow.add_node("grading_node1", grading_node1)
 workflow.add_node("grading_node2", grading_node2)
 workflow.add_node("factchecking_node", factchecking_node)
 workflow.add_node("summation1", summation1)
 workflow.add_node("summation2", summation2)
 
-# Conditional logic handled in add_edge
 workflow.add_edge(START, "chapters")
 workflow.add_edge("chapters", "if_img")
-workflow.add_edge("if_img", "grading_node1", condition=lambda state: state["image"] is None)
-workflow.add_edge("if_img", "grading_node2", condition=lambda state: state["image"] is not None)
+workflow.add_conditional_edges(
+    source="if_img",
+    conditions={
+        "grading_node1": lambda state: state["image"] is None,
+        "grading_node2": lambda state: state["image"] is not None,
+    }
+)
 workflow.add_edge("grading_node1", "factchecking_node")
 workflow.add_edge("grading_node2", "factchecking_node")
 workflow.add_edge("factchecking_node", "summation1", condition=lambda state: state["case1_generation"] is not None)
