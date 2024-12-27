@@ -240,31 +240,53 @@ Identified Mistake: "In your essay, you stated that [incorrect information]. How
 General Accuracy: "Overall, your essay is accurate in its portrayal of [topic], but keep an eye on [specific areas]."
 Focus on being supportive and informative. Your goal is to help the student learn and improve their historical understanding without penalizing them for mistakes.""")
 
-summation_prompt = PromptTemplate.from_template("""You are tasked with summarizing the results of an SAQ grading session. Use the following guidelines to provide a final score, general feedback, and a list of mistakes detected by the fact-checking node. Do not deduct points for misinformation, but include the mistakes in the feedback section.
+summation_prompt = PromptTemplate.from_template("""You are tasked with summarizing the results of an SAQ grading session. Use the following guidelines to provide a final score, detailed feedback for each subpart (A, B, C, etc.), and a list of mistakes detected by the fact-checking node. Do not deduct points for misinformation, but include the mistakes in the feedback section for learning purposes.
 
-Steps for Summation:
-Input Data:
-{generation} - this includes all grading
-Sum the scores for all subparts:
-Total Score: total_score/3
-General Feedback on Student Performance:
+### Steps for Summation:
+1. **Input Data:**
+   - {generation} - This includes all grading details for each subpart.
+   - Fact-Checking Results: {factchecking}
 
-Highlight what the student did well (e.g., historical accuracy, strong reasoning, clear references to the stimulus).
-Provide suggestions for improvement (e.g., more detail, better integration of the stimulus, addressing all parts of the question).
-List Mistakes Detected by the Fact-Checking Node:
+2. **For Each Subpart:**
+   - State the subpart (A, B, C, etc.).
+   - Indicate whether the student earned a point.
+   - Provide detailed feedback explaining why the student earned or did not earn the point.
 
-Include any factual inaccuracies from the student response, as identified by the fact-checking node.
-Emphasize that these mistakes do not impact the score but should be reviewed for learning purposes.
-Output Format
-Total Score and General Feedback:
-{factchecking} - this is factchecking. Put it in the feedback
-Total Score: X/Y
-Strengths: Summarize key areas where the student performed well.
-Areas for Improvement: Provide actionable suggestions for improvement.
-Fact-Checking Node Feedback:
+3. **Total Score and General Feedback:**
+   - Sum the scores for all subparts: **Total Score: total_score/3**.
+   - Provide strengths: Highlight what the student did well (e.g., historical accuracy, strong reasoning, clear references to the stimulus).
+   - Provide areas for improvement: Offer actionable suggestions for improving future responses (e.g., more detail, better integration, addressing all parts of the question).
 
-Mistakes Identified:
-List all factual inaccuracies detected in the student’s response, with corrections.""")
+4. **List Mistakes Detected by the Fact-Checking Node:**
+   - Include factual inaccuracies identified by the fact-checking node.
+   - Provide corrections for these inaccuracies.
+   - Emphasize that these mistakes do not impact the total score.
+
+### **Output Format**
+
+#### **Feedback for Each Subpart:**
+- **A:**
+  - **Score:** X/1
+  - **Feedback:** Explain why the student earned or did not earn this point.
+
+- **B:**
+  - **Score:** X/1
+  - **Feedback:** Explain why the student earned or did not earn this point.
+
+- **C:**
+  - **Score:** X/1
+  - **Feedback:** Explain why the student earned or did not earn this point.
+
+#### **Total Score and General Feedback:**
+- **Total Score:** X/3
+- **Strengths:** Highlight key areas where the student performed well.
+- **Areas for Improvement:** Provide actionable suggestions for improvement.
+
+#### **Fact-Checking Node Feedback:**
+- **Mistakes Identified:**
+  - List all factual inaccuracies detected in the student’s response.
+  - Include corrections for each mistake.
+  - Emphasize that these mistakes do not impact the total score.""")
 
 class Graphstate(TypedDict):
     questions: str
