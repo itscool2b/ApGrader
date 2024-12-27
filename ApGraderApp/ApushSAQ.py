@@ -387,7 +387,7 @@ def summation_node(state):
     except Exception as e:
         raise ValueError(f"Error in summation_node: {e}")
 
-# Workflow setup
+
 workflow = StateGraph(Graphstate)
 workflow.add_node("vision_node", vision_node)
 workflow.add_node("chapters", chapters)
@@ -401,7 +401,7 @@ workflow.add_edge("grading_node", "factchecking_node")
 workflow.add_edge("factchecking_node", "summation_node")
 workflow.add_edge("summation_node", END)
 
-# Compile the workflow
+
 app = workflow.compile()
 
 def evaluate1(questions: str, essay: str, image: Optional[Union[str, bytes]]) -> str:

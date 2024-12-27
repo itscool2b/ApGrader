@@ -7,7 +7,7 @@ from asgiref.sync import sync_to_async
 import logging
 from io import BytesIO
 import json
-from .ApushLEQ import evaluate  # Updated import
+from .ApushLEQ import evaluate  
 from .ApushSAQ import evaluate1
 import io
 logger = logging.getLogger(__name__)
@@ -18,12 +18,12 @@ async def ApushLEQ(request):
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
     try:
-        # Fetch prompt from request
+        
         prompt = request.POST.get("prompt", "").strip()
         if not prompt:
             return JsonResponse({'error': 'Missing "prompt" in request'}, status=400)
 
-        # Fetch and process PDF file
+        
         if 'file' in request.FILES:
             pdf_file = request.FILES['file']
             try:
@@ -38,7 +38,7 @@ async def ApushLEQ(request):
         else:
             return JsonResponse({'error': 'PDF file is required'}, status=400)
 
-        # Evaluate the essay using the prompt
+        
         try:
             response = await sync_to_async(evaluate)(prompt, essay_text)
             logging.info(f"Evaluation successful: {response}")
@@ -46,7 +46,7 @@ async def ApushLEQ(request):
             logger.error(f"Evaluation failed: {e}")
             return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
 
-        # Return response in the specified JSON format
+        
         return JsonResponse({
             "response": {
                 "output": response
@@ -66,7 +66,7 @@ async def saq_view(request):
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
     try:
-        # Fetch and validate JSON questions
+        
         questions = request.POST.get("questions", "").strip()
         if not questions:
             return JsonResponse({'error': 'Missing "questions" in request'}, status=400)
@@ -77,7 +77,7 @@ async def saq_view(request):
             logger.error(f"Invalid JSON for questions: {e}")
             return JsonResponse({'error': 'Invalid JSON format for "questions"'}, status=400)
 
-        # Fetch and process PDF file
+        
         if 'essay_file' in request.FILES:
             pdf_file = request.FILES['essay_file']
             try:
@@ -92,7 +92,7 @@ async def saq_view(request):
         else:
             return JsonResponse({'error': 'PDF file is required'}, status=400)
 
-        # Fetch optional image
+        
         image_data = None
         if 'image' in request.FILES:
             image = request.FILES['image']
@@ -102,7 +102,7 @@ async def saq_view(request):
                 logger.error(f"Error processing image: {e}")
                 return JsonResponse({'error': 'Failed to process the image file'}, status=500)
 
-        # Evaluate the essay
+        
         try:
             response = await sync_to_async(evaluate1)(questions, essay_text, image_data)
             logging.info(f"Evaluation successful: {response}")
@@ -110,7 +110,7 @@ async def saq_view(request):
             logger.error(f"Evaluation failed: {e}")
             return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
 
-        # Return response in the specified JSON format
+        
         return JsonResponse({
             "response": {
                 "output": response
