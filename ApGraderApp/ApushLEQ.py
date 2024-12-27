@@ -43,14 +43,14 @@ def retriever(query: str, top_k: int = 100) -> List[Dict]:
         List[Dict]: A list of retrieved documents with 'text' and 'metadata'.
     """
     try:
-        # Create embedding for the query
+       
         response = client.embeddings.create(
             input=query,
             model="text-embedding-ada-002"
         )
         query_embedding = response.data[0].embedding
 
-        # Query the Pinecone index
+        
         results = index.query(
             vector=query_embedding,
             top_k=top_k,
@@ -392,7 +392,7 @@ A thorough query to find relevant chpaters based off the student essay to fact c
 def retrieve_chapters_node(state: GraphState) -> GraphState:
     essay = state["student_essay"]
 
-    # Generate a query for the vector database
+    
     formatted_prompt = ch_prompt.format(essay=essay)
     response = llm.invoke(formatted_prompt)
 
@@ -487,10 +487,10 @@ def final_node(state: dict) -> dict:
             fact_checking_feedback=fact,
         )
 
-        # Generate the response
+        
         response = llm.invoke(formatted_prompt)
 
-        # Extract and store the response content in the state
+        
         if hasattr(response, "content") and response.content.strip():
             state["summation"] = response.content.strip()
         else:
@@ -517,18 +517,18 @@ workflow.add_node("analysis_grading", analysis_grading_node)
 workflow.add_node("factchecking_grading", fact_check_node)
 workflow.add_node("final_node", final_node)
 
-# Define Workflow Edges
-workflow.add_edge(START, "classify_prompt")  # Start with classification
-workflow.add_edge("classify_prompt", "retrieve_essays")  # Retrieve relevant essays
-workflow.add_edge("retrieve_essays", "fetch_rubric")  # Fetch rubric
-workflow.add_edge("fetch_rubric", "retrieve_chapters")  # Retrieve relevant chapters
-workflow.add_edge("retrieve_chapters", "thesis_grading")  # Start grading
-workflow.add_edge("thesis_grading", "contextualization_grading")  # Contextualization grading
-workflow.add_edge("contextualization_grading", "evidence_grading")  # Evidence grading
-workflow.add_edge("evidence_grading", "analysis_grading")  # Analysis grading
-workflow.add_edge("analysis_grading", "factchecking_grading")  # Fact-checking
-workflow.add_edge("factchecking_grading", "final_node")  # Final node
-workflow.add_edge("final_node", END)  # End of workflow
+
+workflow.add_edge(START, "classify_prompt")  
+workflow.add_edge("classify_prompt", "retrieve_essays")  
+workflow.add_edge("retrieve_essays", "fetch_rubric")  
+workflow.add_edge("fetch_rubric", "retrieve_chapters")  
+workflow.add_edge("retrieve_chapters", "thesis_grading")  
+workflow.add_edge("thesis_grading", "contextualization_grading")  
+workflow.add_edge("contextualization_grading", "evidence_grading")  
+workflow.add_edge("evidence_grading", "analysis_grading")  
+workflow.add_edge("analysis_grading", "factchecking_grading")  
+workflow.add_edge("factchecking_grading", "final_node")  
+workflow.add_edge("final_node", END)  
 
 
 
@@ -536,7 +536,7 @@ app = workflow.compile()
 
 
 def evaluate(prompt: str, essay: str) -> str:
-    # Define the initial state
+    
     state = {
         "prompt": prompt,
         "prompt_type": None,
@@ -552,19 +552,19 @@ def evaluate(prompt: str, essay: str) -> str:
         "summation": None,
     }
 
-    # Step-by-step workflow execution
-    state = classify_prompt_node(state)  # Classify the prompt
-    state = retrieve_essays_node(state)  # Retrieve relevant essays
-    state = fetch_rubric_node(state)  # Fetch rubric documents
-    state = retrieve_chapters_node(state)  # Retrieve relevant chapters
-    state = thesis_grading_node(state)  # Grade the thesis
-    state = contextualization_grading_node(state)  # Grade contextualization
-    state = evidence_grading_node(state)  # Grade evidence
-    state = analysis_grading_node(state)  # Grade analysis and reasoning
-    state = fact_check_node(state)  # Perform fact-checking
-    state = final_node(state)  # Compute summation and finalize
+    
+    state = classify_prompt_node(state)  
+    state = retrieve_essays_node(state)  
+    state = fetch_rubric_node(state)  
+    state = retrieve_chapters_node(state)  
+    state = thesis_grading_node(state)  
+    state = contextualization_grading_node(state)  
+    state = evidence_grading_node(state)  
+    state = analysis_grading_node(state)  
+    state = fact_check_node(state)  
+    state = final_node(state)  
 
-    # Return the final summation if available
+    
     if "summation" in state and state["summation"]:
         return state["summation"]
     else:

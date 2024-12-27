@@ -43,36 +43,36 @@ def retriever(query: str, top_k: int = 100) -> List[Dict]:
         List[Dict]: A list of retrieved documents with 'text' and 'metadata'.
     """
     try:
-        # Validate query input
+        
         if not query or not isinstance(query, str):
             raise ValueError(f"Query must be a non-empty string. Received: {query}")
 
-        # Debug: Log query input
+        
         logging.debug(f"Query received: {query}")
 
-        # Create embedding for the query
+        
         response = client.embeddings.create(
             model="text-embedding-ada-002",
             input=query
         )
 
-        # Extract query embedding using the proper structure
+        
         query_embedding = response.data[0].embedding
 
-        # Debug: Log query embedding
+        
         logging.debug(f"Query embedding: {query_embedding}")
 
-        # Query the Pinecone index
+        
         results = index.query(
             vector=query_embedding,
             top_k=top_k,
             include_metadata=True
         )
 
-        # Debug: Log Pinecone query results
+        
         logging.debug(f"Pinecone query results: {results}")
 
-        # Process and return the results
+       
         return [
             {
                 "text": match.get("metadata", {}).get("text", ""),
@@ -300,7 +300,7 @@ def upload_image_to_s3(image_data):
     """
     Uploads image to S3 and returns a public URL.
     """
-    key = f"temp/{uuid4()}.jpg"  # Generate a unique key for the image
+    key = f"temp/{uuid4()}.jpg"  
     s3_client.put_object(Bucket=bucket_name, Key=key, Body=image_data, ContentType="image/jpeg")
     return f"https://{bucket_name}.s3.amazonaws.com/{key}"
 
@@ -315,10 +315,10 @@ def vision_node(state):
             state["stimulus_description"] = None
             return state
 
-        # Upload image to S3 and get URL
+        
         image_url = upload_image_to_s3(image_data)
 
-        # Call the OpenAI API with the image URL
+        
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
@@ -333,7 +333,7 @@ def vision_node(state):
             max_tokens=300,
         )
 
-        # Extract the response content dynamically
+        
         message_content = response.choices[0].messages["content"]
         state["stimulus_description"] = message_content.strip()
         return state
