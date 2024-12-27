@@ -6,12 +6,14 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from langchain.prompts import PromptTemplate
 from langchain.chat_models import ChatOpenAI
-
+import io
+#import ApGraderApp.p as p
+#from ApGraderApp.p import pc, setup_index, get_index
 import ApGraderApp.p as p
 from ApGraderApp.p import pc, setup_index, get_index
-
 from typing import List, Dict, Optional, Union, TypedDict
-
+import boto3
+from uuid import uuid4
 from langgraph.graph import END, StateGraph, START
 
 load_dotenv()
@@ -23,6 +25,9 @@ if not OPENAI_API_KEY:
 
 openai.api_key = OPENAI_API_KEY
 client = OpenAI(api_key=OPENAI_API_KEY)
+
+s3_client = boto3.client('s3')
+bucket_name =  os.environ.get("AWS_STORAGE_BUCKET_NAME")
 
 index = get_index()
 
@@ -87,6 +92,8 @@ llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4o")
 
 case1 = PromptTemplate.from_template("""You are an AP U.S. History SAQ grader. You will evaluate the provided essay response for a specific SAQ question. Each question may contain multiple subparts (e.g., A, B, C), and you must analyze and grade each subpart individually.
 
+
+IMPORTANT NOTE - Never give a 0 unless the essay u recive is genuinley nothing and not related. If they have the absolute bare minimum just still give them a score.
 Steps for Grading:
 Read the Provided SAQ Question and Essay Response:
 
@@ -134,6 +141,8 @@ Areas for Improvement: Suggest specific ways to improve their response.
 
 case2 = PromptTemplate.from_template("""You are an AP U.S. History SAQ grader. This question includes a stimulus (image, chart, or visual resource) that must be analyzed and integrated into the evaluation process. Your task is to grade each subpart of the SAQ (A, B, C, etc.) while taking the provided stimulus into account.
 
+
+IMPORTANT NOTE - Never give a 0 unless the essay u recive is genuinley nothing and not related. If they have the absolute bare minimum just still give them a score.
 Steps for Grading:
 Analyze the Provided Stimulus:
 
@@ -283,25 +292,54 @@ def chapters(state):
     except Exception as e:
         raise ValueError(f"Error in chapters: {e}")
 
+import openai
+import io
+from io import BytesIO
+
+def upload_image_to_s3(image_data):
+    """
+    Uploads image to S3 and returns a public URL.
+    """
+    key = f"temp/{uuid4()}.jpg"  # Generate a unique key for the image
+    s3_client.put_object(Bucket=bucket_name, Key=key, Body=image_data, ContentType="image/jpeg")
+    return f"https://{bucket_name}.s3.amazonaws.com/{key}"
+
+
 def vision_node(state):
+    """
+    Processes an image using GPT-4 Vision or handles the case if no image is provided.
+    """
     try:
         image_data = state["image"]
         if not image_data:
             state["stimulus_description"] = None
             return state
-        image_file = io.BytesIO(image_data)
+
+        # Upload image to S3 and get URL
+        image_url = upload_image_to_s3(image_data)
+
+        # Call the OpenAI API with the image URL
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": "Describe this image in detail."},
-                {"role": "user", "content": "Please describe this image."}
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": "What's in this image?"},
+                        {"type": "image_url", "image_url": {"url": image_url}},
+                    ],
+                }
             ],
-            files={"image": image_file}
+            max_tokens=300,
         )
-        state["stimulus_description"] = response.choices[0].message["content"].strip()
+
+        # Extract the response content dynamically
+        message_content = response.choices[0].messages["content"]
+        state["stimulus_description"] = message_content.strip()
         return state
     except Exception as e:
         raise ValueError(f"Error in vision_node: {e}")
+
 
 def grading_node(state):
     try:
@@ -344,7 +382,7 @@ def summation_node(state):
         formatted_prompt = summation_prompt.format(generation=generation, factchecking=feedback)
         response = llm.invoke(formatted_prompt)
         state["summation"] = response.content.strip()
-        print(state["summation"])
+       
         return state
     except Exception as e:
         raise ValueError(f"Error in summation_node: {e}")
@@ -387,4 +425,6 @@ def evaluate1(questions: str, essay: str, image: Optional[Union[str, bytes]]) ->
         return state["summation"]
     else:
         raise ValueError("Summation not found in the final state.")
+
+
 
