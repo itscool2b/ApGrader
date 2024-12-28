@@ -70,16 +70,16 @@ async def saq_view(request):
         # Parse and validate questions
         questions = request.POST.get("questions", "").strip()
         if not questions:
-            logger.warning('Missing "questions" in request.')
+            logging.error('Missing "questions" in request.')
             return JsonResponse({'error': 'Missing "questions" in request'}, status=400)
         try:
             questions = json.loads(questions)
             logging.debug("Questions parsed successfully.")
         except json.JSONDecodeError as e:
-            logger.error(f"Invalid JSON for questions: {e}")
+            logging.error(f"Invalid JSON for questions: {e}")
             return JsonResponse({'error': 'Invalid JSON format for "questions"'}, status=400)
 
-        # Process PDF file
+        # Parse and validate PDF
         if 'essay_file' in request.FILES:
             pdf_file = request.FILES['essay_file']
             try:
@@ -87,47 +87,44 @@ async def saq_view(request):
                 reader = PdfReader(pdf_stream)
                 essay_text = "".join([page.extract_text() for page in reader.pages if page.extract_text()])
                 if not essay_text.strip():
-                    logger.warning("PDF file contains no extractable text.")
+                    logging.warning("PDF contains no extractable text.")
                     return JsonResponse({'error': 'Empty or unreadable PDF file'}, status=400)
                 logging.debug("PDF processed successfully.")
             except Exception as e:
-                logger.error(f"Error processing PDF: {e}")
-                return JsonResponse({'error': 'Failed to process the PDF file'}, status=500)
+                logging.error(f"Error processing PDF: {e}")
+                return JsonResponse({'error': 'Failed to process PDF file'}, status=500)
         else:
-            logger.warning("No PDF file provided in request.")
+            logging.error("No PDF file provided in request.")
             return JsonResponse({'error': 'PDF file is required'}, status=400)
 
-        # Process image file
+        # Parse and validate image
         image_data = None
         if 'image' in request.FILES:
             image = request.FILES['image']
             try:
+                if image.content_type not in ["image/jpeg", "image/png"]:
+                    logging.error(f"Unsupported image type: {image.content_type}")
+                    return JsonResponse({'error': 'Unsupported image type. Only JPEG and PNG are allowed.'}, status=400)
                 image_data = image.read()
+                if not image_data:
+                    logging.error("Uploaded image is empty.")
+                    return JsonResponse({'error': 'Uploaded image is empty.'}, status=400)
                 logging.debug(f"Image processed successfully: {len(image_data)} bytes")
             except Exception as e:
-                logger.error(f"Error processing image: {e}")
-                return JsonResponse({'error': 'Failed to process the image file'}, status=500)
-        else:
-            logger.warning("No image file provided in request.")
+                logging.error(f"Error processing image: {e}")
+                return JsonResponse({'error': 'Failed to process image file.'}, status=500)
 
-        # Evaluate the essay
+        # Evaluate
         try:
-            response = await sync_to_async(evaluate1)(questions, essay_text, image_data)
+            response = await asyncio.to_thread(evaluate1, questions, essay_text, image_data)
             logging.info(f"Evaluation successful: {response}")
-        except ValueError as e:
-            logger.error(f"Evaluation failed: {e}")
-            return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
         except Exception as e:
-            logger.error(f"Unexpected error during evaluation: {e}")
-            return JsonResponse({'error': 'Unexpected error during evaluation', 'details': str(e)}, status=500)
+            logging.error(f"Error during evaluation: {e}")
+            return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
 
         # Return response
-        return JsonResponse({
-            "response": {
-                "output": response
-            }
-        }, status=200)
+        return JsonResponse({"response": {"output": response}}, status=200)
 
     except Exception as e:
-        logger.error(f"Error in saq_view endpoint: {e}")
+        logging.error(f"Error in saq_view: {e}")
         return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)

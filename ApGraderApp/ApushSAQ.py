@@ -27,7 +27,7 @@ openai.api_key = OPENAI_API_KEY
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 s3_client = boto3.client('s3')
-bucket_name =  os.environ.get("AWS_STORAGE_BUCKET_NAME")
+bucket_name =  os.getenv("AWS_STORAGE_BUCKET_NAME")
 
 index = get_index()
 
