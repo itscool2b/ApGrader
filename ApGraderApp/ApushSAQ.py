@@ -321,17 +321,16 @@ from botocore.exceptions import BotoCoreError, ClientError
 s3_client = boto3.client('s3')
 
 
-def upload_image_to_s3(image_data, filename=None, expiration=3600):
+def upload_image_to_s3(image_data, filename=None):
     """
-    Uploads an image to S3 and returns a pre-signed URL valid for a specified duration.
-
+    Uploads an image to S3 and returns the public URL.
+    
     Args:
         image_data (bytes): The image data to upload.
         filename (str, optional): The S3 object key. If not provided, a UUID-based name is generated.
-        expiration (int, optional): Time in seconds for the pre-signed URL to remain valid. Default is 3600 (1 hour).
-
+    
     Returns:
-        str: The pre-signed URL for the uploaded image.
+        str: The public URL for the uploaded image.
     """
     if not image_data:
         raise ValueError("No image data provided for upload to S3.")
@@ -342,7 +341,7 @@ def upload_image_to_s3(image_data, filename=None, expiration=3600):
         raise ValueError("Bucket name is not set. Cannot upload image to S3.")
 
     try:
-        # Upload the image to S3 without making it public
+        # Upload the image to S3 without making it public (bucket policy handles public access)
         s3_client.upload_fileobj(
             Fileobj=io.BytesIO(image_data),
             Bucket=bucket_name,
@@ -351,16 +350,9 @@ def upload_image_to_s3(image_data, filename=None, expiration=3600):
         )
         logging.debug(f"Image uploaded to S3: {filename}")
 
-        # Generate a pre-signed URL for the uploaded image
-        image_url = s3_client.generate_presigned_url(
-            ClientMethod='get_object',
-            Params={
-                'Bucket': bucket_name,
-                'Key': filename
-            },
-            ExpiresIn=expiration  # URL expiration time in seconds
-        )
-        logging.debug(f"Generated pre-signed URL: {image_url}")
+        # Construct the standard public URL
+        image_url = f"https://{bucket_name}.s3.{s3_client.meta.region_name}.amazonaws.com/{filename}"
+        logging.debug(f"Constructed public URL: {image_url}")
         return image_url
     except (BotoCoreError, ClientError) as e:
         logging.error(f"Failed to upload image to S3: {e}")
@@ -379,23 +371,24 @@ def vision_node(state):
             state["stimulus_description"] = None
             return state
 
-        # Upload image to S3 and get a pre-signed URL
+        # Upload image to S3 and get the public URL
         try:
             image_url = upload_image_to_s3(image_data)
             logging.debug(f"Image successfully uploaded to S3: {image_url}")
         except Exception as e:
             raise ValueError(f"Error uploading image to S3: {str(e)}")
 
-        # Optional: Verify URL accessibility (can be skipped if confident)
+        # Optionally verify URL accessibility
+        # (You can skip this step if confident the URL is correct)
         # from urllib.request import urlopen
         # try:
         #     response = urlopen(image_url)
         #     if response.status != 200:
-        #         raise ValueError("Pre-signed URL is not accessible.")
+        #         raise ValueError("Public URL is not accessible.")
         # except Exception as e:
-        #     raise ValueError(f"Pre-signed URL accessibility check failed: {e}")
+        #     raise ValueError(f"Public URL accessibility check failed: {e}")
 
-        # Call GPT-4 Vision API with the pre-signed URL
+        # Call GPT-4 Vision API with the public URL
         try:
             response = client.chat.completions.create(
                 model="gpt-4o",
