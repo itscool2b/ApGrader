@@ -10,6 +10,7 @@ import json
 from .ApushLEQ import evaluate  
 from .ApushSAQ import evaluate1
 import io
+import asyncio
 logger = logging.getLogger(__name__)
 
 @csrf_exempt

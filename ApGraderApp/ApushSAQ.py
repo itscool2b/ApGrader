@@ -317,49 +317,70 @@ def chapters(state):
 import openai
 import io
 from io import BytesIO
-
-def upload_image_to_s3(image_data):
+from botocore.exceptions import BotoCoreError, ClientError
+def upload_image_to_s3(image_data, filename=None):
     """
-    Uploads image to S3 and returns the URL.
+    Uploads an image to S3 and returns the public URL.
     """
     if not image_data:
         raise ValueError("No image data provided for upload to S3.")
 
-    key = f"temp/{uuid4()}.jpg"
+    filename = filename or f"temp/{uuid4()}.jpg"  # Default filename if not provided
     try:
-        s3_client.put_object(Bucket=bucket_name, Key=key, Body=image_data, ContentType="image/jpeg")
-        image_url = f"https://{bucket_name}.s3.amazonaws.com/{key}"
-        logging.debug(f"Image successfully uploaded to S3: {image_url}")
+        s3_client.upload_fileobj(
+            Fileobj=io.BytesIO(image_data),
+            Bucket=bucket_name,
+            Key=filename,
+            ExtraArgs={'ContentType': 'image/jpeg'}
+        )
+        image_url = f"https://{bucket_name}.s3.amazonaws.com/{filename}"
         return image_url
-    except Exception as e:
-        logging.error(f"Error uploading image to S3: {e}")
-        raise RuntimeError(f"Failed to upload image to S3: {e}")
+    except (BotoCoreError, ClientError) as e:
+        raise RuntimeError(f"Failed to upload image to S3: {str(e)}")
 
 
 
 def vision_node(state):
+    """
+    Processes an image using GPT-4 Vision or handles the case if no image is provided.
+    """
     try:
-        image_data = state["image"]
+        image_data = state.get("image")
         if not image_data:
-            logging.warning("Image data missing; setting stimulus_description to None.")
+            logging.warning("No image data provided in state['image']. Skipping vision processing.")
             state["stimulus_description"] = None
             return state
 
-        image_url = upload_image_to_s3(image_data)
+        # Upload image to S3
+        try:
+            image_url = upload_image_to_s3(image_data)
+            logging.debug(f"Image successfully uploaded to S3: {image_url}")
+        except Exception as e:
+            raise ValueError(f"Error uploading image to S3: {str(e)}")
 
-        response = client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "user", "content": [
-                    {"type": "text", "text": "What's in this image?"},
-                    {"type": "image_url", "image_url": {"url": image_url}},
-                ]}
-            ],
-            max_tokens=300,
-        )
-        message_content = response.choices[0].messages["content"]
-        state["stimulus_description"] = message_content.strip()
+        # Call GPT-4 Vision API
+        try:
+            response = client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": "What's in this image?"},
+                            {"type": "image_url", "image_url": {"url": image_url}},
+                        ],
+                    }
+                ],
+                max_tokens=300,
+            )
+            message_content = response.choices[0].messages["content"]
+            state["stimulus_description"] = message_content.strip()
+            logging.info(f"Stimulus description: {state['stimulus_description']}")
+        except Exception as e:
+            raise ValueError(f"Error in GPT-4 Vision processing: {str(e)}")
+
         return state
+
     except Exception as e:
         logging.error(f"Error in vision_node: {e}")
         raise ValueError(f"Error in vision_node: {e}")
