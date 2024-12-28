@@ -319,12 +319,16 @@ import io
 from io import BytesIO
 
 def upload_image_to_s3(image_data):
-    """
-    Uploads image to S3 and returns a public URL.
-    """
-    key = f"temp/{uuid4()}.jpg"  
-    s3_client.put_object(Bucket=bucket_name, Key=key, Body=image_data, ContentType="image/jpeg")
-    return f"https://{bucket_name}.s3.amazonaws.com/{key}"
+    if not image_data:
+        raise ValueError("No image data provided for upload.")
+    
+    key = f"temp/{uuid4()}.jpg"
+    try:
+        s3_client.put_object(Bucket=bucket_name, Key=key, Body=image_data, ContentType="image/jpeg")
+        return f"https://{bucket_name}.s3.amazonaws.com/{key}"
+    except Exception as e:
+        logging.error(f"Error uploading image to S3: {e}")
+        raise
 
 
 def vision_node(state):
