@@ -423,7 +423,8 @@ def vision_node(state: Graphstate) -> Graphstate:
                 max_tokens=300,
             )
             # Extract message content
-            message_content = response.choices[0].message['content']
+            message_content = response.choices[0].message.content
+
             state["stimulus_description"] = message_content.strip()
             logging.info(f"Stimulus description: {state['stimulus_description']}")
         except Exception as e:
