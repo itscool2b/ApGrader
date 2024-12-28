@@ -83,7 +83,7 @@ async def saq_view(request):
         if 'essay_file' in request.FILES:
             pdf_file = request.FILES['essay_file']
             try:
-                pdf_stream = BytesIO(pdf_file.read())
+                pdf_stream = io.BytesIO(pdf_file.read())
                 reader = PdfReader(pdf_stream)
                 essay_text = "".join([page.extract_text() for page in reader.pages if page.extract_text()])
                 if not essay_text.strip():
@@ -102,32 +102,23 @@ async def saq_view(request):
         if 'image' in request.FILES:
             image = request.FILES['image']
             try:
+                # Allow more formats now
                 if image.content_type not in ["image/jpeg", "image/png", "image/gif", "image/webp"]:
                     logging.error(f"Unsupported image type: {image.content_type}")
                     return JsonResponse({'error': 'Unsupported image type. Only JPEG, PNG, GIF, and WebP are allowed.'}, status=400)
                 
-                # Validate and possibly convert the image
-                image_file = Image.open(image)
-                if image_file.format.lower() not in ['jpeg', 'png', 'gif', 'webp']:
-                    logging.warning(f"Converting unsupported image format: {image_file.format}")
-                    image_file = image_file.convert('RGB')  # Convert to RGB to ensure compatibility
-                    buffer = io.BytesIO()
-                    image_file.save(buffer, format='JPEG')
-                    image_data = buffer.getvalue()
-                else:
-                    image_data = image.read()
-                
+                # Read image data as bytes
+                image_data = image.read()
                 if not image_data:
                     logging.error("Uploaded image is empty.")
                     return JsonResponse({'error': 'Uploaded image is empty.'}, status=400)
-                logging.debug(f"Image processed successfully: {len(image_data)} bytes")
+                logging.debug(f"Image read successfully: {len(image_data)} bytes")
             except Exception as e:
                 logging.error(f"Error processing image: {e}")
                 return JsonResponse({'error': 'Failed to process image file.'}, status=500)
-
         else:
-            logging.error("No PDF file provided in request.")
-            return JsonResponse({'error': 'PDF file is required'}, status=400)
+            logging.error("No image file provided in request.")
+            return JsonResponse({'error': 'Image file is required'}, status=400)
 
         # Evaluate
         try:

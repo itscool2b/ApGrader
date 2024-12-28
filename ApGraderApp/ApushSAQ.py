@@ -321,7 +321,38 @@ from botocore.exceptions import BotoCoreError, ClientError
 s3_client = boto3.client('s3')
 
 
-def upload_image_to_s3(image_data, filename=None):
+def validate_and_convert_image(image_file: io.BytesIO) -> bytes:
+    """
+    Validates the image format and converts it to PNG if necessary.
+    
+    Args:
+        image_file (io.BytesIO): The uploaded image file.
+    
+    Returns:
+        bytes: The validated (and possibly converted) image data.
+    
+    Raises:
+        ValueError: If the image is in an unsupported format or corrupted.
+    """
+    try:
+        with Image.open(image_file) as img:
+            img_format = img.format.lower()
+            logging.debug(f"Original image format: {img_format}")
+            if img_format not in ['jpeg', 'png', 'gif', 'webp']:
+                logging.warning(f"Unsupported image format: {img_format}. Converting to PNG.")
+                img = img.convert('RGBA')  # Convert to RGBA to support transparency if needed
+                buffer = io.BytesIO()
+                img.save(buffer, format='PNG')
+                return buffer.getvalue()
+            else:
+                # Reset file pointer and read raw data
+                image_file.seek(0)
+                return image_file.read()
+    except Exception as e:
+        logging.error(f"Image validation/conversion failed: {e}")
+        raise ValueError(f"Invalid image file: {e}")
+
+def upload_image_to_s3(image_data: bytes, filename: Optional[str] = None) -> str:
     """
     Uploads an image to S3 and returns the public URL.
     
@@ -331,27 +362,31 @@ def upload_image_to_s3(image_data, filename=None):
     
     Returns:
         str: The public URL for the uploaded image.
+    
+    Raises:
+        RuntimeError: If the upload fails.
     """
     if not image_data:
         raise ValueError("No image data provided for upload to S3.")
 
-    filename = filename or f"temp/{uuid4()}.jpg"  # Default filename if not provided
+    filename = filename or f"temp/{uuid4()}.png"  # Ensure .png extension after conversion
 
     if not bucket_name:
         raise ValueError("Bucket name is not set. Cannot upload image to S3.")
 
     try:
-        # Upload the image to S3 without making it public (bucket policy handles public access)
+        # Upload the image to S3
         s3_client.upload_fileobj(
             Fileobj=io.BytesIO(image_data),
             Bucket=bucket_name,
             Key=filename,
-            ExtraArgs={'ContentType': 'image/jpeg'}
+            ExtraArgs={'ContentType': 'image/png'}
         )
         logging.debug(f"Image uploaded to S3: {filename}")
 
         # Construct the standard public URL
-        image_url = f"https://{bucket_name}.s3.{s3_client.meta.region_name}.amazonaws.com/{filename}"
+        region = s3_client.meta.region_name
+        image_url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{filename}"
         logging.debug(f"Constructed public URL: {image_url}")
         return image_url
     except (BotoCoreError, ClientError) as e:
@@ -360,7 +395,8 @@ def upload_image_to_s3(image_data, filename=None):
 
 
 
-def vision_node(state):
+
+def vision_node(state: Graphstate) -> Graphstate:
     """
     Processes an image using GPT-4 Vision or handles the case if no image is provided.
     """
@@ -371,27 +407,25 @@ def vision_node(state):
             state["stimulus_description"] = None
             return state
 
+        # Validate and convert the image
+        try:
+            image_file = io.BytesIO(image_data)
+            validated_image_data = validate_and_convert_image(image_file)
+            logging.debug(f"Image validated and converted successfully.")
+        except ValueError as ve:
+            raise ValueError(f"Image validation failed: {ve}")
+
         # Upload image to S3 and get the public URL
         try:
-            image_url = upload_image_to_s3(image_data)
+            image_url = upload_image_to_s3(validated_image_data)
             logging.debug(f"Image successfully uploaded to S3: {image_url}")
         except Exception as e:
-            raise ValueError(f"Error uploading image to S3: {str(e)}")
-
-        # Optionally verify URL accessibility
-        # (You can skip this step if confident the URL is correct)
-        # from urllib.request import urlopen
-        # try:
-        #     response = urlopen(image_url)
-        #     if response.status != 200:
-        #         raise ValueError("Public URL is not accessible.")
-        # except Exception as e:
-        #     raise ValueError(f"Public URL accessibility check failed: {e}")
+            raise ValueError(f"Error uploading image to S3: {e}")
 
         # Call GPT-4 Vision API with the public URL
         try:
             response = client.chat.completions.create(
-                model="gpt-4o",
+                model="gpt-4",
                 messages=[
                     {
                         "role": "user",
@@ -403,11 +437,13 @@ def vision_node(state):
                 ],
                 max_tokens=300,
             )
-            message_content = response.choices[0].messages["content"]
+            # Extract message content
+            message_content = response.choices[0].message['content']
             state["stimulus_description"] = message_content.strip()
             logging.info(f"Stimulus description: {state['stimulus_description']}")
         except Exception as e:
-            raise ValueError(f"Error in GPT-4 Vision processing: {str(e)}")
+            logging.error(f"Error in GPT-4 Vision processing: {e}")
+            raise ValueError(f"Error in GPT-4 Vision processing: {e}")
 
         return state
 

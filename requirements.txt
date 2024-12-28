@@ -13,3 +13,4 @@ langchain-pinecone==0.2.0   # LangChain Pinecone integration
 uvicorn==0.32.1             # ASGI server to run the application
 langgraph>=0.0.1            # StateGraph utility used for workflow definition
 boto3==1.28.50              # AWS SDK for Python for S3 and other AWS services
+Pillow==9.5.0               # For image validation and conversion
