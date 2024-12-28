@@ -326,6 +326,10 @@ def upload_image_to_s3(image_data, filename=None):
         raise ValueError("No image data provided for upload to S3.")
 
     filename = filename or f"temp/{uuid4()}.jpg"  # Default filename if not provided
+    
+    if not bucket_name:
+        raise ValueError("Bucket name is not set. Cannot upload image to S3.")
+    
     try:
         s3_client.upload_fileobj(
             Fileobj=io.BytesIO(image_data),
@@ -384,6 +388,7 @@ def vision_node(state):
     except Exception as e:
         logging.error(f"Error in vision_node: {e}")
         raise ValueError(f"Error in vision_node: {e}")
+
 
 
 
