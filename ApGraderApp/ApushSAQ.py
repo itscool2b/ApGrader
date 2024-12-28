@@ -15,7 +15,7 @@ from typing import List, Dict, Optional, Union, TypedDict
 import boto3
 from uuid import uuid4
 from langgraph.graph import END, StateGraph, START
-
+from PIL import Image
 load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
