@@ -319,52 +319,51 @@ import io
 from io import BytesIO
 
 def upload_image_to_s3(image_data):
+    """
+    Uploads image to S3 and returns the URL.
+    """
     if not image_data:
-        raise ValueError("No image data provided for upload.")
-    
+        raise ValueError("No image data provided for upload to S3.")
+
     key = f"temp/{uuid4()}.jpg"
     try:
         s3_client.put_object(Bucket=bucket_name, Key=key, Body=image_data, ContentType="image/jpeg")
-        return f"https://{bucket_name}.s3.amazonaws.com/{key}"
+        image_url = f"https://{bucket_name}.s3.amazonaws.com/{key}"
+        logging.debug(f"Image successfully uploaded to S3: {image_url}")
+        return image_url
     except Exception as e:
         logging.error(f"Error uploading image to S3: {e}")
-        raise
+        raise RuntimeError(f"Failed to upload image to S3: {e}")
+
 
 
 def vision_node(state):
-    """
-    Processes an image using GPT-4 Vision or handles the case if no image is provided.
-    """
     try:
         image_data = state["image"]
         if not image_data:
+            logging.warning("Image data missing; setting stimulus_description to None.")
             state["stimulus_description"] = None
             return state
 
-        
         image_url = upload_image_to_s3(image_data)
 
-        
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": "What's in this image?"},
-                        {"type": "image_url", "image_url": {"url": image_url}},
-                    ],
-                }
+                {"role": "user", "content": [
+                    {"type": "text", "text": "What's in this image?"},
+                    {"type": "image_url", "image_url": {"url": image_url}},
+                ]}
             ],
             max_tokens=300,
         )
-
-        
         message_content = response.choices[0].messages["content"]
         state["stimulus_description"] = message_content.strip()
         return state
     except Exception as e:
+        logging.error(f"Error in vision_node: {e}")
         raise ValueError(f"Error in vision_node: {e}")
+
 
 
 def grading_node(state):
