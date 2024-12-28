@@ -321,66 +321,43 @@ from botocore.exceptions import BotoCoreError, ClientError
 s3_client = boto3.client('s3')
 
 
-def validate_and_convert_image(image_file: io.BytesIO) -> bytes:
-    """
-    Validates the image format and converts it to PNG if necessary.
-    
-    Args:
-        image_file (io.BytesIO): The uploaded image file.
-    
-    Returns:
-        bytes: The validated (and possibly converted) image data.
-    
-    Raises:
-        ValueError: If the image is in an unsupported format or corrupted.
-    """
-    try:
-        with Image.open(image_file) as img:
-            img_format = img.format.lower()
-            logging.debug(f"Original image format: {img_format}")
-            if img_format not in ['jpeg', 'png', 'gif', 'webp']:
-                logging.warning(f"Unsupported image format: {img_format}. Converting to PNG.")
-                img = img.convert('RGBA')  # Convert to RGBA to support transparency if needed
-                buffer = io.BytesIO()
-                img.save(buffer, format='PNG')
-                return buffer.getvalue()
-            else:
-                # Reset file pointer and read raw data
-                image_file.seek(0)
-                return image_file.read()
-    except Exception as e:
-        logging.error(f"Image validation/conversion failed: {e}")
-        raise ValueError(f"Invalid image file: {e}")
-
 def upload_image_to_s3(image_data: bytes, filename: Optional[str] = None) -> str:
     """
     Uploads an image to S3 and returns the public URL.
-    
+
     Args:
         image_data (bytes): The image data to upload.
         filename (str, optional): The S3 object key. If not provided, a UUID-based name is generated.
-    
+
     Returns:
         str: The public URL for the uploaded image.
-    
+
     Raises:
         RuntimeError: If the upload fails.
     """
     if not image_data:
         raise ValueError("No image data provided for upload to S3.")
 
-    filename = filename or f"temp/{uuid4()}.png"  # Ensure .png extension after conversion
+    filename = filename or f"temp/{uuid4()}.png"  # Use .png extension for consistency
 
     if not bucket_name:
         raise ValueError("Bucket name is not set. Cannot upload image to S3.")
 
     try:
+        # Determine the image format to set the correct Content-Type
+        with Image.open(io.BytesIO(image_data)) as img:
+            img_format = img.format.lower()
+            if img_format not in ['jpeg', 'png', 'gif', 'webp']:
+                logging.error(f"Attempted to upload unsupported image format: {img_format}")
+                raise ValueError(f"Unsupported image format: {img_format}")
+            content_type = f"image/{img_format if img_format != 'jpg' else 'jpeg'}"
+
         # Upload the image to S3
         s3_client.upload_fileobj(
             Fileobj=io.BytesIO(image_data),
             Bucket=bucket_name,
             Key=filename,
-            ExtraArgs={'ContentType': 'image/png'}
+            ExtraArgs={'ContentType': content_type}
         )
         logging.debug(f"Image uploaded to S3: {filename}")
 
@@ -392,9 +369,9 @@ def upload_image_to_s3(image_data: bytes, filename: Optional[str] = None) -> str
     except (BotoCoreError, ClientError) as e:
         logging.error(f"Failed to upload image to S3: {e}")
         raise RuntimeError(f"Failed to upload image to S3: {str(e)}")
-
-
-
+    except ValueError as ve:
+        logging.error(f"Image upload validation error: {ve}")
+        raise ve
 
 def vision_node(state: Graphstate) -> Graphstate:
     """
@@ -407,17 +384,25 @@ def vision_node(state: Graphstate) -> Graphstate:
             state["stimulus_description"] = None
             return state
 
-        # Validate and convert the image
+        # Ensure image_data is bytes
+        if isinstance(image_data, str):
+            image_data = image_data.encode('utf-8')  # Convert string to bytes if necessary
+
+        # Validate the image format
         try:
-            image_file = io.BytesIO(image_data)
-            validated_image_data = validate_and_convert_image(image_file)
-            logging.debug(f"Image validated and converted successfully.")
-        except ValueError as ve:
-            raise ValueError(f"Image validation failed: {ve}")
+            with Image.open(io.BytesIO(image_data)) as img:
+                img_format = img.format.lower()
+                logging.debug(f"Uploaded image format: {img_format}")
+                if img_format not in ['jpeg', 'png', 'gif', 'webp']:
+                    logging.error(f"Unsupported image format: {img_format}")
+                    raise ValueError(f"Unsupported image format: {img_format}")
+        except Exception as e:
+            logging.error(f"Image validation failed: {e}")
+            raise ValueError(f"Image validation failed: {e}")
 
         # Upload image to S3 and get the public URL
         try:
-            image_url = upload_image_to_s3(validated_image_data)
+            image_url = upload_image_to_s3(image_data)
             logging.debug(f"Image successfully uploaded to S3: {image_url}")
         except Exception as e:
             raise ValueError(f"Error uploading image to S3: {e}")
@@ -429,10 +414,10 @@ def vision_node(state: Graphstate) -> Graphstate:
                 messages=[
                     {
                         "role": "user",
-                        "content": [
+                        "content": json.dumps([
                             {"type": "text", "text": "What's in this image?"},
                             {"type": "image_url", "image_url": {"url": image_url}},
-                        ],
+                        ]),
                     }
                 ],
                 max_tokens=300,
@@ -450,7 +435,6 @@ def vision_node(state: Graphstate) -> Graphstate:
     except Exception as e:
         logging.error(f"Error in vision_node: {e}")
         raise ValueError(f"Error in vision_node: {e}")
-
 
 
 def grading_node(state):
