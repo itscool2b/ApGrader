@@ -102,8 +102,9 @@ async def saq_view(request):
         if 'image' in request.FILES:
             image = request.FILES['image']
             try:
-                # Allow more formats now
-                if image.content_type not in ["image/jpeg", "image/png", "image/gif", "image/webp"]:
+                # Check if the image has one of the supported MIME types
+                supported_mime_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]
+                if image.content_type not in supported_mime_types:
                     logging.error(f"Unsupported image type: {image.content_type}")
                     return JsonResponse({'error': 'Unsupported image type. Only JPEG, PNG, GIF, and WebP are allowed.'}, status=400)
                 
