@@ -12,7 +12,7 @@ from .ApushSAQ import evaluate1
 import io
 import asyncio
 logger = logging.getLogger(__name__)
-
+from PIL import Image
 @csrf_exempt
 async def ApushLEQ(request):
     if request.method != "POST":
@@ -102,10 +102,21 @@ async def saq_view(request):
         if 'image' in request.FILES:
             image = request.FILES['image']
             try:
-                if image.content_type not in ["image/jpeg", "image/png"]:
+                if image.content_type not in ["image/jpeg", "image/png", "image/gif", "image/webp"]:
                     logging.error(f"Unsupported image type: {image.content_type}")
-                    return JsonResponse({'error': 'Unsupported image type. Only JPEG and PNG are allowed.'}, status=400)
-                image_data = image.read()
+                    return JsonResponse({'error': 'Unsupported image type. Only JPEG, PNG, GIF, and WebP are allowed.'}, status=400)
+                
+                # Validate and possibly convert the image
+                image_file = Image.open(image)
+                if image_file.format.lower() not in ['jpeg', 'png', 'gif', 'webp']:
+                    logging.warning(f"Converting unsupported image format: {image_file.format}")
+                    image_file = image_file.convert('RGB')  # Convert to RGB to ensure compatibility
+                    buffer = io.BytesIO()
+                    image_file.save(buffer, format='JPEG')
+                    image_data = buffer.getvalue()
+                else:
+                    image_data = image.read()
+                
                 if not image_data:
                     logging.error("Uploaded image is empty.")
                     return JsonResponse({'error': 'Uploaded image is empty.'}, status=400)
@@ -113,6 +124,10 @@ async def saq_view(request):
             except Exception as e:
                 logging.error(f"Error processing image: {e}")
                 return JsonResponse({'error': 'Failed to process image file.'}, status=500)
+
+        else:
+            logging.error("No PDF file provided in request.")
+            return JsonResponse({'error': 'PDF file is required'}, status=400)
 
         # Evaluate
         try:
