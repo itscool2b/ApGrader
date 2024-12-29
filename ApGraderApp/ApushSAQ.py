@@ -322,6 +322,19 @@ s3_client = boto3.client('s3')
 
 
 def upload_image_to_s3(image_data: bytes, filename: Optional[str] = None) -> str:
+    """
+    Uploads an image to S3 and returns the public URL.
+
+    Args:
+        image_data (bytes): The image data to upload.
+        filename (str, optional): The S3 object key. If not provided, a UUID-based name is generated.
+
+    Returns:
+        str: The public URL for the uploaded image.
+
+    Raises:
+        RuntimeError: If the upload fails.
+    """
     if not image_data:
         raise ValueError("No image data provided for upload to S3.")
 
@@ -335,6 +348,7 @@ def upload_image_to_s3(image_data: bytes, filename: Optional[str] = None) -> str
         with Image.open(io.BytesIO(image_data)) as img:
             img_format = img.format.lower()
             if img_format not in ['jpeg', 'png', 'gif', 'webp']:
+                logging.error(f"Attempted to upload unsupported image format: {img_format}")
                 raise ValueError(f"Unsupported image format: {img_format}")
             content_type = f"image/{img_format if img_format != 'jpg' else 'jpeg'}"
 
@@ -345,12 +359,19 @@ def upload_image_to_s3(image_data: bytes, filename: Optional[str] = None) -> str
             Key=filename,
             ExtraArgs={'ContentType': content_type}
         )
+        logging.debug(f"Image uploaded to S3: {filename}")
+
+        # Construct the standard public URL
         region = s3_client.meta.region_name
         image_url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{filename}"
+        logging.debug(f"Constructed public URL: {image_url}")
         return image_url
     except (BotoCoreError, ClientError) as e:
         logging.error(f"Failed to upload image to S3: {e}")
         raise RuntimeError(f"Failed to upload image to S3: {str(e)}")
+    except ValueError as ve:
+        logging.error(f"Image upload validation error: {ve}")
+        raise ve
 
 # Vision node function
 def vision_node(state: Graphstate) -> Graphstate:
@@ -398,7 +419,7 @@ def vision_node(state: Graphstate) -> Graphstate:
 
 def grading_node(state):
     try:
-        essay = state["student_essay"]
+        essay = state["student_essay"]  
         questions = state["questions"]
         stimulus_description = state.get("stimulus_description")
         if stimulus_description:
