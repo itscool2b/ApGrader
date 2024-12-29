@@ -364,23 +364,20 @@ def upload_image_to_s3(image_data: bytes, filename: Optional[str] = None) -> str
         raise ValueError("Invalid image data provided.")
 
     # Generate filename with correct extension
-    filename = filename or f"temp/{uuid4()}.{extension}"
+    filename = filename or f"uploads/{uuid4()}.{extension}"
 
-    # Set Content-Type
-    content_type = f"image/{extension}"
-
+    # Upload the image to S3
     try:
         s3_client.upload_fileobj(
             Fileobj=io.BytesIO(image_data),
             Bucket=bucket_name,
             Key=filename,
-            ExtraArgs={'ContentType': content_type}
-            # Removed 'ACL': 'public-read' to comply with bucket settings
+            ExtraArgs={'ContentType': f"image/{extension}"}
         )
     except (BotoCoreError, ClientError) as e:
         raise RuntimeError(f"Failed to upload image to S3: {e}")
 
-    # Construct the public URL
+    # Construct and return the public URL
     region = s3_client.meta.region_name
     image_url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{filename}"
     return image_url
