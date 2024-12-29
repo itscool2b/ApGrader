@@ -397,8 +397,8 @@ def vision_node(state: Dict[str, Any]) -> Dict[str, Any]:
         image_url = upload_image_to_s3(image_data)
 
         # Call GPT-4 Vision API with the public URL
-        response = client.chat.completions.create(
-            model="gpt-4",
+        response = openai.ChatCompletion.create(
+            model="gpt-4o",
             messages=[
                 {
                     "role": "user",
@@ -408,8 +408,8 @@ def vision_node(state: Dict[str, Any]) -> Dict[str, Any]:
             max_tokens=300,
         )
 
-        # Extract message content
-        message_content = response.choices[0]
+        # Correctly access the content attribute
+        message_content = response.choices[0].message.content
         state["stimulus_description"] = message_content
 
         return state
