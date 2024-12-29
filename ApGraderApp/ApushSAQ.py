@@ -400,20 +400,19 @@ def vision_node(state: Dict[str, Any]) -> Dict[str, Any]:
         # Extract image data from state
         image_data = state.get("image")
         if not image_data:
-            state["stimulus_description"] = None
-            return state
+            return jsonify({"error": "No image data provided"}), 400
 
-        # Validate and extract base64 image string
-        img_data_match = re.match(r'data:(image/.*?);base64,(.*)', image_data)
+        # Validate the base64 format of the image
+        img_data_match = re.match(r'data:(image/.*?);base64,(.*)', image_data.decode('utf-8'))
         if not img_data_match:
-            raise ValueError("Invalid image data format.")
+            return jsonify({"error": "Invalid image data format"}), 400
 
         img_type, img_b64_str = img_data_match.groups()
 
-        # Define a prompt for a complete description
+        # Define the prompt for the Vision API
         prompt = "Provide a detailed description of the content in this image."
 
-        # Call the Vision API using the base64 data as a pseudo-URL
+        # Call Vision API with image passed as base64 URL
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
@@ -423,9 +422,7 @@ def vision_node(state: Dict[str, Any]) -> Dict[str, Any]:
                         {"type": "text", "text": prompt},
                         {
                             "type": "image_url",
-                            "image_url": {
-                                "url": f"data:{img_type};base64,{img_b64_str}",
-                            },
+                            "image_url": {"url": f"data:{img_type};base64,{img_b64_str}"},
                         },
                     ],
                 }
@@ -433,15 +430,14 @@ def vision_node(state: Dict[str, Any]) -> Dict[str, Any]:
             max_tokens=300,
         )
 
-        # Extract the response from the Vision API
+        # Extract the response content
         stimulus_description = response.choices[0].message.content.strip()
         state["stimulus_description"] = stimulus_description
-        print(stimulus_description)
+
         return state
 
     except Exception as e:
         print(f"Error in vision_node: {e}")
-        raise ValueError(f"Error in vision_node: {e}")
     
 def grading_node(state):
     try:
