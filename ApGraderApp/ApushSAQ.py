@@ -338,11 +338,6 @@ def upload_image_to_s3(image_data: bytes, filename: Optional[str] = None) -> str
     if not image_data:
         raise ValueError("No image data provided for upload to S3.")
 
-    filename = filename or f"temp/{uuid4()}.png"  # Use .png extension for consistency
-
-    if not bucket_name:
-        raise ValueError("Bucket name is not set. Cannot upload image to S3.")
-
     try:
         # Determine the image format to set the correct Content-Type
         with Image.open(io.BytesIO(image_data)) as img:
@@ -350,14 +345,24 @@ def upload_image_to_s3(image_data: bytes, filename: Optional[str] = None) -> str
             if img_format not in ['jpeg', 'png', 'gif', 'webp']:
                 logging.error(f"Attempted to upload unsupported image format: {img_format}")
                 raise ValueError(f"Unsupported image format: {img_format}")
-            content_type = f"image/{img_format if img_format != 'jpg' else 'jpeg'}"
+            content_type = f"image/{'jpeg' if img_format == 'jpg' else img_format}"
+
+        # Generate filename if not provided, ensuring the extension matches the format
+        if not filename:
+            filename = f"temp/{uuid4()}.{img_format}"
+        else:
+            # Optional: Verify that the provided filename has the correct extension
+            expected_extension = img_format if img_format != 'jpeg' else 'jpg'
+            if not filename.lower().endswith(f".{expected_extension}"):
+                logging.warning(f"Filename extension does not match image format. Expected .{expected_extension}")
+                filename += f".{expected_extension}"
 
         # Upload the image to S3
         s3_client.upload_fileobj(
             Fileobj=io.BytesIO(image_data),
             Bucket=bucket_name,
             Key=filename,
-            ExtraArgs={'ContentType': content_type}
+            ExtraArgs={'ContentType': content_type, 'ACL': 'public-read'}  # Ensure the object is publicly readable
         )
         logging.debug(f"Image uploaded to S3: {filename}")
 
@@ -391,9 +396,11 @@ def vision_node(state: Graphstate) -> Graphstate:
         else:
             raise ValueError("Image must be either bytes or a URL string.")
 
+        logging.debug(f"Using image URL for GPT-4 Vision API: {image_url}")
+
         # Call GPT-4 Vision API with the image URL
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4o",  # Correct model name
             messages=[
                 {
                     "role": "user",
@@ -410,13 +417,26 @@ def vision_node(state: Graphstate) -> Graphstate:
         )
 
         # Extract message content
+        if not response or not response.choices or not response.choices[0].message:
+            logging.error("Invalid response structure from GPT-4 Vision API.")
+            raise RuntimeError("Invalid response from GPT-4 Vision API.")
+
         message_content = response.choices[0].message.content
         state["stimulus_description"] = message_content
+        logging.debug(f"Received stimulus description: {message_content}")
         return state
+    except ClientError as ce:
+        logging.error(f"ClientError during GPT-4 Vision API call: {ce}")
+        raise
+    except BotoCoreError as be:
+        logging.error(f"BotoCoreError during S3 upload: {be}")
+        raise
+    except ValueError as ve:
+        logging.error(f"ValueError: {ve}")
+        raise
     except Exception as e:
-        logging.error(f"Error in GPT-4 Vision processing: {e}")
+        logging.error(f"Unexpected error in GPT-4 Vision processing: {e}")
         raise ValueError(f"Error in GPT-4 Vision processing: {e}")
-
 def grading_node(state):
     try:
         essay = state["student_essay"]  
