@@ -420,7 +420,7 @@ def vision_node(state: Dict[str, Any]) -> Dict[str, Any]:
             max_tokens=300,
         )
 
-        # Extract the API response
+        # Extract the API responseedjfdhjdkj
         message_content = response.choices[0].message.content
         state["stimulus_description"] = message_content
         print(message_content)
