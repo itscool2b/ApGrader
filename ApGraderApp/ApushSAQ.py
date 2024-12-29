@@ -425,7 +425,7 @@ def vision_node(state: Graphstate) -> Graphstate:
             # Extract message content
             message_content = response.choices[0]
 
-            state["stimulus_description"] = message_content.strip()
+            state["stimulus_description"] = message_content
             logging.info(f"Stimulus description: {state['stimulus_description']}")
         except Exception as e:
             logging.error(f"Error in GPT-4 Vision processing: {e}")
