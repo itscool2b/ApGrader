@@ -397,7 +397,7 @@ def vision_node(state: Dict[str, Any]) -> Dict[str, Any]:
         image_url = upload_image_to_s3(image_data)
 
         # Call GPT-4 Vision API with the public URL
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
                 {
