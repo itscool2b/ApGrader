@@ -1,21 +1,23 @@
 import os
-import openai
 import json
 import logging
+import io
+import base64
+import re
+from uuid import uuid4
+from typing import List, Dict, Optional, Union, TypedDict, Any
 from dotenv import load_dotenv
+from PIL import Image
+import boto3
+from botocore.exceptions import BotoCoreError, ClientError
+import openai
 from openai import OpenAI
 from langchain.prompts import PromptTemplate
 from langchain.chat_models import ChatOpenAI
-import io
-#import ApGraderApp.p as p
-#from ApGraderApp.p import pc, setup_index, get_index
+from langgraph.graph import END, StateGraph, START
 import ApGraderApp.p as p
 from ApGraderApp.p import pc, setup_index, get_index
-from typing import List, Dict, Optional, Union, TypedDict
-import boto3
-from uuid import uuid4
-from langgraph.graph import END, StateGraph, START
-from PIL import Image
+
 load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -27,7 +29,7 @@ openai.api_key = OPENAI_API_KEY
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 
-bucket_name =  os.getenv("AWS_STORAGE_BUCKET_NAME")
+
 
 index = get_index()
 
@@ -301,7 +303,7 @@ class Graphstate(TypedDict):
     image: Optional[Union[str, bytes]]
     stimulus_description: str
 
-# Node definitions
+
 def chapters(state):
     try:
         essay = state["student_essay"]
@@ -315,61 +317,10 @@ def chapters(state):
         return state
     except Exception as e:
         raise ValueError(f"Error in chapters: {e}")
-import base64
-import openai
-import io
-from io import BytesIO
-from botocore.exceptions import BotoCoreError, ClientError
-s3_client = boto3.client('s3',region_name='us-east-2')
 
-def validate_image(image_data: bytes) -> bool:
-    try:
-        with Image.open(io.BytesIO(image_data)) as img:
-            img_format = img.format.lower()
-            if img_format not in ['jpeg', 'png', 'gif', 'webp']:
-                print(f"Unsupported image format: {img_format}")
-                return False
-            print(f"Valid image format: {img_format}")
-            return True
-    except IOError as e:
-        print(f"Invalid image data: {e}")
-        return False
 
-def upload_image_to_s3(image_data: bytes, filename: Optional[str] = None) -> str:
-    if not image_data:
-        raise ValueError("No image data provided for upload to S3.")
 
-    
-    try:
-        with Image.open(io.BytesIO(image_data)) as img:
-            img_format = img.format.lower()
-            if img_format not in ['jpeg', 'png', 'gif', 'webp']:
-                raise ValueError(f"Unsupported image format: {img_format}")
-            extension = img_format if img_format != 'jpeg' else 'jpg'
-    except IOError:
-        raise ValueError("Invalid image data provided.")
 
-    
-    filename = filename or f"uploads/{uuid4()}.{extension}"
-
-    
-    try:
-        s3_client.upload_fileobj(
-            Fileobj=io.BytesIO(image_data),
-            Bucket=bucket_name,
-            Key=filename,
-            ExtraArgs={'ContentType': f"image/{extension}"}
-        )
-    except (BotoCoreError, ClientError) as e:
-        raise RuntimeError(f"Failed to upload image to S3: {e}")
-
-   
-    region = "us-east-2"  
-    image_url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{filename}"
-    return image_url
-
-import base64
-import re
 def vision_node(state):
     """
     Processes a Base64-encoded image using OpenAI's Vision API.
@@ -379,18 +330,18 @@ def vision_node(state):
         dict: Updated state with stimulus_description.
     """
     try:
-        # Retrieve Base64-encoded image data from the state
+        
         image_data = state.get("image")
         if not image_data:
             raise ValueError("No image data provided.")
 
-        # Add MIME type prefix if missing
+        
         if not image_data.startswith("data:"):
-            image_data = f"data:image/jpeg;base64,{image_data}"  # Adjust MIME type as needed.
+            image_data = f"data:image/jpeg;base64,{image_data}"  
 
-        # Call OpenAI Vision API
+        
         response = client.chat.completions.create(
-            model="gpt-4o-mini",  # Ensure this model supports vision tasks.
+            model="gpt-4o",  
             messages=[
                 {
                     "role": "user",
@@ -401,7 +352,7 @@ def vision_node(state):
                         },
                         {
                             "type": "image_url",
-                            "image_url": {"url": image_data},  # Pass the Base64 string with prefix.
+                            "image_url": {"url": image_data},  
                         },
                     ],
                 }
@@ -409,7 +360,7 @@ def vision_node(state):
             max_tokens=300,
         )
 
-        # Extract and store the response content
+        
         stimulus_description = response.choices[0].message.content
         state["stimulus_description"] = stimulus_description
         print(stimulus_description)
