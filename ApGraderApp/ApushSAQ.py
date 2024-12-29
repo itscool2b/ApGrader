@@ -413,7 +413,7 @@ def vision_node(state: Dict[str, Any]) -> Dict[str, Any]:
         # Correctly access the content attribute
         message_content = response.choices[0].message.content
         state["stimulus_description"] = message_content
-
+        print(state[["stimulus_description"]])
         return state
     except Exception as e:
         raise ValueError(f"Error in vision_node: {e}")
