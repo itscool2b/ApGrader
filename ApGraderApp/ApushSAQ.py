@@ -423,7 +423,7 @@ def vision_node(state: Dict[str, Any]) -> Dict[str, Any]:
         # Extract the API response
         message_content = response.choices[0].message.content
         state["stimulus_description"] = message_content
-
+        print(message_content)
         return state
 
     except Exception as e:
