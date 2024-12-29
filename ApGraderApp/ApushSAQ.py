@@ -431,7 +431,7 @@ def vision_node(state: Dict[str, Any]) -> Dict[str, Any]:
         )
 
         # Extract the response content
-        stimulus_description = response.choices[0].message.content.strip()
+        stimulus_description = response.choices[0].message.content
         state["stimulus_description"] = stimulus_description
 
         return state
