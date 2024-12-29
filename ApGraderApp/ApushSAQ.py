@@ -415,7 +415,7 @@ def vision_node(state: dict) -> dict:
 
         # Call GPT-4 Vision API with the image URL
         response = client.chat.completions.create(
-            model="gpt-4-vision",  # Ensure this is the correct model name
+            model="gpt-4o",  # Ensure this is the correct model name
             messages=[
                 {
                     "role": "user",
