@@ -206,7 +206,9 @@ Total Score and Summary:
 
 Total Score: X/Y (e.g., 2/3 for a 3-part question).
 Strengths: Highlight what the student did well.
-Areas for Improvement: Suggest specific ways to improve their response.""")
+Areas for Improvement: Suggest specific ways to improve their response.
+How their essay relates to the stimulus be very specific                                   
+                                     """)
 
 ch_prompt = PromptTemplate.from_template("""
 This is the student essay - {essay}
