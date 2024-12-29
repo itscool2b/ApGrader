@@ -399,30 +399,23 @@ def vision_node(state: Dict[str, Any]) -> Dict[str, Any]:
         if not image_data:
             raise ValueError("No image data provided.")
 
+        # Validate image format before upload
+        if not validate_image(image_data):
+            raise ValueError("Unsupported image format. Only JPEG, PNG, GIF, and WebP are allowed.")
+
         # Upload the image to S3 and get the public URL
         print("Uploading image to S3...")
         image_url = upload_image_to_s3(image_data)
         print(f"Image uploaded successfully. URL: {image_url}")
 
-        # Define the prompt for the Vision API
-        prompt = "What is in this image?"
-
         # Call the Vision API with the S3 URL
+        prompt = "What is in this image?"
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {
                     "role": "user",
-                    "content": [
-                        {"type": "text", "text": prompt},
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": image_url,
-                                "detail": "high",  # Optional: Adjust detail level
-                            },
-                        },
-                    ],
+                    "content": f"{prompt}\n\nImage URL: {image_url}"
                 }
             ],
             max_tokens=300,
@@ -437,7 +430,6 @@ def vision_node(state: Dict[str, Any]) -> Dict[str, Any]:
     except Exception as e:
         print(f"Error in vision_node: {e}")
         raise ValueError(f"Error in vision_node: {e}")
-
 def grading_node(state):
     try:
         essay = state["student_essay"]  
