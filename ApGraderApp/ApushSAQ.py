@@ -372,6 +372,7 @@ def upload_image_to_s3(image_data: bytes, filename: Optional[str] = None) -> str
     image_url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{filename}"
     return image_url
 import base64
+
 def vision_node(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     Processes an image using GPT-4 Vision or handles the case if no image is provided.
@@ -388,33 +389,50 @@ def vision_node(state: Dict[str, Any]) -> Dict[str, Any]:
             state["stimulus_description"] = None
             return state
 
-        # Ensure image_data is bytes
+        # Decode image if base64-encoded
         if isinstance(image_data, str):
             try:
                 image_data = base64.b64decode(image_data)
             except base64.binascii.Error:
                 raise ValueError("Image data is not valid base64-encoded bytes.")
 
+        # Validate image data and get format
+        try:
+            with Image.open(io.BytesIO(image_data)) as img:
+                img_format = img.format.lower()
+                if img_format not in ['jpeg', 'png', 'gif', 'webp']:
+                    raise ValueError(f"Unsupported image format: {img_format}")
+        except IOError:
+            raise ValueError("Invalid image data provided.")
+
         # Upload image to S3 and get the public URL
         image_url = upload_image_to_s3(image_data)
 
-        # Call GPT-4 Vision API with the public URL
+        # Ensure the image URL is publicly accessible
+        # If the API doesn't support URLs, fallback to inline image data
+        api_input = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "What's in this image?"},
+                    {"type": "image_url", "image_url": {"url": image_url}}
+                ]
+            }
+        ]
+
+        # Send API request
         response = client.chat.completions.create(
             model="gpt-4o",
-            messages=[
-                {
-                    "role": "user",
-                    "content": f"What's in this image? {image_url}"
-                }
-            ],
+            messages=api_input,
             max_tokens=300,
         )
 
-        # Correctly access the content attribute
+        # Extract the response content
         message_content = response.choices[0].message.content
         state["stimulus_description"] = message_content
-        print(state["stimulus_description"])
+
         return state
+
     except Exception as e:
         raise ValueError(f"Error in vision_node: {e}")
     
