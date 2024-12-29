@@ -332,109 +332,88 @@ def upload_image_to_s3(image_data: bytes, filename: Optional[str] = None) -> str
         str: The public URL for the uploaded image.
 
     Raises:
+        ValueError: If image data is missing or format is unsupported.
         RuntimeError: If the upload fails.
     """
     if not image_data:
         raise ValueError("No image data provided for upload to S3.")
 
-    filename = filename or f"temp/{uuid4()}.png"  # Use .png extension for consistency
-
-    if not bucket_name:
-        raise ValueError("Bucket name is not set. Cannot upload image to S3.")
-
+    # Validate and determine image format
     try:
-        # Determine the image format to set the correct Content-Type
         with Image.open(io.BytesIO(image_data)) as img:
             img_format = img.format.lower()
             if img_format not in ['jpeg', 'png', 'gif', 'webp']:
-                logging.error(f"Attempted to upload unsupported image format: {img_format}")
                 raise ValueError(f"Unsupported image format: {img_format}")
-            content_type = f"image/{img_format if img_format != 'jpg' else 'jpeg'}"
+            extension = img_format if img_format != 'jpeg' else 'jpg'
+    except IOError:
+        raise ValueError("Invalid image data provided.")
 
-        # Upload the image to S3
+    # Generate filename with correct extension
+    filename = filename or f"temp/{uuid4()}.{extension}"
+
+    # Set Content-Type
+    content_type = f"image/{extension}"
+
+    try:
         s3_client.upload_fileobj(
             Fileobj=io.BytesIO(image_data),
             Bucket=bucket_name,
             Key=filename,
-            ExtraArgs={'ContentType': content_type}
+            ExtraArgs={'ContentType': content_type, 'ACL': 'public-read'}
         )
-        logging.debug(f"Image uploaded to S3: {filename}")
-
-        # Construct the standard public URL
-        region = s3_client.meta.region_name
-        image_url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{filename}"
-        logging.debug(f"Constructed public URL: {image_url}")
-        return image_url
     except (BotoCoreError, ClientError) as e:
-        logging.error(f"Failed to upload image to S3: {e}")
-        raise RuntimeError(f"Failed to upload image to S3: {str(e)}")
-    except ValueError as ve:
-        logging.error(f"Image upload validation error: {ve}")
-        raise ve
+        raise RuntimeError(f"Failed to upload image to S3: {e}")
 
-def vision_node(state: Graphstate) -> Graphstate:
+    # Construct the public URL
+    region = s3_client.meta.region_name
+    image_url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{filename}"
+    return image_url
+
+def vision_node(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     Processes an image using GPT-4 Vision or handles the case if no image is provided.
+
+    Args:
+        state (dict): The state containing image data.
+
+    Returns:
+        dict: Updated state with stimulus_description.
     """
     try:
         image_data = state.get("image")
         if not image_data:
-            logging.warning("No image data provided in state['image']. Skipping vision processing.")
             state["stimulus_description"] = None
             return state
 
         # Ensure image_data is bytes
         if isinstance(image_data, str):
-            image_data = image_data.encode('utf-8')  # Convert string to bytes if necessary
-
-        # Validate the image format
-        with Image.open(io.BytesIO(image_data)) as img:
-            img_format = img.format.lower()
-            logging.debug(f"Uploaded image format: {img_format}")
-            if img_format not in ['jpeg', 'png', 'gif', 'webp']:
-                logging.error(f"Unsupported image format: {img_format}")
-                raise ValueError(f"Unsupported image format: {img_format}")
+            import base64
+            try:
+                image_data = base64.b64decode(image_data)
+            except base64.binascii.Error:
+                raise ValueError("Image data is not valid base64-encoded bytes.")
 
         # Upload image to S3 and get the public URL
-        try:
-            image_url = upload_image_to_s3(image_data)
-            logging.debug(f"Image successfully uploaded to S3: {image_url}")
-        except Exception as e:
-            raise ValueError(f"Error uploading image to S3: {e}")
+        image_url = upload_image_to_s3(image_data)
 
         # Call GPT-4 Vision API with the public URL
-        try:
-            response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": "What's in this image?"},
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": image_url,
-                                    "detail": "high",
-                                },
-                            },
-                        ],
-                    }
-                ],
-                max_tokens=300,
-            )
-            # Extract message content
-            message_content = response.choices[0].message.content
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {
+                    "role": "user",
+                    "content": f"What's in this image? {image_url}"
+                }
+            ],
+            max_tokens=300,
+        )
 
-            state["stimulus_description"] = message_content
-            logging.info(f"Stimulus description: {state['stimulus_description']}")
-        except Exception as e:
-            logging.error(f"Error in GPT-4 Vision processing: {e}")
-            raise ValueError(f"Error in GPT-4 Vision processing: {e}")
+        # Extract message content
+        message_content = response.choices[0].message['content']
+        state["stimulus_description"] = message_content
 
         return state
     except Exception as e:
-        logging.error(f"Error in vision_node: {e}")
         raise ValueError(f"Error in vision_node: {e}")
 
 
