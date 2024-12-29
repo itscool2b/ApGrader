@@ -373,70 +373,45 @@ def upload_image_to_s3(image_data: bytes, filename: Optional[str] = None) -> str
         logging.error(f"Image upload validation error: {ve}")
         raise ve
 
-def vision_node(state: Graphstate) -> Graphstate:
+def vision_node(state):
     """
-    Processes an image using GPT-4 Vision or handles the case if no image is provided.
+    Processes an image using GPT-4 Vision.
     """
     try:
-        image_data = state.get("image")
+        image_data = state.get("image_url")
         if not image_data:
-            logging.warning("No image data provided in state['image']. Skipping vision processing.")
+            logging.warning("No image URL provided in state['image_url']. Skipping vision processing.")
             state["stimulus_description"] = None
             return state
 
-        # Ensure image_data is bytes
-        if isinstance(image_data, str):
-            image_data = image_data.encode('utf-8')  # Convert string to bytes if necessary
+        # Call GPT-4 Vision API with the image URL
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": "What's in this image?"},
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": image_data},
+                        },
+                    ],
+                }
+            ],
+            max_tokens=300,
+        )
 
-        # Validate the image format
-        try:
-            with Image.open(io.BytesIO(image_data)) as img:
-                img_format = img.format.lower()
-                logging.debug(f"Uploaded image format: {img_format}")
-                if img_format not in ['jpeg', 'png', 'gif', 'webp']:
-                    logging.error(f"Unsupported image format: {img_format}")
-                    raise ValueError(f"Unsupported image format: {img_format}")
-        except Exception as e:
-            logging.error(f"Image validation failed: {e}")
-            raise ValueError(f"Image validation failed: {e}")
-
-        # Upload image to S3 and get the public URL
-        try:
-            image_url = upload_image_to_s3(image_data)
-            logging.debug(f"Image successfully uploaded to S3: {image_url}")
-        except Exception as e:
-            raise ValueError(f"Error uploading image to S3: {e}")
-
-        # Call GPT-4 Vision API with the public URL
-        try:
-            response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {
-                        "role": "user",
-                        "content": json.dumps([
-                            {"type": "text", "text": "What's in this image?"},
-                            {"type": "image_url", "image_url": {"url": image_url}},
-                        ]),
-                    }
-                ],
-                max_tokens=300,
-            )
-            # Extract message content
-            message_content = response.choices[0]
-
-            state["stimulus_description"] = message_content
-            logging.info(f"Stimulus description: {state['stimulus_description']}")
-        except Exception as e:
-            logging.error(f"Error in GPT-4 Vision processing: {e}")
-            raise ValueError(f"Error in GPT-4 Vision processing: {e}")
-
-        return state
+        # Extract message content
+        message_content = response.choices[0].message.content
+        state["stimulus_description"] = message_content
+        logging.info(f"Stimulus description: {state['stimulus_description']}")
 
     except Exception as e:
-        logging.error(f"Error in vision_node: {e}")
-        raise ValueError(f"Error in vision_node: {e}")
+        logging.error(f"Error in GPT-4 Vision processing: {e}")
+        raise ValueError(f"Error in GPT-4 Vision processing: {e}")
 
+    return state
 
 def grading_node(state):
     try:
