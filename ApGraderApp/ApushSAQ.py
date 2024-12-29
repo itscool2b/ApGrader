@@ -322,14 +322,14 @@ s3_client = boto3.client('s3')
 
 def upload_image_to_s3(image_data: bytes, filename: Optional[str] = None) -> str:
     """
-    Uploads an image to S3 and returns a presigned URL.
+    Uploads an image to S3 and returns the public URL.
 
     Args:
         image_data (bytes): The image data to upload.
         filename (str, optional): The S3 object key. If not provided, a UUID-based name is generated.
 
     Returns:
-        str: The presigned URL for the uploaded image.
+        str: The public URL for the uploaded image.
 
     Raises:
         RuntimeError: If the upload fails.
@@ -366,14 +366,12 @@ def upload_image_to_s3(image_data: bytes, filename: Optional[str] = None) -> str
         )
         logging.debug(f"Image uploaded to S3: {filename}")
 
-        # Generate a presigned URL valid for 1 hour
-        presigned_url = s3_client.generate_presigned_url(
-            'get_object',
-            Params={'Bucket': bucket_name, 'Key': filename},
-            ExpiresIn=3600  # URL valid for 1 hour
-        )
-        logging.debug(f"Generated presigned URL: {presigned_url}")
-        return presigned_url
+        # Construct the public URL based on bucket settings
+        region = s3_client.meta.region_name
+        image_url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{filename}"
+        logging.debug(f"Constructed image URL: {image_url}")
+
+        return image_url
 
     except (BotoCoreError, ClientError) as e:
         logging.error(f"Failed to upload image to S3: {e}")
@@ -453,6 +451,7 @@ def vision_node(state: dict) -> dict:
     except Exception as e:
         logging.error(f"Unexpected error in GPT-4 Vision processing: {e}")
         raise ValueError(f"Error in GPT-4 Vision processing: {e}")
+    
 def grading_node(state):
     try:
         essay = state["student_essay"]  
