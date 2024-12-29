@@ -337,6 +337,11 @@ def upload_image_to_s3(image_data: bytes, filename: Optional[str] = None) -> str
     if not image_data:
         raise ValueError("No image data provided for upload to S3.")
 
+    filename = filename or f"temp/{uuid4()}.png"  # Use .png extension for consistency
+
+    if not bucket_name:
+        raise ValueError("Bucket name is not set. Cannot upload image to S3.")
+
     try:
         # Determine the image format to set the correct Content-Type
         with Image.open(io.BytesIO(image_data)) as img:
@@ -344,20 +349,9 @@ def upload_image_to_s3(image_data: bytes, filename: Optional[str] = None) -> str
             if img_format not in ['jpeg', 'png', 'gif', 'webp']:
                 logging.error(f"Attempted to upload unsupported image format: {img_format}")
                 raise ValueError(f"Unsupported image format: {img_format}")
-            content_type = f"image/jpeg" if img_format == 'jpg' else f"image/{img_format}"
-            logging.debug(f"Detected image format: {img_format}")
+            content_type = f"image/{img_format if img_format != 'jpg' else 'jpeg'}"
 
-        # Generate filename if not provided, ensuring the extension matches the format
-        if not filename:
-            filename = f"temp/{uuid4()}.{img_format}"
-        else:
-            # Optional: Verify that the provided filename has the correct extension
-            expected_extension = img_format if img_format != 'jpeg' else 'jpg'
-            if not filename.lower().endswith(f".{expected_extension}"):
-                logging.warning(f"Filename extension does not match image format. Expected .{expected_extension}")
-                filename += f".{expected_extension}"
-
-        # Upload the image to S3 without ACL
+        # Upload the image to S3
         s3_client.upload_fileobj(
             Fileobj=io.BytesIO(image_data),
             Bucket=bucket_name,
@@ -366,13 +360,11 @@ def upload_image_to_s3(image_data: bytes, filename: Optional[str] = None) -> str
         )
         logging.debug(f"Image uploaded to S3: {filename}")
 
-        # Construct the public URL based on bucket settings
+        # Construct the standard public URL
         region = s3_client.meta.region_name
         image_url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{filename}"
-        logging.debug(f"Constructed image URL: {image_url}")
-
+        logging.debug(f"Constructed public URL: {image_url}")
         return image_url
-
     except (BotoCoreError, ClientError) as e:
         logging.error(f"Failed to upload image to S3: {e}")
         raise RuntimeError(f"Failed to upload image to S3: {str(e)}")
@@ -380,18 +372,9 @@ def upload_image_to_s3(image_data: bytes, filename: Optional[str] = None) -> str
         logging.error(f"Image upload validation error: {ve}")
         raise ve
 
-def vision_node(state: dict) -> dict:
+def vision_node(state: Graphstate) -> Graphstate:
     """
-    Processes the image in the state using GPT-4 Vision API and adds a description.
-
-    Args:
-        state (dict): The state containing the image data.
-
-    Returns:
-        dict: The updated state with the stimulus description.
-
-    Raises:
-        ValueError: If processing fails.
+    Processes an image using GPT-4 Vision or handles the case if no image is provided.
     """
     try:
         image_data = state.get("image")
@@ -400,57 +383,61 @@ def vision_node(state: dict) -> dict:
             state["stimulus_description"] = None
             return state
 
-        if isinstance(image_data, bytes):
-            # If the image data is bytes, upload it to S3
+        # Ensure image_data is bytes
+        if isinstance(image_data, str):
+            image_data = image_data.encode('utf-8')  # Convert string to bytes if necessary
+
+        # Validate the image format
+        with Image.open(io.BytesIO(image_data)) as img:
+            img_format = img.format.lower()
+            logging.debug(f"Uploaded image format: {img_format}")
+            if img_format not in ['jpeg', 'png', 'gif', 'webp']:
+                logging.error(f"Unsupported image format: {img_format}")
+                raise ValueError(f"Unsupported image format: {img_format}")
+
+        # Upload image to S3 and get the public URL
+        try:
             image_url = upload_image_to_s3(image_data)
-        elif isinstance(image_data, str):
-            # If the image data is a URL, use it directly
-            image_url = image_data
-        else:
-            raise ValueError("Image must be either bytes or a URL string.")
+            logging.debug(f"Image successfully uploaded to S3: {image_url}")
+        except Exception as e:
+            raise ValueError(f"Error uploading image to S3: {e}")
 
-        logging.debug(f"Using image URL for GPT-4 Vision API: {image_url}")
+        # Call GPT-4 Vision API with the public URL
+        try:
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": "What's in this image?"},
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": image_url,
+                                    "detail": "high",
+                                },
+                            },
+                        ],
+                    }
+                ],
+                max_tokens=300,
+            )
+            # Extract message content
+            message_content = response.choices[0].message.content
 
-        # Call GPT-4 Vision API with the image URL
-        response = client.chat.completions.create(
-            model="gpt-4o",  # Ensure this is the correct model name
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": "What's in this image?"},
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": image_url},
-                        },
-                    ],
-                }
-            ],
-            max_tokens=300,
-        )
+            state["stimulus_description"] = message_content
+            logging.info(f"Stimulus description: {state['stimulus_description']}")
+        except Exception as e:
+            logging.error(f"Error in GPT-4 Vision processing: {e}")
+            raise ValueError(f"Error in GPT-4 Vision processing: {e}")
 
-        # Extract message content
-        if not response or not response.choices or not response.choices[0].message:
-            logging.error("Invalid response structure from GPT-4 Vision API.")
-            raise RuntimeError("Invalid response from GPT-4 Vision API.")
-
-        message_content = response.choices[0].message.content
-        state["stimulus_description"] = message_content
-        logging.debug(f"Received stimulus description: {message_content}")
         return state
-
-    except ClientError as ce:
-        logging.error(f"ClientError during GPT-4 Vision API call: {ce}")
-        raise
-    except BotoCoreError as be:
-        logging.error(f"BotoCoreError during S3 upload: {be}")
-        raise
-    except ValueError as ve:
-        logging.error(f"ValueError: {ve}")
-        raise
     except Exception as e:
-        logging.error(f"Unexpected error in GPT-4 Vision processing: {e}")
-        raise ValueError(f"Error in GPT-4 Vision processing: {e}")
+        logging.error(f"Error in vision_node: {e}")
+        raise ValueError(f"Error in vision_node: {e}")
+
+
     
 def grading_node(state):
     try:
