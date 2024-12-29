@@ -315,12 +315,25 @@ def chapters(state):
         return state
     except Exception as e:
         raise ValueError(f"Error in chapters: {e}")
-
+import base64
 import openai
 import io
 from io import BytesIO
 from botocore.exceptions import BotoCoreError, ClientError
 s3_client = boto3.client('s3')
+
+def validate_image(image_data: bytes) -> bool:
+    try:
+        with Image.open(io.BytesIO(image_data)) as img:
+            img_format = img.format.lower()
+            if img_format not in ['jpeg', 'png', 'gif', 'webp']:
+                print(f"Unsupported image format: {img_format}")
+                return False
+            print(f"Valid image format: {img_format}")
+            return True
+    except IOError as e:
+        print(f"Invalid image data: {e}")
+        return False
 
 def upload_image_to_s3(image_data: bytes, filename: Optional[str] = None) -> str:
     """
@@ -389,44 +402,51 @@ def vision_node(state: Dict[str, Any]) -> Dict[str, Any]:
             state["stimulus_description"] = None
             return state
 
-        # Ensure image_data is bytes
+        # Decode image if base64-encoded
         if isinstance(image_data, str):
             try:
                 image_data = base64.b64decode(image_data)
             except base64.binascii.Error:
                 raise ValueError("Image data is not valid base64-encoded bytes.")
 
-        # Validate image format
-        try:
-            with Image.open(io.BytesIO(image_data)) as img:
-                img_format = img.format.lower()
-                if img_format not in ['jpeg', 'png', 'gif', 'webp']:
-                    raise ValueError(f"Unsupported image format: {img_format}")
-        except IOError:
-            raise ValueError("Invalid image data provided.")
+        # Validate and upload the image
+        print("Validating image...")
+        if not validate_image(image_data):
+            raise ValueError("Image validation failed.")
 
-        # Upload to S3
+        print("Uploading image to S3...")
         image_url = upload_image_to_s3(image_data)
+        print(f"Image uploaded to: {image_url}")
 
-        # Call Vision API
+        # Call Vision API with structured input
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
                 {
                     "role": "user",
-                    "content": f"What's in this image? {image_url}"
+                    "content": [
+                        {"type": "text", "text": "What's in this image?"},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": image_url,
+                                "detail": "high",  # Optional: Add detail level if supported
+                            },
+                        },
+                    ],
                 }
             ],
             max_tokens=300,
         )
 
-        # Extract the API responseedjfdhjdkj
+        # Extract and save the API response
         message_content = response.choices[0].message.content
         state["stimulus_description"] = message_content
         print(message_content)
         return state
 
     except Exception as e:
+        print(f"Error in vision_node: {e}")
         raise ValueError(f"Error in vision_node: {e}")
     
 def grading_node(state):
