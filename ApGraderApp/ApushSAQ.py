@@ -372,34 +372,38 @@ import base64
 import re
 def vision_node(state):
     """
-    Processes an image using OpenAI's Vision API with Base64 image data.
-
+    Processes a Base64 image using OpenAI's Vision API.
     Args:
-        state (dict): The state containing image data.
-
+        state (dict): The state containing Base64-encoded image data.
     Returns:
         dict: Updated state with stimulus_description.
     """
     try:
-        # Get image data
+        # Retrieve Base64-encoded image data
         image_data = state.get("image")
         if not image_data:
             raise ValueError("No image data provided.")
 
-        # Call OpenAI Vision API with Base64 image data
-        prompt = "What is in this image?"
+        # Add MIME type prefix if missing
+        if not image_data.startswith("data:"):
+            image_data = f"data:image/jpeg;base64,{image_data}"  # Adjust if input is PNG or other formats.
+
+        # Call the Vision API
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4o-mini",  # Change the model to one that supports vision, if needed.
             messages=[
                 {
                     "role": "user",
-                    "content": f"{prompt}\n\nBase64 Image: {image_data}"
+                    "content": [
+                        {"type": "text", "text": "What is in this image?"},
+                        {"type": "image", "image": image_data},
+                    ],
                 }
             ],
             max_tokens=300,
         )
 
-        # Extract stimulus description
+        # Extract the response content
         stimulus_description = response.choices[0].message.content
         state["stimulus_description"] = stimulus_description
         return state
