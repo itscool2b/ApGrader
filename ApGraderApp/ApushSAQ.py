@@ -87,7 +87,7 @@ def retriever(query: str, top_k: int = 100) -> List[Dict]:
         logging.error(f"Error in retriever: {str(e)}")
         raise RuntimeError("Error in retriever function.") from e
 
-
+from typing import Any, Dict
 llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4o")
 
 case1 = PromptTemplate.from_template("""You are an AP U.S. History SAQ grader. You will evaluate the provided essay response for a specific SAQ question. Each question may contain multiple subparts (e.g., A, B, C), and you must analyze and grade each subpart individually.
