@@ -320,7 +320,7 @@ import openai
 import io
 from io import BytesIO
 from botocore.exceptions import BotoCoreError, ClientError
-s3_client = boto3.client('s3')
+s3_client = boto3.client('s3',region_name='us-east-2')
 
 def validate_image(image_data: bytes) -> bool:
     try:
@@ -336,20 +336,6 @@ def validate_image(image_data: bytes) -> bool:
         return False
 
 def upload_image_to_s3(image_data: bytes, filename: Optional[str] = None) -> str:
-    """
-    Uploads an image to S3 and returns the public URL.
-
-    Args:
-        image_data (bytes): The image data to upload.
-        filename (str, optional): The S3 object key. If not provided, a UUID-based name is generated.
-
-    Returns:
-        str: The public URL for the uploaded image.
-
-    Raises:
-        ValueError: If image data is missing or format is unsupported.
-        RuntimeError: If the upload fails.
-    """
     if not image_data:
         raise ValueError("No image data provided for upload to S3.")
 
@@ -378,9 +364,10 @@ def upload_image_to_s3(image_data: bytes, filename: Optional[str] = None) -> str
         raise RuntimeError(f"Failed to upload image to S3: {e}")
 
     # Construct and return the public URL
-    region = s3_client.meta.region_name
+    region = "us-east-2"  # Set your bucket's region
     image_url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{filename}"
     return image_url
+
 import base64
 import re
 def vision_node(state: Dict[str, Any]) -> Dict[str, Any]:
