@@ -371,7 +371,7 @@ def vision_node(state: Graphstate) -> Graphstate:
             raise ValueError("Image must be either bytes or a URL string.")
 
         # Call GPT-4 Vision API with the image URL
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {
