@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from PyPDF2 import PdfReader
-
+import base64
 from asgiref.sync import sync_to_async
 import logging
 from io import BytesIO
@@ -108,12 +108,12 @@ async def saq_view(request):
                     logging.error(f"Unsupported image type: {image.content_type}")
                     return JsonResponse({'error': 'Unsupported image type. Only JPEG, PNG, GIF, and WebP are allowed.'}, status=400)
                 
-                # Read image data as bytes
-                image_data = image.read()
+                # Read and encode image data as Base64
+                image_data = base64.b64encode(image.read()).decode('utf-8')
                 if not image_data:
                     logging.error("Uploaded image is empty.")
                     return JsonResponse({'error': 'Uploaded image is empty.'}, status=400)
-                logging.debug(f"Image read successfully: {len(image_data)} bytes")
+                logging.debug("Image read and encoded successfully.")
             except Exception as e:
                 logging.error(f"Error processing image: {e}")
                 return JsonResponse({'error': 'Failed to process image file.'}, status=500)

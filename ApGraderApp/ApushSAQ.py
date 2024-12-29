@@ -339,7 +339,7 @@ def upload_image_to_s3(image_data: bytes, filename: Optional[str] = None) -> str
     if not image_data:
         raise ValueError("No image data provided for upload to S3.")
 
-    # Validate and determine image format
+    
     try:
         with Image.open(io.BytesIO(image_data)) as img:
             img_format = img.format.lower()
@@ -349,10 +349,10 @@ def upload_image_to_s3(image_data: bytes, filename: Optional[str] = None) -> str
     except IOError:
         raise ValueError("Invalid image data provided.")
 
-    # Generate filename with correct extension
+    
     filename = filename or f"uploads/{uuid4()}.{extension}"
 
-    # Upload the image to S3
+    
     try:
         s3_client.upload_fileobj(
             Fileobj=io.BytesIO(image_data),
@@ -363,16 +363,16 @@ def upload_image_to_s3(image_data: bytes, filename: Optional[str] = None) -> str
     except (BotoCoreError, ClientError) as e:
         raise RuntimeError(f"Failed to upload image to S3: {e}")
 
-    # Construct and return the public URL
-    region = "us-east-2"  # Set your bucket's region
+   
+    region = "us-east-2"  
     image_url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{filename}"
     return image_url
 
 import base64
 import re
-def vision_node(state: Dict[str, Any]) -> Dict[str, Any]:
+def vision_node(state):
     """
-    Processes an image using OpenAI's Vision API with S3-generated image URL.
+    Processes an image using OpenAI's Vision API with Base64 image data.
 
     Args:
         state (dict): The state containing image data.
@@ -381,41 +381,30 @@ def vision_node(state: Dict[str, Any]) -> Dict[str, Any]:
         dict: Updated state with stimulus_description.
     """
     try:
-        # Extract image data from state
+        # Get image data
         image_data = state.get("image")
         if not image_data:
             raise ValueError("No image data provided.")
 
-        # Validate image format before upload
-        if not validate_image(image_data):
-            raise ValueError("Unsupported image format. Only JPEG, PNG, GIF, and WebP are allowed.")
-
-        # Upload the image to S3 and get the public URL
-        print("Uploading image to S3...")
-        image_url = upload_image_to_s3(image_data)
-        print(f"Image uploaded successfully. URL: {image_url}")
-
-        # Call the Vision API with the S3 URL
+        # Call OpenAI Vision API with Base64 image data
         prompt = "What is in this image?"
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4o",
             messages=[
                 {
                     "role": "user",
-                    "content": f"{prompt}\n\nImage URL: {image_url}"
+                    "content": f"{prompt}\n\nBase64 Image: {image_data}"
                 }
             ],
             max_tokens=300,
         )
 
-        # Extract and save the API response
+        # Extract stimulus description
         stimulus_description = response.choices[0].message.content
         state["stimulus_description"] = stimulus_description
-        print(stimulus_description)
         return state
 
     except Exception as e:
-        print(f"Error in vision_node: {e}")
         raise ValueError(f"Error in vision_node: {e}")
 def grading_node(state):
     try:
