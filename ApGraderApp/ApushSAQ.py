@@ -320,17 +320,16 @@ from io import BytesIO
 from botocore.exceptions import BotoCoreError, ClientError
 s3_client = boto3.client('s3')
 
-
 def upload_image_to_s3(image_data: bytes, filename: Optional[str] = None) -> str:
     """
-    Uploads an image to S3 and returns the public URL.
+    Uploads an image to S3 and returns a presigned URL.
 
     Args:
         image_data (bytes): The image data to upload.
         filename (str, optional): The S3 object key. If not provided, a UUID-based name is generated.
 
     Returns:
-        str: The public URL for the uploaded image.
+        str: The presigned URL for the uploaded image.
 
     Raises:
         RuntimeError: If the upload fails.
@@ -345,7 +344,8 @@ def upload_image_to_s3(image_data: bytes, filename: Optional[str] = None) -> str
             if img_format not in ['jpeg', 'png', 'gif', 'webp']:
                 logging.error(f"Attempted to upload unsupported image format: {img_format}")
                 raise ValueError(f"Unsupported image format: {img_format}")
-            content_type = f"image/{'jpeg' if img_format == 'jpg' else img_format}"
+            content_type = f"image/jpeg" if img_format == 'jpg' else f"image/{img_format}"
+            logging.debug(f"Detected image format: {img_format}")
 
         # Generate filename if not provided, ensuring the extension matches the format
         if not filename:
@@ -357,20 +357,24 @@ def upload_image_to_s3(image_data: bytes, filename: Optional[str] = None) -> str
                 logging.warning(f"Filename extension does not match image format. Expected .{expected_extension}")
                 filename += f".{expected_extension}"
 
-        # Upload the image to S3
+        # Upload the image to S3 without ACL
         s3_client.upload_fileobj(
             Fileobj=io.BytesIO(image_data),
             Bucket=bucket_name,
             Key=filename,
-            ExtraArgs={'ContentType': content_type, 'ACL': 'public-read'}  # Ensure the object is publicly readable
+            ExtraArgs={'ContentType': content_type}
         )
         logging.debug(f"Image uploaded to S3: {filename}")
 
-        # Construct the standard public URL
-        region = s3_client.meta.region_name
-        image_url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{filename}"
-        logging.debug(f"Constructed public URL: {image_url}")
-        return image_url
+        # Generate a presigned URL valid for 1 hour
+        presigned_url = s3_client.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': bucket_name, 'Key': filename},
+            ExpiresIn=3600  # URL valid for 1 hour
+        )
+        logging.debug(f"Generated presigned URL: {presigned_url}")
+        return presigned_url
+
     except (BotoCoreError, ClientError) as e:
         logging.error(f"Failed to upload image to S3: {e}")
         raise RuntimeError(f"Failed to upload image to S3: {str(e)}")
@@ -378,8 +382,19 @@ def upload_image_to_s3(image_data: bytes, filename: Optional[str] = None) -> str
         logging.error(f"Image upload validation error: {ve}")
         raise ve
 
-# Vision node function
-def vision_node(state: Graphstate) -> Graphstate:
+def vision_node(state: dict) -> dict:
+    """
+    Processes the image in the state using GPT-4 Vision API and adds a description.
+
+    Args:
+        state (dict): The state containing the image data.
+
+    Returns:
+        dict: The updated state with the stimulus description.
+
+    Raises:
+        ValueError: If processing fails.
+    """
     try:
         image_data = state.get("image")
         if not image_data:
@@ -400,7 +415,7 @@ def vision_node(state: Graphstate) -> Graphstate:
 
         # Call GPT-4 Vision API with the image URL
         response = client.chat.completions.create(
-            model="gpt-4o",  # Correct model name
+            model="gpt-4-vision",  # Ensure this is the correct model name
             messages=[
                 {
                     "role": "user",
@@ -425,6 +440,7 @@ def vision_node(state: Graphstate) -> Graphstate:
         state["stimulus_description"] = message_content
         logging.debug(f"Received stimulus description: {message_content}")
         return state
+
     except ClientError as ce:
         logging.error(f"ClientError during GPT-4 Vision API call: {ce}")
         raise
