@@ -359,7 +359,8 @@ def upload_image_to_s3(image_data: bytes, filename: Optional[str] = None) -> str
             Fileobj=io.BytesIO(image_data),
             Bucket=bucket_name,
             Key=filename,
-            ExtraArgs={'ContentType': content_type, 'ACL': 'public-read'}
+            ExtraArgs={'ContentType': content_type}
+            # Removed 'ACL': 'public-read' to comply with bucket settings
         )
     except (BotoCoreError, ClientError) as e:
         raise RuntimeError(f"Failed to upload image to S3: {e}")
@@ -368,7 +369,7 @@ def upload_image_to_s3(image_data: bytes, filename: Optional[str] = None) -> str
     region = s3_client.meta.region_name
     image_url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{filename}"
     return image_url
-
+import base64
 def vision_node(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     Processes an image using GPT-4 Vision or handles the case if no image is provided.
@@ -387,7 +388,6 @@ def vision_node(state: Dict[str, Any]) -> Dict[str, Any]:
 
         # Ensure image_data is bytes
         if isinstance(image_data, str):
-            import base64
             try:
                 image_data = base64.b64decode(image_data)
             except base64.binascii.Error:
@@ -398,7 +398,7 @@ def vision_node(state: Dict[str, Any]) -> Dict[str, Any]:
 
         # Call GPT-4 Vision API with the public URL
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4",
             messages=[
                 {
                     "role": "user",
@@ -415,8 +415,6 @@ def vision_node(state: Dict[str, Any]) -> Dict[str, Any]:
         return state
     except Exception as e:
         raise ValueError(f"Error in vision_node: {e}")
-
-
     
 def grading_node(state):
     try:
