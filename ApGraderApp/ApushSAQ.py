@@ -389,14 +389,14 @@ def vision_node(state: Dict[str, Any]) -> Dict[str, Any]:
             state["stimulus_description"] = None
             return state
 
-        # Decode image if base64-encoded
+        # Ensure image_data is bytes
         if isinstance(image_data, str):
             try:
                 image_data = base64.b64decode(image_data)
             except base64.binascii.Error:
                 raise ValueError("Image data is not valid base64-encoded bytes.")
 
-        # Validate image data and get format
+        # Validate image format
         try:
             with Image.open(io.BytesIO(image_data)) as img:
                 img_format = img.format.lower()
@@ -405,29 +405,22 @@ def vision_node(state: Dict[str, Any]) -> Dict[str, Any]:
         except IOError:
             raise ValueError("Invalid image data provided.")
 
-        # Upload image to S3 and get the public URL
+        # Upload to S3
         image_url = upload_image_to_s3(image_data)
 
-        # Ensure the image URL is publicly accessible
-        # If the API doesn't support URLs, fallback to inline image data
-        api_input = [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": "What's in this image?"},
-                    {"type": "image_url", "image_url": {"url": image_url}}
-                ]
-            }
-        ]
-
-        # Send API request
+        # Call Vision API
         response = client.chat.completions.create(
             model="gpt-4o",
-            messages=api_input,
+            messages=[
+                {
+                    "role": "user",
+                    "content": f"What's in this image? {image_url}"
+                }
+            ],
             max_tokens=300,
         )
 
-        # Extract the response content
+        # Extract the API response
         message_content = response.choices[0].message.content
         state["stimulus_description"] = message_content
 
