@@ -322,19 +322,6 @@ s3_client = boto3.client('s3')
 
 
 def upload_image_to_s3(image_data: bytes, filename: Optional[str] = None) -> str:
-    """
-    Uploads an image to S3 and returns the public URL.
-
-    Args:
-        image_data (bytes): The image data to upload.
-        filename (str, optional): The S3 object key. If not provided, a UUID-based name is generated.
-
-    Returns:
-        str: The public URL for the uploaded image.
-
-    Raises:
-        RuntimeError: If the upload fails.
-    """
     if not image_data:
         raise ValueError("No image data provided for upload to S3.")
 
@@ -348,7 +335,6 @@ def upload_image_to_s3(image_data: bytes, filename: Optional[str] = None) -> str
         with Image.open(io.BytesIO(image_data)) as img:
             img_format = img.format.lower()
             if img_format not in ['jpeg', 'png', 'gif', 'webp']:
-                logging.error(f"Attempted to upload unsupported image format: {img_format}")
                 raise ValueError(f"Unsupported image format: {img_format}")
             content_type = f"image/{img_format if img_format != 'jpg' else 'jpeg'}"
 
@@ -359,33 +345,33 @@ def upload_image_to_s3(image_data: bytes, filename: Optional[str] = None) -> str
             Key=filename,
             ExtraArgs={'ContentType': content_type}
         )
-        logging.debug(f"Image uploaded to S3: {filename}")
-
-        # Construct the standard public URL
         region = s3_client.meta.region_name
         image_url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{filename}"
-        logging.debug(f"Constructed public URL: {image_url}")
         return image_url
     except (BotoCoreError, ClientError) as e:
         logging.error(f"Failed to upload image to S3: {e}")
         raise RuntimeError(f"Failed to upload image to S3: {str(e)}")
-    except ValueError as ve:
-        logging.error(f"Image upload validation error: {ve}")
-        raise ve
 
-def vision_node(state):
-    """
-    Processes an image using GPT-4 Vision.
-    """
+# Vision node function
+def vision_node(state: Graphstate) -> Graphstate:
     try:
-        image_data = state.get("image_url")
+        image_data = state.get("image")
         if not image_data:
-            logging.warning("No image URL provided in state['image_url']. Skipping vision processing.")
+            logging.warning("No image data provided in state['image']. Skipping vision processing.")
             state["stimulus_description"] = None
             return state
 
+        if isinstance(image_data, bytes):
+            # If the image data is bytes, upload it to S3
+            image_url = upload_image_to_s3(image_data)
+        elif isinstance(image_data, str):
+            # If the image data is a URL, use it directly
+            image_url = image_data
+        else:
+            raise ValueError("Image must be either bytes or a URL string.")
+
         # Call GPT-4 Vision API with the image URL
-        response = client.chat.completions.create(
+        response = openai.ChatCompletion.create(
             model="gpt-4o-mini",
             messages=[
                 {
@@ -394,7 +380,7 @@ def vision_node(state):
                         {"type": "text", "text": "What's in this image?"},
                         {
                             "type": "image_url",
-                            "image_url": {"url": image_data},
+                            "image_url": {"url": image_url},
                         },
                     ],
                 }
@@ -405,13 +391,10 @@ def vision_node(state):
         # Extract message content
         message_content = response.choices[0].message.content
         state["stimulus_description"] = message_content
-        logging.info(f"Stimulus description: {state['stimulus_description']}")
-
+        return state
     except Exception as e:
         logging.error(f"Error in GPT-4 Vision processing: {e}")
         raise ValueError(f"Error in GPT-4 Vision processing: {e}")
-
-    return state
 
 def grading_node(state):
     try:
