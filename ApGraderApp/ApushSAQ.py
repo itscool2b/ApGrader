@@ -385,7 +385,7 @@ def upload_image_to_s3(image_data: bytes, filename: Optional[str] = None) -> str
     image_url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{filename}"
     return image_url
 import base64
-
+import re
 def vision_node(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     Processes an image using GPT-4 Vision or handles the case if no image is provided.
@@ -397,40 +397,34 @@ def vision_node(state: Dict[str, Any]) -> Dict[str, Any]:
         dict: Updated state with stimulus_description.
     """
     try:
+        # Extract image data from state
         image_data = state.get("image")
         if not image_data:
             state["stimulus_description"] = None
             return state
 
-        # Decode image if base64-encoded
-        if isinstance(image_data, str):
-            try:
-                image_data = base64.b64decode(image_data)
-            except base64.binascii.Error:
-                raise ValueError("Image data is not valid base64-encoded bytes.")
+        # Validate and extract base64 image string
+        img_data_match = re.match(r'data:(image/.*?);base64,(.*)', image_data)
+        if not img_data_match:
+            raise ValueError("Invalid image data format.")
 
-        # Validate and upload the image
-        print("Validating image...")
-        if not validate_image(image_data):
-            raise ValueError("Image validation failed.")
+        img_type, img_b64_str = img_data_match.groups()
 
-        print("Uploading image to S3...")
-        image_url = upload_image_to_s3(image_data)
-        print(f"Image uploaded to: {image_url}")
+        # Define a prompt for a complete description
+        prompt = "Provide a detailed description of the content in this image."
 
-        # Call Vision API with structured input
+        # Call the Vision API using the base64 data as a pseudo-URL
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4o-mini",
             messages=[
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": "What's in this image?"},
+                        {"type": "text", "text": prompt},
                         {
                             "type": "image_url",
                             "image_url": {
-                                "url": image_url,
-                                "detail": "high",  # Optional: Add detail level if supported
+                                "url": f"data:{img_type};base64,{img_b64_str}",
                             },
                         },
                     ],
@@ -439,10 +433,10 @@ def vision_node(state: Dict[str, Any]) -> Dict[str, Any]:
             max_tokens=300,
         )
 
-        # Extract and save the API response
-        message_content = response.choices[0].message.content
-        state["stimulus_description"] = message_content
-        print(message_content)
+        # Extract the response from the Vision API
+        stimulus_description = response.choices[0].message.content.strip()
+        state["stimulus_description"] = stimulus_description
+        print(stimulus_description)
         return state
 
     except Exception as e:
