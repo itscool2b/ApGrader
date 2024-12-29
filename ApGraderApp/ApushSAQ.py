@@ -388,7 +388,7 @@ import base64
 import re
 def vision_node(state: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Processes an image using GPT-4 Vision or handles the case if no image is provided.
+    Processes an image using OpenAI's Vision API with S3-generated image URL.
 
     Args:
         state (dict): The state containing image data.
@@ -397,35 +397,20 @@ def vision_node(state: Dict[str, Any]) -> Dict[str, Any]:
         dict: Updated state with stimulus_description.
     """
     try:
-        # Get image data from state
+        # Extract image data from state
         image_data = state.get("image")
         if not image_data:
             raise ValueError("No image data provided.")
 
-        # Ensure image_data is a UTF-8 string (decode if bytes)
-        if isinstance(image_data, bytes):
-            try:
-                image_data = image_data.decode("utf-8")
-            except UnicodeDecodeError:
-                raise ValueError("Image data is not a valid UTF-8 encoded string.")
+        # Upload the image to S3 and get the public URL
+        print("Uploading image to S3...")
+        image_url = upload_image_to_s3(image_data)
+        print(f"Image uploaded successfully. URL: {image_url}")
 
-        # Validate and extract the base64 image data
-        img_data_match = re.match(r'data:(image/.*?);base64,(.*)', image_data)
-        if not img_data_match:
-            raise ValueError("Invalid image data format. Ensure the image is base64-encoded and prefixed with a MIME type.")
+        # Define the prompt for the Vision API
+        prompt = "What is in this image?"
 
-        img_type, img_b64_str = img_data_match.groups()
-
-        # Validate the base64 string
-        try:
-            base64.b64decode(img_b64_str, validate=True)
-        except base64.binascii.Error:
-            raise ValueError("Invalid base64 encoding in image data.")
-
-        # Define a prompt for the Vision API
-        prompt = "Provide a complete, detailed description of the content in this image."
-
-        # Call Vision API with the base64-encoded image passed as a pseudo-URL
+        # Call the Vision API with the S3 URL
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
@@ -435,7 +420,10 @@ def vision_node(state: Dict[str, Any]) -> Dict[str, Any]:
                         {"type": "text", "text": prompt},
                         {
                             "type": "image_url",
-                            "image_url": {"url": f"data:{img_type};base64,{img_b64_str}"},
+                            "image_url": {
+                                "url": image_url,
+                                "detail": "high",  # Optional: Adjust detail level
+                            },
                         },
                     ],
                 }
@@ -443,7 +431,7 @@ def vision_node(state: Dict[str, Any]) -> Dict[str, Any]:
             max_tokens=300,
         )
 
-        # Extract the response content without transformations
+        # Extract and save the API response
         stimulus_description = response.choices[0].message.content
         state["stimulus_description"] = stimulus_description
 
@@ -452,7 +440,7 @@ def vision_node(state: Dict[str, Any]) -> Dict[str, Any]:
     except Exception as e:
         print(f"Error in vision_node: {e}")
         raise ValueError(f"Error in vision_node: {e}")
-    
+
 def grading_node(state):
     try:
         essay = state["student_essay"]  
