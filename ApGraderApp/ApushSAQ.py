@@ -410,7 +410,7 @@ def vision_node(state: Graphstate) -> Graphstate:
         # Call GPT-4 Vision API with the public URL
         try:
             response = client.chat.completions.create(
-                model="gpt-4",
+                model="gpt-4o-mini",
                 messages=[
                     {
                         "role": "user",
