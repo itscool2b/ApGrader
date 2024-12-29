@@ -288,7 +288,7 @@ summation_prompt = PromptTemplate.from_template("""You are tasked with summarizi
   - Include corrections for each mistake.
   - Emphasize that these mistakes do not impact the total score.
                                                 
-                                                ALSO JUST OUTPUT THIS - {description} - just explain the stimulus and how the student realted their essay to it - it doesnt effect score""")
+                                                """)
 
 class Graphstate(TypedDict):
     questions: str
@@ -412,6 +412,7 @@ def vision_node(state):
         # Extract and store the response content
         stimulus_description = response.choices[0].message.content
         state["stimulus_description"] = stimulus_description
+        print(stimulus_description)
         return state
 
     except Exception as e:
@@ -452,10 +453,10 @@ def summation_node(state):
     try:
         generation = state["case1_generation"] or state["case2_generation"]
         feedback = state.get("factchecking_generation", "")
-        description = state["stimulus_description"]
+        
         if not feedback:
             raise ValueError("Fact-checking feedback is missing.")
-        formatted_prompt = summation_prompt.format(generation=generation, factchecking=feedback, description=description)
+        formatted_prompt = summation_prompt.format(generation=generation, factchecking=feedback)
         response = llm.invoke(formatted_prompt)
         state["summation"] = response.content.strip()
        
