@@ -372,38 +372,44 @@ import base64
 import re
 def vision_node(state):
     """
-    Processes a Base64 image using OpenAI's Vision API.
+    Processes a Base64-encoded image using OpenAI's Vision API.
     Args:
         state (dict): The state containing Base64-encoded image data.
     Returns:
         dict: Updated state with stimulus_description.
     """
     try:
-        # Retrieve Base64-encoded image data
+        # Retrieve Base64-encoded image data from the state
         image_data = state.get("image")
         if not image_data:
             raise ValueError("No image data provided.")
 
         # Add MIME type prefix if missing
         if not image_data.startswith("data:"):
-            image_data = f"data:image/jpeg;base64,{image_data}"  # Adjust if input is PNG or other formats.
+            image_data = f"data:image/jpeg;base64,{image_data}"  # Adjust MIME type as needed.
 
-        # Call the Vision API
+        # Call OpenAI Vision API
         response = client.chat.completions.create(
-            model="gpt-4o-mini",  # Change the model to one that supports vision, if needed.
+            model="gpt-4o-mini",  # Ensure this model supports vision tasks.
             messages=[
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": "What is in this image?"},
-                        {"type": "image", "image": image_data},
+                        {
+                            "type": "text",
+                            "text": "What is in this image?",
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": image_data},  # Pass the Base64 string with prefix.
+                        },
                     ],
                 }
             ],
             max_tokens=300,
         )
 
-        # Extract the response content
+        # Extract and store the response content
         stimulus_description = response.choices[0].message.content
         state["stimulus_description"] = stimulus_description
         return state
