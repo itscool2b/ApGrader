@@ -581,7 +581,7 @@ def summation_node(state):
     complx = state["complexunderstanding_generation"]
     factcheck = state["factchecking_generation"]
 
-    formatted_prompt = summation_prompt.format(thesis_generation=thesis,contextualization_generation=context,evidence_beyond_generation=beyond,complexunderstanding_generation=complx,factchecking_generation=factcheck,evidence_generation=evidence)
+    formatted_prompt = summation_prompt.format(thesis_generation=thesis,contextualization_generation=context,evidence_beyond_generation=beyond,complexunderstanding_generation=complx,fact_checking_feedback=factcheck,evidence_generation=evidence)
     response = llm.invoke(formatted_prompt)
     state["summation"] = response.content.strip()
     return state
