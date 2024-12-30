@@ -163,14 +163,14 @@ evidence_prompt = PromptTemplate.from_template(
 - **Descriptions and usage** of documents must be in the student's own words and relevant to the prompt.
 
 **Document Descriptions**:
-- **Document 1 Description:** {doc_1_description}
-- **Document 2 Description:** {doc_2_description}
-- **Document 3 Description:** {doc_3_description}
-- **Document 4 Description:** {doc_4_description}
-- **Document 5 Description:** {doc_5_description}
-- **Document 6 Description:** {doc_6_description}
-- **Document 7 Description:** {doc_7_description}
-- **Document 8 Description:** {doc_8_description}
+- **Document 1 Description:** {doc1}
+- **Document 2 Description:** {doc2}
+- **Document 3 Description:** {doc3}
+- **Document 4 Description:** {doc4}
+- **Document 5 Description:** {doc5}
+- **Document 6 Description:** {doc6}
+- **Document 7 Description:** {doc7}
+
 
 **Essay to Evaluate**:
 {essay}
@@ -636,7 +636,7 @@ def evaluate2(prompt: str, essay: str, images: List[Optional[str]] = None) -> st
     images = images[:7] + [None] * (7 - len(images))  
 
     
-    state: GraphState = {
+    state = {
         "prompt": prompt,
         "prompt_type": None,
         "student_essay": essay,
