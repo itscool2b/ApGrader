@@ -335,7 +335,8 @@ def vision_node(state):
         
         image_data = state.get("image")
         if not image_data:
-            raise ValueError("No image data provided.")
+            state["stimulus_description"] = None
+            return state
 
         
         if not image_data.startswith("data:"):
