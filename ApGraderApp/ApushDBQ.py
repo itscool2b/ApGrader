@@ -475,7 +475,7 @@ def vision_node(state: GraphState) -> GraphState:
                         ],
                     }
                 ],
-                max_tokens=300,
+                max_tokens=500,
             )
 
             
@@ -599,7 +599,7 @@ workflow.add_node("evidence_beyond_grading", evidence_beyond_grading_node)
 workflow.add_node("complex_understanding_grading", complex_understanding_grading_node)
 workflow.add_node("factchecking_grading", factchecking_node)
 
-# Rename this node to avoid conflict
+
 workflow.add_node("final_summation_node", summation_node)
 
 workflow.add_edge(START, "classify_prompt")
@@ -667,7 +667,7 @@ def evaluate2(prompt: str, essay: str, images: List[Optional[str]] = None) -> st
         state = evidence_beyond_grading_node(state)
         state = complex_understanding_grading_node(state)
         state = factchecking_node(state)
-        # Use the renamed workflow node
+        
         state = summation_node(state)
     except Exception as e:
         raise ValueError(f"An error occurred during evaluation: {e}")
