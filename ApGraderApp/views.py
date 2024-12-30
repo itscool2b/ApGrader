@@ -38,9 +38,11 @@ async def ApushLEQ(request):
             except Exception as e:
                 logger.error(f"Error processing PDF: {e}")
                 return JsonResponse({'error': 'Failed to process the PDF file'}, status=500)
+        
         else:
-            return JsonResponse({'error': 'PDF file is required'}, status=400)
-
+            essay_text = request.POST.get("essay_text", "").strip()
+            if not essay_text:
+                return JsonResponse({'error': 'Either "essay_file" or "essay_text" is required'}, status=400)
         
         try:
             response = await sync_to_async(evaluate)(prompt, essay_text)
@@ -148,6 +150,10 @@ async def dbq_view(request):
         except Exception:
             return JsonResponse({'error': 'Failed to process PDF file'}, status=500)
 
+        else:
+            essay_text = request.POST.get("essay_text", "").strip()
+            if not essay_text:
+                return JsonResponse({'error': 'Either "essay_file" or "essay_text" is required'}, status=400)
         
         images = []
         for i in range(1, 8):  
@@ -176,3 +182,7 @@ async def dbq_view(request):
 
     except Exception as e:
         return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
+    
+@csrf_exempt
+def bulk_grading(request):
+    pass
