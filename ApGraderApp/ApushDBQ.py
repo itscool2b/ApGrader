@@ -618,7 +618,7 @@ workflow.add_edge("summation", END)
 
 app = workflow.compile()
 
-def evaluate(prompt: str, essay: str, images: List[Optional[str]] = None) -> str:
+def evaluate2(prompt: str, essay: str, images: List[Optional[str]] = None) -> str:
     """
     Evaluate function to process the prompt, essay, and optional image inputs.
 
