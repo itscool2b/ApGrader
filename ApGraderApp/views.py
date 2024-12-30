@@ -131,33 +131,40 @@ async def dbq_view(request):
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
     try:
-        
+        # Retrieve and validate the prompt
         prompt = request.POST.get("prompt", "").strip()
         if not prompt:
             return JsonResponse({'error': 'Missing "prompt" in request'}, status=400)
 
         
-        if 'essay_file' not in request.FILES:
-            return JsonResponse({'error': 'PDF file is required'}, status=400)
+        submission_type = request.POST.get("submissionType", "").strip().lower()
+        if submission_type not in ["file", "text"]:
+            return JsonResponse({'error': 'Invalid or missing "submissionType". Must be "file" or "text".'}, status=400)
 
-        try:
-            pdf_file = request.FILES['essay_file']
-            pdf_stream = io.BytesIO(pdf_file.read())
-            reader = PdfReader(pdf_stream)
-            essay_text = "".join([page.extract_text() for page in reader.pages if page.extract_text()])
-            if not essay_text.strip():
-                return JsonResponse({'error': 'Empty or unreadable PDF file'}, status=400)
-        except Exception:
-            return JsonResponse({'error': 'Failed to process PDF file'}, status=500)
+        if submission_type == "file":
+            
+            if 'essay_file' not in request.FILES:
+                return JsonResponse({'error': 'PDF file is required for file submissions'}, status=400)
+            try:
+                pdf_file = request.FILES['essay_file']
+                pdf_stream = io.BytesIO(pdf_file.read())
+                reader = PdfReader(pdf_stream)
+                essay_text = "".join([page.extract_text() for page in reader.pages if page.extract_text()])
+                if not essay_text.strip():
+                    return JsonResponse({'error': 'Empty or unreadable PDF file'}, status=400)
+            except Exception as e:
+                return JsonResponse({'error': f'Failed to process PDF file: {str(e)}'}, status=500)
 
-        else:
+        elif submission_type == "text":
+            
             essay_text = request.POST.get("essay_text", "").strip()
             if not essay_text:
-                return JsonResponse({'error': 'Either "essay_file" or "essay_text" is required'}, status=400)
+                return JsonResponse({'error': 'Essay text is required for text submissions'}, status=400)
+
         
         images = []
-        for i in range(1, 8):  
-            image_key = f'image{i}'
+        for i in range(1, 8):
+            image_key = f'image_{i}'  
             if image_key in request.FILES:
                 image = request.FILES[image_key]
                 supported_mime_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]
@@ -166,14 +173,14 @@ async def dbq_view(request):
                 try:
                     image_data = base64.b64encode(image.read()).decode('utf-8')
                     images.append(image_data)
-                except Exception:
-                    return JsonResponse({'error': f'Failed to process {image_key}.'}, status=500)
+                except Exception as e:
+                    return JsonResponse({'error': f'Failed to process {image_key}: {str(e)}'}, status=500)
 
-        
+        # Ensure exactly 7 images (pad with None if fewer)
         images = images[:7] + [None] * (7 - len(images))
 
-        
         try:
+            # Assuming 'evaluate2' is your evaluation function
             response = await sync_to_async(evaluate2)(prompt, essay_text, images)
         except Exception as e:
             return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
@@ -182,7 +189,6 @@ async def dbq_view(request):
 
     except Exception as e:
         return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
-    
 @csrf_exempt
 def bulk_grading_leq(request):
     pass
