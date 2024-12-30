@@ -9,6 +9,7 @@ from io import BytesIO
 import json
 from .ApushLEQ import evaluate  
 from .ApushSAQ import evaluate1
+from .ApushDBQ import evaluate2
 import io
 import asyncio
 logger = logging.getLogger(__name__)
@@ -115,6 +116,60 @@ async def saq_view(request):
             return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
 
         
+        return JsonResponse({"response": {"output": response}}, status=200)
+
+    except Exception as e:
+        return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
+    
+@csrf_exempt
+async def dbq_view(request):
+    if request.method != "POST":
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    try:
+        
+        prompt = request.POST.get("prompt", "").strip()
+        if not prompt:
+            return JsonResponse({'error': 'Missing "prompt" in request'}, status=400)
+
+        
+        if 'essay_file' not in request.FILES:
+            return JsonResponse({'error': 'PDF file is required'}, status=400)
+
+        try:
+            pdf_file = request.FILES['essay_file']
+            pdf_stream = io.BytesIO(pdf_file.read())
+            reader = PdfReader(pdf_stream)
+            essay_text = "".join([page.extract_text() for page in reader.pages if page.extract_text()])
+            if not essay_text.strip():
+                return JsonResponse({'error': 'Empty or unreadable PDF file'}, status=400)
+        except Exception:
+            return JsonResponse({'error': 'Failed to process PDF file'}, status=500)
+
+        
+        images = []
+        for i in range(1, 8):  
+            image_key = f'image{i}'
+            if image_key in request.FILES:
+                image = request.FILES[image_key]
+                supported_mime_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]
+                if image.content_type not in supported_mime_types:
+                    return JsonResponse({'error': f'Unsupported image type for {image_key}.'}, status=400)
+                try:
+                    image_data = base64.b64encode(image.read()).decode('utf-8')
+                    images.append(image_data)
+                except Exception:
+                    return JsonResponse({'error': f'Failed to process {image_key}.'}, status=500)
+
+        
+        images = images[:7] + [None] * (7 - len(images))
+
+        
+        try:
+            response = await asyncio.to_thread(evaluate2, prompt, essay_text, images)
+        except Exception as e:
+            return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
+
         return JsonResponse({"response": {"output": response}}, status=200)
 
     except Exception as e:
