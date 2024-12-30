@@ -82,6 +82,7 @@ async def saq_view(request):
             return JsonResponse({'error': 'Invalid JSON format for "questions"'}, status=400)
 
         
+        essay_text = None
         if 'essay_file' in request.FILES:
             pdf_file = request.FILES['essay_file']
             try:
@@ -93,9 +94,12 @@ async def saq_view(request):
             except Exception:
                 return JsonResponse({'error': 'Failed to process PDF file'}, status=500)
         else:
-            return JsonResponse({'error': 'PDF file is required'}, status=400)
+            essay_text = request.POST.get("essay_text", "").strip()
+            if not essay_text:
+                return JsonResponse({'error': 'Either "essay_file" or "essay_text" is required'}, status=400)
 
-        
+       
+        image_data = None
         if 'image' in request.FILES:
             image = request.FILES['image']
             supported_mime_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]
@@ -106,10 +110,8 @@ async def saq_view(request):
                 image_data = base64.b64encode(image.read()).decode('utf-8')
             except Exception:
                 return JsonResponse({'error': 'Failed to process image file.'}, status=500)
-        else:
-            return JsonResponse({'error': 'Image file is required'}, status=400)
 
-        
+       
         try:
             response = await asyncio.to_thread(evaluate1, questions, essay_text, image_data)
         except Exception as e:

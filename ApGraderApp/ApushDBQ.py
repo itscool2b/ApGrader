@@ -322,6 +322,7 @@ complex_understanding_prompt = PromptTemplate.from_template(
   feedback"""
 )
 
+
 summation_prompt = PromptTemplate.from_template(
     """
 Your task is to output the final feedback in the exact format below. 
@@ -358,17 +359,27 @@ So here is what u shoud be outputing based on all the data u have been given
 
 output format
 MAKE SURE TO ADD EVERYTHING UP PROPERLY AND MAKE SURE THE EXTRACTION OF DATA IS ACCURATE AND COMPLETE. I GAVE U ALL THE DATA ABOVE BEFORE
-Thesis score - 
-Contextualization score - 
-Evidence score - 
-Edivence beyond score -
-Complex understanding score - 
+Thesis score - /1
+Contextualization score - /1
+Evidence score - /3
+Edivence beyond score - /1
+Complex understanding score - /1
 Total summed up score out of 7. For examples 3/7 or 2/7 just insert the score/7 - 
 
 FEEDBACK - 
 Thesis feedback - 
 Contextualization feedback - 
 Evidence feedback - 
+Give evidence feedback in this format:
+**Total Score (0–3)**: Provide a total score.
+- **Breakdown**:
+  - **First Evidence Point (1 Point)**: Yes/No
+    - *Explanation:* Brief explanation for why the point was earned or not.
+  - **Second Evidence Point (1 Point)**: Yes/No
+    - *Explanation:* Brief explanation for why the point was earned or not.
+  - **HIPP Point (1 Point)**: Yes/No
+    - *Explanation:* Brief explanation for why the point was earned or not.
+- **Overall Feedback**: Provide a summary of the strengths and areas for improvement.
 Edivence beyond feedback -
 Complex understanding feedback - 
 Fact-checking feedback - (Include only if exists; summarize any content mistakes and corrections.)
