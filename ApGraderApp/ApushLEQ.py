@@ -265,14 +265,14 @@ So here is what u shoud be outputing based on all the data u have been given
 output format
 MAKE SURE TO ADD EVERYTHING UP PROPERLY AND MAKE SURE THE EXTRACTION OF DATA IS ACCURATE AND COMPLETE. I GAVE U ALL THE DATA ABOVE BEFORE
 Thesis score - 
-**contextualization score - 
+contextualization score - 
 evidence score - 
 complex understanding score - 
 total summed up score out of 6. For examples 3/6 or 2/6 just insert the score/6 - 
 
 FEEDBACK - 
 Thesis feedback - 
-**contextualization feedback - 
+contextualization feedback - 
 evidence feedback - 
 complex understanding feedback - 
 fact-checking feedback - (Include only if exists; summarize any content mistakes and corrections.)

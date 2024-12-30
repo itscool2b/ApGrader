@@ -184,5 +184,13 @@ async def dbq_view(request):
         return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
     
 @csrf_exempt
-def bulk_grading(request):
+def bulk_grading_leq(request):
+    pass
+
+@csrf_exempt
+def bulk_grading_saq(request):
+    pass
+
+@csrf_exempt
+def bulk_grading_dbq(request):
     pass
