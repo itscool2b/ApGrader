@@ -171,7 +171,6 @@ evidence_prompt = PromptTemplate.from_template(
 - **Document 6 Description:** {doc6}
 - **Document 7 Description:** {doc7}
 
-
 **Essay to Evaluate**:
 {essay}
 
@@ -179,7 +178,7 @@ evidence_prompt = PromptTemplate.from_template(
 
 **Instructions**:
 1. **Analyze the Use of Documents**:
-   - Review each document description (Doc 1 to Doc 8) to determine how accurately and effectively they are described in the essay.
+   - Review each document description (Doc 1 to Doc 7) to determine how accurately and effectively they are described in the essay.
    - Assess whether the student has explained the content of each document in their own words and related it to the prompt.
    - Identify which documents are used to support the argument and how they contribute to the thesis.
 
@@ -189,25 +188,21 @@ evidence_prompt = PromptTemplate.from_template(
 3. **Assign Scores and Provide Feedback**:
    - **Total Score (0–3)**: Sum the points earned across the three Evidence points.
    - **Breakdown**:
-     - **First Evidence Point (1 Point)**: Yes/No + Explanation
-     - **Second Evidence Point (1 Point)**: Yes/No + Explanation
-     - **HIPP Point (1 Point)**: Yes/No + Explanation
-       - *If earned:* Specify which documents contributed to earning this point by quoting relevant parts of the student's essay.
-       - *If not earned:* No need to provide additional details.
+     - **First Evidence Point (1 Point)**: (Explain if criteria are met)
+     - **Second Evidence Point (1 Point)**: (Explain if criteria are met)
+     - **HIPP Point (1 Point)**: (Explain if criteria are met)
    - **Overall Feedback**: Summarize the strengths and areas for improvement regarding the use of evidence in the essay. Include specific references to how documents were used or could be better utilized.
 
 **Output**:
-- **Total Score (0–3)**: total_score
-for the breakdown display the scores and why they earned it
+- **Total Score (0–3)**: Provide a total score.
 - **Breakdown**:
-  - **First Evidence Point (1 Point)**: first_evidence_point
-    - *Explanation:* first_evidence_explanation
-  - **Second Evidence Point (1 Point)**: second_evidence_point
-    - *Explanation:* second_evidence_explanation
-  - **HIPP Point (1 Point)**: hipp_point
-    - *Explanation:* hipp_explanation
-      hipp_specific_feedback
-- **Overall Feedback**: overall_feedback"""
+  - **First Evidence Point (1 Point)**: Yes/No
+    - *Explanation:* Brief explanation for why the point was earned or not.
+  - **Second Evidence Point (1 Point)**: Yes/No
+    - *Explanation:* Brief explanation for why the point was earned or not.
+  - **HIPP Point (1 Point)**: Yes/No
+    - *Explanation:* Brief explanation for why the point was earned or not.
+- **Overall Feedback**: Provide a summary of the strengths and areas for improvement."""
 )
 
 evidence_beyond_prompt = PromptTemplate.from_template(
