@@ -598,8 +598,8 @@ workflow.add_node("evidence_beyond_grading", evidence_beyond_grading_node)
 workflow.add_node("complex_understanding_grading", complex_understanding_grading_node)
 workflow.add_node("factchecking_grading", factchecking_node)
 
-# Rename this node to avoid the conflict with the state key 'summation'
-workflow.add_node("summation_node", summation_node)
+# Rename this node to avoid conflict
+workflow.add_node("final_summation_node", summation_node)
 
 workflow.add_edge(START, "classify_prompt")
 workflow.add_edge("classify_prompt", "vision")
@@ -609,10 +609,11 @@ workflow.add_edge("contextualization_grading", "evidence_grading")
 workflow.add_edge("evidence_grading", "evidence_beyond_grading")
 workflow.add_edge("evidence_beyond_grading", "complex_understanding_grading")
 workflow.add_edge("complex_understanding_grading", "factchecking_grading")
-workflow.add_edge("factchecking_grading", "summation_node")
-workflow.add_edge("summation_node", END)
+workflow.add_edge("factchecking_grading", "final_summation_node")
+workflow.add_edge("final_summation_node", END)
 
 app = workflow.compile()
+
 def evaluate2(prompt: str, essay: str, images: List[Optional[str]] = None) -> str:
     """
     Evaluate function to process the prompt, essay, and optional image inputs.
@@ -625,12 +626,10 @@ def evaluate2(prompt: str, essay: str, images: List[Optional[str]] = None) -> st
     Returns:
         str: Evaluation result from the workflow.
     """
-    
     if images is None:
         images = []
-    images = images[:7] + [None] * (7 - len(images))  
+    images = images[:7] + [None] * (7 - len(images))
 
-    
     state = {
         "prompt": prompt,
         "prompt_type": None,
@@ -658,21 +657,20 @@ def evaluate2(prompt: str, essay: str, images: List[Optional[str]] = None) -> st
         "summation": None,
     }
 
-    
     try:
         state = classify_prompt_node(state)
-        state = vision_node(state) 
+        state = vision_node(state)
         state = thesis_grading_node(state)
         state = contextualization_grading_node(state)
         state = evidence_grading_node(state)
         state = evidence_beyond_grading_node(state)
         state = complex_understanding_grading_node(state)
         state = factchecking_node(state)
+        # Use the renamed workflow node
         state = summation_node(state)
     except Exception as e:
         raise ValueError(f"An error occurred during evaluation: {e}")
 
-    
     if "summation" in state and state["summation"]:
         return state["summation"]
     else:
