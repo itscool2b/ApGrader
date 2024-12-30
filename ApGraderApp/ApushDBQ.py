@@ -543,7 +543,7 @@ def evidence_beyond_grading_node(state: GraphState) -> GraphState:
     essay = state["student_essay"]
     prompt_type = state["prompt_type"]
 
-    formatted_prompt = evidence_prompt.format(essay=essay,prompt_type=prompt_type,doc1=d1,doc2=d2,doc3=d3,doc4=d4,doc5=d5,doc6=d6,doc7=d7)
+    formatted_prompt = evidence_beyond_prompt.format(essay=essay,prompt_type=prompt_type,doc1=d1,doc2=d2,doc3=d3,doc4=d4,doc5=d5,doc6=d6,doc7=d7)
     response = llm.invoke(formatted_prompt)
 
     state["evidence_beyond_generation"] = response.content.strip()
