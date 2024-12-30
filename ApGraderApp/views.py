@@ -115,7 +115,7 @@ async def saq_view(request):
 
        
         try:
-            response = await asyncio.to_thread(evaluate1, questions, essay_text, image_data)
+            response = await sync_to_async(evaluate1)(questions, essay_text,image_data)
         except Exception as e:
             return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
 
@@ -174,7 +174,7 @@ async def dbq_view(request):
 
         
         try:
-            response = await asyncio.to_thread(evaluate2, prompt, essay_text, images)
+            response = await sync_to_async(evaluate2)(prompt, essay_text, images)
         except Exception as e:
             return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
 
