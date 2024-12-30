@@ -586,32 +586,8 @@ def summation_node(state):
     state["summation"] = response.content.strip()
     return state
 
-workflow = StateGraph(GraphState)
-
-workflow.add_node("classify_prompt", classify_prompt_node)
-workflow.add_node("vision", vision_node)
-workflow.add_node("thesis_grading", thesis_grading_node)
-workflow.add_node("contextualization_grading", contextualization_grading_node)
-workflow.add_node("evidence_grading", evidence_grading_node)
-workflow.add_node("evidence_beyond_grading", evidence_beyond_grading_node)
-workflow.add_node("complex_understanding_grading", complex_understanding_grading_node)
-workflow.add_node("factchecking_grading", factchecking_node)
-workflow.add_node("summation", summation_node)
 
 
-workflow.add_edge(START, "classify_prompt")
-workflow.add_edge("classify_prompt", "vision")
-workflow.add_edge("vision", "thesis_grading")
-workflow.add_edge("thesis_grading", "contextualization_grading")
-workflow.add_edge("contextualization_grading", "evidence_grading")
-workflow.add_edge("evidence_grading", "evidence_beyond_grading")
-workflow.add_edge("evidence_beyond_grading", "complex_understanding_grading")
-workflow.add_edge("complex_understanding_grading", "factchecking_grading")
-workflow.add_edge("factchecking_grading", "summation")
-workflow.add_edge("summation", END)
-
-
-app = workflow.compile()
 
 def evaluate2(prompt: str, essay: str, images: List[Optional[str]] = None) -> str:
     """
