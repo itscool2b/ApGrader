@@ -201,7 +201,7 @@ evidence_prompt = PromptTemplate.from_template(
 for the breakdown display the scores and why they earned it
 - **Breakdown**:
   - **First Evidence Point (1 Point)**: first_evidence_point
-    - *Explanation:* {first_evidence_explanation
+    - *Explanation:* first_evidence_explanation
   - **Second Evidence Point (1 Point)**: second_evidence_point
     - *Explanation:* second_evidence_explanation
   - **HIPP Point (1 Point)**: hipp_point
