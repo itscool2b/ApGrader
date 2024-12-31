@@ -14,6 +14,8 @@ import io
 import asyncio
 logger = logging.getLogger(__name__)
 from PIL import Image
+from .ApEuroLEQ import evaluateeuroleq
+
 
 @csrf_exempt
 async def ApushLEQ(request):
@@ -131,7 +133,7 @@ async def dbq_view(request):
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
     try:
-        # Retrieve and validate the prompt
+        
         prompt = request.POST.get("prompt", "").strip()
         if not prompt:
             return JsonResponse({'error': 'Missing "prompt" in request'}, status=400)
@@ -176,11 +178,11 @@ async def dbq_view(request):
                 except Exception as e:
                     return JsonResponse({'error': f'Failed to process {image_key}: {str(e)}'}, status=500)
 
-        # Ensure exactly 7 images (pad with None if fewer)
+        
         images = images[:7] + [None] * (7 - len(images))
 
         try:
-            # Assuming 'evaluate2' is your evaluation function
+            
             response = await sync_to_async(evaluate2)(prompt, essay_text, images)
         except Exception as e:
             return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
@@ -189,6 +191,7 @@ async def dbq_view(request):
 
     except Exception as e:
         return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
+    
 @csrf_exempt
 def bulk_grading_leq(request):
     pass
@@ -200,3 +203,54 @@ def bulk_grading_saq(request):
 @csrf_exempt
 def bulk_grading_dbq(request):
     pass
+
+
+@csrf_exempt
+async def ApEuroLEQ(request):
+    if request.method != "POST":
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    try:
+        
+        prompt = request.POST.get("prompt", "").strip()
+        if not prompt:
+            return JsonResponse({'error': 'Missing "prompt" in request'}, status=400)
+
+        
+        if 'file' in request.FILES:
+            pdf_file = request.FILES['file']
+            try:
+                pdf_stream = BytesIO(pdf_file.read())
+                reader = PdfReader(pdf_stream)
+                essay_text = "".join([page.extract_text() for page in reader.pages])
+                if not essay_text.strip():
+                    return JsonResponse({'error': 'Empty or unreadable PDF file'}, status=400)
+            except Exception as e:
+                logger.error(f"Error processing PDF: {e}")
+                return JsonResponse({'error': 'Failed to process the PDF file'}, status=500)
+        
+        else:
+            essay_text = request.POST.get("essay_text", "").strip()
+            if not essay_text:
+                return JsonResponse({'error': 'Either "essay_file" or "essay_text" is required'}, status=400)
+        
+        try:
+            response = await sync_to_async(evaluateeuroleq)(prompt, essay_text)
+            logging.info(f"Evaluation successful: {response}")
+        except ValueError as e:
+            logger.error(f"Evaluation failed: {e}")
+            return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
+
+        
+        return JsonResponse({
+            "response": {
+                "output": response
+            }
+        }, status=200)
+
+    except Exception as e:
+        logger.error(f"Error in process endpoint: {e}")
+        return JsonResponse({
+            "error": "Internal Server Error",
+            "details": str(e)
+        }, status=500)
