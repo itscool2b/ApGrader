@@ -309,34 +309,33 @@ def thesis_grading_node(state: GraphState) -> GraphState:
     """
     Node 4: Grade the thesis statement.
     """
-    rubric = state["rubric"]
+
     essay = state["student_essay"]
     prompt_type = state["prompt_type"]
 
-    formatted_prompt = thesis_prompt.format(rubric=rubric,prompt_type=prompt_type,essay=essay)
+    formatted_prompt = thesis_prompt.format(prompt_type=prompt_type,essay=essay)
     response = llm.invoke(formatted_prompt)
     state["thesis_generation"] = response.content.strip()
     return state
 
 
 def contextualization_grading_node(state: GraphState) -> GraphState:
-    rubric = state["rubric"]
+
     essay = state["student_essay"]
     prompt_type = state["prompt_type"]
 
-    formatted_prompt = contextualization_prompt.format(rubric=rubric,essay=essay,prompt_type=prompt_type)
+    formatted_prompt = contextualization_prompt.format(essay=essay,prompt_type=prompt_type)
     response = llm.invoke(formatted_prompt)
     state["contextualization_generation"] = response.content.strip()
 
     return state
 
 def evidence_grading_node(state: GraphState) -> GraphState:
-   
-    rubric = state["rubric"]
+
     essay = state["student_essay"]
     prompt_type = state["prompt_type"]
 
-    formatted_prompt = evidence_prompt.format(rubric=rubric,essay=essay,prompt_type=prompt_type)
+    formatted_prompt = evidence_prompt.format(essay=essay,prompt_type=prompt_type)
     response = llm.invoke(formatted_prompt)
 
     state["evidence_generation"] = response.content.strip()
@@ -344,11 +343,11 @@ def evidence_grading_node(state: GraphState) -> GraphState:
 
 
 def analysis_grading_node(state: GraphState) -> GraphState:
-    rubric = state["rubric"]
+
     essay = state["student_essay"]
     prompt_type = state["prompt_type"]
       
-    formatted_prompt = complexunderstanding_prompt.format(rubric=rubric,essay=essay,prompt_type=prompt_type)
+    formatted_prompt = complexunderstanding_prompt.format(essay=essay,prompt_type=prompt_type)
     response = llm.invoke(formatted_prompt)
 
     state["complexunderstanding_generation"] = response.content.strip()
@@ -359,9 +358,8 @@ def analysis_grading_node(state: GraphState) -> GraphState:
 def fact_check_node(state):
     
     essay = state["student_essay"]
-    chapters = state["relevant_chapters"]
 
-    formatted_prompt = factchecking_prompt.format(essay=essay,chapters=chapters)
+    formatted_prompt = factchecking_prompt.format(essay=essay)
     response = llm.invoke(formatted_prompt)
 
     state["factchecking_generation"] = response.content.strip()
