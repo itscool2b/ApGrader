@@ -30,6 +30,42 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 
 index = get_index()
 
+def retriever(query: str, top_k: int = 1) -> List[Dict]:
+    """
+    Generalized function to retrieve relevant documents from Pinecone based on a query.
+
+    Args:
+        query (str): The search query.
+        top_k (int): Number of top results to retrieve. Default is 100.
+
+    Returns:
+        List[Dict]: A list of retrieved documents with 'text' and 'metadata'.
+    """
+    try:
+       
+        response = client.embeddings.create(
+            input=query,
+            model="text-embedding-ada-002"
+        )
+        query_embedding = response.data[0].embedding
+
+        
+        results = index.query(
+            vector=query_embedding,
+            top_k=top_k,
+            include_metadata=True
+        )
+
+        return [
+            {
+                "text": match.get("metadata", {}).get("text", ""),
+                "metadata": match.get("metadata", {})
+            }
+            for match in results.get("matches", [])
+        ]
+    except Exception as e:
+        logging.error(f"Error in retriever: {e}")
+        raise RuntimeError("Error in retriever function.") from e
 
 classification_prompt = PromptTemplate.from_template(
     """
@@ -276,6 +312,7 @@ class GraphState(TypedDict):
     prompt: str
     prompt_type: str
     student_essay: str
+    rubric: List[Dict] 
     thesis_generation: str
     relevant_chapters: List[Dict]
     contextualization_generation: str
@@ -288,6 +325,24 @@ class GraphState(TypedDict):
 
 workflow = StateGraph(GraphState)
 
+def fetch_rubric_node(state: GraphState) -> GraphState:
+    """
+    Node to fetch rubric documents using the retriever function.
+
+    Args:
+        state (GraphState): The current state of the graph.
+
+    Returns:
+        GraphState: Updated state with fetched rubric documents.
+    """
+    try:
+        logging.info("Fetching rubric documents.")
+        state["rubric"] = retriever("ap euro leq rubric")
+        logging.info(f"Fetched {len(state['rubric'])} rubric documents.")
+    except Exception as e:
+        logging.error(f"Error in fetch_rubric_node: {e}")
+        raise RuntimeError(f"Error in fetch_rubric_node: {e}")
+    return state
 
 
 def classify_prompt_node(state: GraphState) -> GraphState:
@@ -309,33 +364,34 @@ def thesis_grading_node(state: GraphState) -> GraphState:
     """
     Node 4: Grade the thesis statement.
     """
-
+    rubric = state["rubric"]
     essay = state["student_essay"]
     prompt_type = state["prompt_type"]
 
-    formatted_prompt = thesis_prompt.format(prompt_type=prompt_type,essay=essay)
+    formatted_prompt = thesis_prompt.format(rubric=rubric,prompt_type=prompt_type,essay=essay)
     response = llm.invoke(formatted_prompt)
     state["thesis_generation"] = response.content.strip()
     return state
 
 
 def contextualization_grading_node(state: GraphState) -> GraphState:
-
+    rubric = state["rubric"]
     essay = state["student_essay"]
     prompt_type = state["prompt_type"]
 
-    formatted_prompt = contextualization_prompt.format(essay=essay,prompt_type=prompt_type)
+    formatted_prompt = contextualization_prompt.format(rubric=rubric,essay=essay,prompt_type=prompt_type)
     response = llm.invoke(formatted_prompt)
     state["contextualization_generation"] = response.content.strip()
 
     return state
 
 def evidence_grading_node(state: GraphState) -> GraphState:
-
+   
+    rubric = state["rubric"]
     essay = state["student_essay"]
     prompt_type = state["prompt_type"]
 
-    formatted_prompt = evidence_prompt.format(essay=essay,prompt_type=prompt_type)
+    formatted_prompt = evidence_prompt.format(rubric=rubric,essay=essay,prompt_type=prompt_type)
     response = llm.invoke(formatted_prompt)
 
     state["evidence_generation"] = response.content.strip()
@@ -343,11 +399,11 @@ def evidence_grading_node(state: GraphState) -> GraphState:
 
 
 def analysis_grading_node(state: GraphState) -> GraphState:
-
+    rubric = state["rubric"]
     essay = state["student_essay"]
     prompt_type = state["prompt_type"]
       
-    formatted_prompt = complexunderstanding_prompt.format(essay=essay,prompt_type=prompt_type)
+    formatted_prompt = complexunderstanding_prompt.format(rubric=rubric,essay=essay,prompt_type=prompt_type)
     response = llm.invoke(formatted_prompt)
 
     state["complexunderstanding_generation"] = response.content.strip()
@@ -359,7 +415,8 @@ def fact_check_node(state):
     
     essay = state["student_essay"]
 
-    formatted_prompt = factchecking_prompt.format(essay=essay)
+
+    formatted_prompt = factchecking_prompt.format(essay=essay,chapters=chapters)
     response = llm.invoke(formatted_prompt)
 
     state["factchecking_generation"] = response.content.strip()
@@ -417,9 +474,10 @@ def evaluateeuroleq(prompt: str, essay: str) -> str:
         "complexunderstanding_generation": None,
         "factchecking_generation": None,
         "summation": None,
+        "rubric": []
     }
 
-    
+    state = fetch_rubric_node(state)
     state = classify_prompt_node(state)  
     state = thesis_grading_node(state)  
     state = contextualization_grading_node(state)  

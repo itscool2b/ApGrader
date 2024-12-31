@@ -31,7 +31,7 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 index = get_index()
 
 
-def retriever(query: str, top_k: int = 100) -> List[Dict]:
+def retriever(query: str, top_k: int = 1) -> List[Dict]:
     """
     Generalized function to retrieve relevant documents from Pinecone based on a query.
 
@@ -367,7 +367,7 @@ def fetch_rubric_node(state: GraphState) -> GraphState:
     """
     try:
         logging.info("Fetching rubric documents.")
-        state["rubric"] = retriever("LEQ Rubric")
+        state["rubric"] = retriever("ap us history leq rubric")
         logging.info(f"Fetched {len(state['rubric'])} rubric documents.")
     except Exception as e:
         logging.error(f"Error in fetch_rubric_node: {e}")
