@@ -279,7 +279,7 @@ Be thorough with the feed back, explain why they earned or lost the point in eac
 
 factchecking_prompt = PromptTemplate.from_template("""You are an expert AP US History essay fact-checker. Your task is to fact-check the content of a student's essay based on the chapters and topics retrieved from a vector database. Follow these instructions carefully:
 
-Fact-Check the Essay: Review the essay for historical accuracy. Cross-reference claims and information in the essay with the content provided in the {chapters} from the vector database. Focus on ensuring the essay aligns with the correct historical events, dates, figures, and interpretations.
+Fact-Check the Essay: Review the essay for historical accuracy. Use ur knowledge make sure u are correct. Focus on ensuring the essay aligns with the correct historical events, dates, figures, and interpretations.
 
 
 Here is the essay - {essay}
@@ -314,7 +314,6 @@ class GraphState(TypedDict):
     student_essay: str
     rubric: List[Dict] 
     thesis_generation: str
-    relevant_chapters: List[Dict]
     contextualization_generation: str
     evidence_generation: str
     complexunderstanding_generation: str
@@ -416,7 +415,7 @@ def fact_check_node(state):
     essay = state["student_essay"]
 
 
-    formatted_prompt = factchecking_prompt.format(essay=essay,chapters=chapters)
+    formatted_prompt = factchecking_prompt.format(essay=essay)
     response = llm.invoke(formatted_prompt)
 
     state["factchecking_generation"] = response.content.strip()
