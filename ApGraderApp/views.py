@@ -452,7 +452,7 @@ async def ApEuroLEQ(request):
 from .ApushLEQ import evaluate69    
 
 
-@csrf_exempt()
+@csrf_exempt
 async def apushleqbulk(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
