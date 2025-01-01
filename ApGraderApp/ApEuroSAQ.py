@@ -305,6 +305,8 @@ class Graphstate(TypedDict):
     image: Optional[Union[str, bytes]]
     stimulus_description: str
 
+    student_essay_image: Optional[Union[str, bytes]]
+
 
 def chapters(state):
     try:
@@ -441,6 +443,7 @@ def evaluateeurosaq(questions: str, essay: str, image: Optional[Union[str, bytes
         "case1_generation": None,
         "case2_generation": None,
         "student_essay": essay,
+        "student_essay_image": None,
         "factchecking_generation": None,
         "relevant_chapters": [],
         "summation": None,
@@ -463,6 +466,7 @@ def euro_saq_bulk_grading(questions: str, essay: str, image: Optional[Union[str,
         "case1_generation": None,
         "case2_generation": None,
         "student_essay": essay,
+        "student_essay_image": None,
         "factchecking_generation": None,
         "relevant_chapters": [],
         "summation": None,

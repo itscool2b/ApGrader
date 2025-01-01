@@ -12,7 +12,7 @@ from ApGraderApp.p import pc, setup_index, get_index
 
 from typing import List, Dict
 from typing_extensions import TypedDict
-
+from typing import List, Dict, Optional, Union, TypedDict, Any
 from langgraph.graph import END, StateGraph, START
 
 
@@ -311,7 +311,7 @@ class GraphState(TypedDict):
     """
     prompt: str
     prompt_type: str
-    student_essay_image: str
+    student_essay_image: Optional[Union[str, bytes]]
     student_essay: str
     rubric: List[Dict] 
     thesis_generation: str
