@@ -8,5 +8,6 @@ urlpatterns = [
     path("ApushDBQ", views.dbq_view, name='ApushDBQ'),
     path("ApEuroLEQ", views.ApEuroLEQ, name='ApEuroLEQ'),
     path("ApEuroSAQ", views.eurosaq_view, name='ApEuroSAQ'),
+    path("ApEuroLEQbulk", views.euro_leq_bulk, name='ApEuroLEQbulk'),
     
 ]

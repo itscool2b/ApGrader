@@ -311,6 +311,7 @@ class GraphState(TypedDict):
     """
     prompt: str
     prompt_type: str
+    student_essay_image: str
     student_essay: str
     rubric: List[Dict] 
     thesis_generation: str
@@ -323,6 +324,50 @@ class GraphState(TypedDict):
 
 
 workflow = StateGraph(GraphState)
+
+
+def essay_vision_node(state):
+
+    try:
+        image_data = state.get('student_essay_image')
+        if not image_data:
+            state["stimulus_description"] = None
+            return state
+
+        if not image_data.startswith("data:"):
+            image_data = f"data:image/jpeg;base64,{image_data}"  
+
+        response = client.chat.completions.create(
+            model="gpt-4o",  
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "What is in this image?",
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": image_data},  
+                        },
+                    ],
+                }
+            ],
+            max_tokens=300,
+        )
+
+        
+        essay = response.choices[0].message.content
+        state["student_essay"] = essay
+        print(essay)
+        return state
+
+    except Exception as e:
+        raise ValueError(f"Error in vision_node: {e}")
+        
+
+
 
 def fetch_rubric_node(state: GraphState) -> GraphState:
     """
@@ -466,6 +511,7 @@ def evaluateeuroleq(prompt: str, essay: str) -> str:
     state = {
         "prompt": prompt,
         "prompt_type": None,
+        "student_essay_image": None,
         "student_essay": essay,
         "thesis_generation": None,
         "contextualization_generation": None,
@@ -476,6 +522,38 @@ def evaluateeuroleq(prompt: str, essay: str) -> str:
         "rubric": []
     }
 
+    state = fetch_rubric_node(state)
+    state = classify_prompt_node(state)  
+    state = thesis_grading_node(state)  
+    state = contextualization_grading_node(state)  
+    state = evidence_grading_node(state)  
+    state = analysis_grading_node(state)  
+    state = fact_check_node(state)  
+    state = final_node(state)  
+
+    
+    if "summation" in state and state["summation"]:
+        return state["summation"]
+    else:
+        raise ValueError("Summation not found in the final state.")
+
+def leq_bulk(prompt: str, essay: str) -> str:
+    
+    state = {
+        "prompt": prompt,
+        "prompt_type": None,
+        "student_essay_image": essay,
+        "student_essay": None,
+        "thesis_generation": None,
+        "contextualization_generation": None,
+        "evidence_generation": None,
+        "complexunderstanding_generation": None,
+        "factchecking_generation": None,
+        "summation": None,
+        "rubric": []
+    }
+
+    state = essay_vision_node(state)
     state = fetch_rubric_node(state)
     state = classify_prompt_node(state)  
     state = thesis_grading_node(state)  

@@ -7,7 +7,8 @@ from asgiref.sync import sync_to_async
 import logging
 from io import BytesIO
 import json
-from .ApushLEQ import evaluate  
+from .ApushLEQ import evaluate
+from .ApushLEQ import leq_bulk
 from .ApushSAQ import evaluate1
 from .ApushDBQ import evaluate2
 import io
@@ -194,8 +195,33 @@ async def dbq_view(request):
         return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
     
 @csrf_exempt
-def bulk_grading_leq(request):
-    pass
+async def euro_leq_bulk(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    try:
+        prompt = request.POST.get('prompt', '').strip()
+        if not prompt:
+            return JsonResponse({'error': 'Missing "prompt" in request'}, status=400)
+        files = request.FILES.getlist('images')
+        if not files:
+            return JsonResponse({'error': 'No files provided'}, status=400)
+        for file in files:
+            image = file
+            supported_mime_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]
+            if image.content_type not in supported_mime_types:
+                return JsonResponse({'error': 'Unsupported image type.'}, status=400)
+            try:
+                image_data = base64.b64encode(image.read()).decode('utf-8')
+            except Exception:
+                return JsonResponse({'error': 'Failed to process image file.'}, status=500)
+            try:
+                response = await sync_to_async(leq_bulk)(prompt, image_data)
+            except Exception as e:
+                return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
+            return JsonResponse({"response": {"output": response}}, status=200)
+    except Exception as e:
+        return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
+                
 
 @csrf_exempt
 def bulk_grading_saq(request):
@@ -379,3 +405,4 @@ async def eurodbq(request):
 
     except Exception as e:
         return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
+    
