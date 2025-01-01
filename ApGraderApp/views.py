@@ -21,7 +21,7 @@ from .ApEuroDBQ import evaluateeurodbq
 from .ApEuroSAQ import euro_saq_bulk_grading
 import zipfile
 from django.http import HttpResponse
-
+from .ApEuroDBQ import evaluateeurodbqbulk
 @csrf_exempt
 async def ApushLEQ(request):
     if request.method != "POST":
@@ -223,7 +223,7 @@ async def bulk_grading_leq(request):
                 except Exception:
                     return JsonResponse({'error': 'Failed to process image file.'}, status=500)
                 try:
-                    # Use sync_to_async if euro_leq_bulk is a synchronous function
+                    
                     response = await sync_to_async(euro_leq_bulk)(prompt, image_data)
                     file_name = f"{file.name}_response.txt"
                     zip_file.writestr(file_name, response)
@@ -316,12 +316,12 @@ async def euro_dbq_bulk(request):
             for essay in essays:
                 try:
                     
-                    essay_text = essay.read().decode('utf-8').strip()
+                    essay_text = base64.b64encode(essay.read()).decode('utf-8')
                     if not essay_text:
                         return JsonResponse({'error': f'Empty or unreadable essay: {essay.name}'}, status=400)
 
                    
-                    response = await evaluateeurodbq(prompt, essay_text, images)
+                    response = await evaluateeurodbqbulk(prompt, essay_text, images)
 
                     
                     file_name = f"{essay.name}_response.txt"

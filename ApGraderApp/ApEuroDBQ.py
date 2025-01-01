@@ -757,7 +757,7 @@ def evaluateeurodbq(prompt: str, essay: str, images: List[Optional[str]] = None)
     else:
         raise ValueError("Summation not found in the final state.")
     
-def evaluateeurodbq(prompt: str, essay: str, images: List[Optional[str]] = None) -> str:
+def evaluateeurodbqbulk(prompt: str, essay, images: List[Optional[str]] = None) -> str:
     """
     Evaluate function to process the prompt, essay, and optional image inputs.
 

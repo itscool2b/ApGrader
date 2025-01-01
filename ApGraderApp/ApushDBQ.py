@@ -428,6 +428,7 @@ class GraphState(TypedDict):
     doc5: Optional[Union[str, bytes]]
     doc6: Optional[Union[str, bytes]]
     doc7: Optional[Union[str, bytes]]
+    student_essay_image: Optional[Union[str, bytes]]
     doc1_desc: str
     doc2_desc: str
     doc3_desc: str
@@ -649,6 +650,7 @@ def evaluate2(prompt: str, essay: str, images: List[Optional[str]] = None) -> st
         "thesis_generation": None,
         "contextualization_generation": None,
         "evidence_generation": None,
+        'student_essay_image': None,
         "evidence_beyond_generation": None,
         "complexunderstanding_generation": None,
         "factchecking_generation": None,
@@ -670,6 +672,70 @@ def evaluate2(prompt: str, essay: str, images: List[Optional[str]] = None) -> st
     }
 
     try:
+        state = classify_prompt_node(state)
+        state = vision_node(state)
+        state = thesis_grading_node(state)
+        state = contextualization_grading_node(state)
+        state = evidence_grading_node(state)
+        state = evidence_beyond_grading_node(state)
+        state = complex_understanding_grading_node(state)
+        state = factchecking_node(state)
+        
+        state = summation_node(state)
+    except Exception as e:
+        raise ValueError(f"An error occurred during evaluation: {e}")
+
+    if "summation" in state and state["summation"]:
+        return state["summation"]
+    else:
+        raise ValueError("Summation not found in the final state.")
+    
+def evaluate2(prompt: str, essay, images: List[Optional[str]] = None) -> str:
+    """
+    Evaluate function to process the prompt, essay, and optional image inputs.
+
+    Args:
+        prompt (str): The essay prompt.
+        essay (str): The student's essay.
+        images (List[Optional[str]]): List of up to 7 image data in Base64 format. Defaults to an empty list if not provided.
+
+    Returns:
+        str: Evaluation result from the workflow.
+    """
+    if images is None:
+        images = []
+    images = images[:7] + [None] * (7 - len(images))
+
+    state = {
+        "prompt": prompt,
+        "prompt_type": None,
+        "student_essay": None,
+        "thesis_generation": None,
+        "contextualization_generation": None,
+        "student_essay_image": essay,
+        "evidence_generation": None,
+        "evidence_beyond_generation": None,
+        "complexunderstanding_generation": None,
+        "factchecking_generation": None,
+        "doc1": images[0],
+        "doc2": images[1],
+        "doc3": images[2],
+        "doc4": images[3],
+        "doc5": images[4],
+        "doc6": images[5],
+        "doc7": images[6],
+        "doc1_desc": None,
+        "doc2_desc": None,
+        "doc3_desc": None,
+        "doc4_desc": None,
+        "doc5_desc": None,
+        "doc6_desc": None,
+        "doc7_desc": None,
+        "summation": None,
+    }
+
+    try:
+       # state = essay_vision_node(state)
         state = classify_prompt_node(state)
         state = vision_node(state)
         state = thesis_grading_node(state)

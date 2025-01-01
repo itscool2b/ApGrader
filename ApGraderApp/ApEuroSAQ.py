@@ -500,7 +500,7 @@ def evaluateeurosaq(questions: str, essay: str, image: Optional[Union[str, bytes
     else:
         raise ValueError("Summation not found in the final state.")
 
-def euro_saq_bulk_grading(questions: str, essay: str, stim: Optional[Union[str, bytes]]) -> str:
+def euro_saq_bulk_grading(questions, essay, stim):
     state = {
         "questions": questions,
         "case1_generation": None,
