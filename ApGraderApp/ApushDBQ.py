@@ -600,6 +600,46 @@ def summation_node(state):
     return state
 
 
+def essay_vision_node(state):
+
+    try:
+        image_data = state.get('student_essay_image')
+        if not image_data:
+            state["student_essay_image"] = None
+            return state
+
+        if not image_data.startswith("data:"):
+            image_data = f"data:image/jpeg;base64,{image_data}"  
+
+        response = client.chat.completions.create(
+            model="gpt-4o",  
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "print out the text from this image exactly. You should only output the text nothing else.",
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": image_data},  
+                        },
+                    ],
+                }
+            ],
+            max_tokens=300,
+        )
+
+        
+        essay = response.choices[0].message.content
+        state["student_essay"] = essay
+        print(essay)
+        return state
+
+    except Exception as e:
+        raise ValueError(f"Error in vision_node: {e}")
+
 workflow = StateGraph(GraphState)
 
 workflow.add_node("classify_prompt", classify_prompt_node)
@@ -690,7 +730,7 @@ def evaluate2(prompt: str, essay: str, images: List[Optional[str]] = None) -> st
     else:
         raise ValueError("Summation not found in the final state.")
     
-def evaluate2(prompt: str, essay, images: List[Optional[str]] = None) -> str:
+def evaluate22(prompt: str, essay, images: List[Optional[str]] = None) -> str:
     """
     Evaluate function to process the prompt, essay, and optional image inputs.
 
@@ -735,7 +775,7 @@ def evaluate2(prompt: str, essay, images: List[Optional[str]] = None) -> str:
     }
 
     try:
-       # state = essay_vision_node(state)
+        state = essay_vision_node(state)
         state = classify_prompt_node(state)
         state = vision_node(state)
         state = thesis_grading_node(state)

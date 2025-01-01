@@ -309,7 +309,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4o")
 
 
-
+from typing import List, Dict, Optional, Union, TypedDict, Any
 class GraphState(TypedDict):
     """
     Represents the state of the graph workflow.
@@ -327,11 +327,51 @@ class GraphState(TypedDict):
     factchecking_generation: str
     summation: str
     
-
+    student_essay_image: Optional[Union[str, bytes]]
 
 workflow = StateGraph(GraphState)
 
 
+def essay_vision_node(state):
+
+    try:
+        image_data = state.get('student_essay_image')
+        if not image_data:
+            state["student_essay_image"] = None
+            return state
+
+        if not image_data.startswith("data:"):
+            image_data = f"data:image/jpeg;base64,{image_data}"  
+
+        response = client.chat.completions.create(
+            model="gpt-4o",  
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "print out the text from this image exactly. You should only output the text nothing else.",
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": image_data},  
+                        },
+                    ],
+                }
+            ],
+            max_tokens=300,
+        )
+
+        
+        essay = response.choices[0].message.content
+        state["student_essay"] = essay
+        print(essay)
+        return state
+
+    except Exception as e:
+        raise ValueError(f"Error in vision_node: {e}")
+    
 
 def classify_prompt_node(state: GraphState) -> GraphState:
     logging.info("Classifying prompt.")
@@ -553,6 +593,42 @@ def evaluate(prompt: str, essay: str) -> str:
     }
 
     
+    state = classify_prompt_node(state)  
+    state = retrieve_essays_node(state)  
+    state = fetch_rubric_node(state)  
+    state = retrieve_chapters_node(state)  
+    state = thesis_grading_node(state)  
+    state = contextualization_grading_node(state)  
+    state = evidence_grading_node(state)  
+    state = analysis_grading_node(state)  
+    state = fact_check_node(state)  
+    state = final_node(state)  
+
+    
+    if "summation" in state and state["summation"]:
+        return state["summation"]
+    else:
+        raise ValueError("Summation not found in the final state.")
+
+def evaluate69(prompt: str, essay) -> str:
+    
+    state = {
+        "prompt": prompt,
+        "prompt_type": None,
+        "student_essay": None,
+        "student_essay_image": essay,
+        "rubric": [],
+        "relevant_essays": [],
+        "relevant_chapters": [],
+        "thesis_generation": None,
+        "contextualization_generation": None,
+        "evidence_generation": None,
+        "complexunderstanding_generation": None,
+        "factchecking_generation": None,
+        "summation": None,
+    }
+
+    state = essay_vision_node(state)
     state = classify_prompt_node(state)  
     state = retrieve_essays_node(state)  
     state = fetch_rubric_node(state)  

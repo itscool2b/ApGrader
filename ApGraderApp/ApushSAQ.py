@@ -304,7 +304,47 @@ class Graphstate(TypedDict):
     summation: str
     image: Optional[Union[str, bytes]]
     stimulus_description: str
+    student_essay_image: Optional[Union[str,bytes]]
 
+def essay_vision_node(state):
+
+    try:
+        image_data = state.get('student_essay_image')
+        if not image_data:
+            state["student_essay_image"] = None
+            return state
+
+        if not image_data.startswith("data:"):
+            image_data = f"data:image/jpeg;base64,{image_data}"  
+
+        response = client.chat.completions.create(
+            model="gpt-4o",  
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "print out the text from this image exactly. You should only output the text nothing else.",
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": image_data},  
+                        },
+                    ],
+                }
+            ],
+            max_tokens=300,
+        )
+
+        
+        essay = response.choices[0].message.content
+        state["student_essay"] = essay
+        print(essay)
+        return state
+
+    except Exception as e:
+        raise ValueError(f"Error in vision_node: {e}")
 
 def chapters(state):
     try:
@@ -446,6 +486,7 @@ def evaluate1(questions: str, essay: str, image: Optional[Union[str, bytes]]) ->
         "summation": None,
         "image": image,
         "stimulus_description": None,
+        "student_essay_image": None
     }
     state = vision_node(state)
     state = chapters(state)
@@ -457,5 +498,28 @@ def evaluate1(questions: str, essay: str, image: Optional[Union[str, bytes]]) ->
     else:
         raise ValueError("Summation not found in the final state.")
 
+def evaluate11(questions: str, essay, image: Optional[Union[str, bytes]]) -> str:
+    state = {
+        "questions": questions,
+        "case1_generation": None,
+        "case2_generation": None,
+        "student_essay": None,
+        "factchecking_generation": None,
+        "relevant_chapters": [],
+        "summation": None,
+        "image": image,
+        "stimulus_description": None,
+        "student_essay_image": essay
+    }
+    state = essay_vision_node(state)
+    state = vision_node(state)
+    state = chapters(state)
+    state = grading_node(state)
+    state = factchecking_node(state)
+    state = summation_node(state)
+    if "summation" in state and state["summation"]:
+        return state["summation"]
+    else:
+        raise ValueError("Summation not found in the final state.")
 
 

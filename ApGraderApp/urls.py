@@ -9,6 +9,9 @@ urlpatterns = [
     path("ApEuroLEQ", views.ApEuroLEQ, name='ApEuroLEQ'),
     path("ApEuroSAQ", views.eurosaq_view, name='ApEuroSAQ'),
     path("ApEuroLEQbulk", views.bulk_grading_leq, name='ApEuroLEQbulk'),
-    path("ApEuroSAQbulk", views.euro_saq_bulk, name='ApEuroSAQbulk')
+    path("ApEuroSAQbulk", views.euro_saq_bulk, name='ApEuroSAQbulk'),
+    path("ApushLEQbulk", views.apushleqbulk, name='ApEuroLEQbulk'),
+    path("ApushSAQbulk", views.apushsaqbulk, name='ApEuroSAQbulk'),
+    path("ApushDBQbulk", views.apushdbqbulk, name='ApEuroDBQbulk')
     
 ]
