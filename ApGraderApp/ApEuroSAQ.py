@@ -308,10 +308,45 @@ class Graphstate(TypedDict):
     student_essay_image: Optional[Union[str, bytes]]
 
 
-def optional(state):
+def essay_vision_node(state):
 
     try:
-        image = state.get('student_essay_image')
+        image_data = state.get('student_essay_image')
+        if not image_data:
+            state["student_essay"] = None
+            return state
+
+        if not image_data.startswith("data:"):
+            image_data = f"data:image/jpeg;base64,{image_data}"  
+
+        response = client.chat.completions.create(
+            model="gpt-4o",  
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "print out the text from this image exactly. You should only output the text nothing else.",
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": image_data},  
+                        },
+                    ],
+                }
+            ],
+            max_tokens=300,
+        )
+
+        
+        essay = response.choices[0].message.content
+        state["student_essay"] = essay
+        print(essay)
+        return state
+
+    except Exception as e:
+        raise ValueError(f"Error in vision_node: {e}")
 
 def chapters(state):
     try:

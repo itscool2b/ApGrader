@@ -331,7 +331,7 @@ def essay_vision_node(state):
     try:
         image_data = state.get('student_essay_image')
         if not image_data:
-            state["stimulus_description"] = None
+            state["student_essay_image"] = None
             return state
 
         if not image_data.startswith("data:"):
