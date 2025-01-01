@@ -457,5 +457,26 @@ def evaluateeurosaq(questions: str, essay: str, image: Optional[Union[str, bytes
     else:
         raise ValueError("Summation not found in the final state.")
 
+def euro_saq_bulk_grading(questions: str, essay: str, image: Optional[Union[str, bytes]]) -> str:
+    state = {
+        "questions": questions,
+        "case1_generation": None,
+        "case2_generation": None,
+        "student_essay": essay,
+        "factchecking_generation": None,
+        "relevant_chapters": [],
+        "summation": None,
+        "image": image,
+        "stimulus_description": None,
+    }
+    state = vision_node(state)
+    state = chapters(state)
+    state = grading_node(state)
+    state = factchecking_node(state)
+    state = summation_node(state)
+    if "summation" in state and state["summation"]:
+        return state["summation"]
+    else:
+        raise ValueError("Summation not found in the final state.")
 
 

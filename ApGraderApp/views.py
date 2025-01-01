@@ -8,7 +8,7 @@ import logging
 from io import BytesIO
 import json
 from .ApushLEQ import evaluate
-from .ApushLEQ import leq_bulk
+from .ApEuroLEQ import euro_leq_bulk
 from .ApushSAQ import evaluate1
 from .ApushDBQ import evaluate2
 import io
@@ -18,6 +18,9 @@ from PIL import Image
 from .ApEuroLEQ import evaluateeuroleq
 from .ApEuroSAQ import evaluateeurosaq
 from .ApEuroDBQ import evaluateeurodbq
+from .ApEuroSAQ import euro_saq_bulk_grading
+import zipfile
+from django.http import HttpResponse
 
 @csrf_exempt
 async def ApushLEQ(request):
@@ -205,27 +208,70 @@ async def euro_leq_bulk(request):
         files = request.FILES.getlist('images')
         if not files:
             return JsonResponse({'error': 'No files provided'}, status=400)
-        for file in files:
-            image = file
-            supported_mime_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]
-            if image.content_type not in supported_mime_types:
-                return JsonResponse({'error': 'Unsupported image type.'}, status=400)
-            try:
-                image_data = base64.b64encode(image.read()).decode('utf-8')
-            except Exception:
-                return JsonResponse({'error': 'Failed to process image file.'}, status=500)
-            try:
-                response = await sync_to_async(leq_bulk)(prompt, image_data)
-            except Exception as e:
-                return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
-            return JsonResponse({"response": {"output": response}}, status=200)
+
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            for file in files:
+                image = file
+                supported_mime_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]
+                if image.content_type not in supported_mime_types:
+                    return JsonResponse({'error': 'Unsupported image type.'}, status=400)
+                try:
+                    image_data = base64.b64encode(image.read()).decode('utf-8')
+                except Exception:
+                    return JsonResponse({'error': 'Failed to process image file.'}, status=500)
+                try:
+                    response = await sync_to_async(euro_leq_bulk)(prompt, image_data)
+                    file_name = f"{file.name}_response.txt"
+                    zip_file.writestr(file_name, response)
+                except Exception as e:
+                    return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
+
+        zip_buffer.seek(0)
+        response = HttpResponse(zip_buffer, content_type='application/zip')
+        response['Content-Disposition'] = 'attachment; filename="responses.zip"'
+        return response
     except Exception as e:
         return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
+    
                 
 
 @csrf_exempt
-def bulk_grading_saq(request):
-    pass
+async def euro_saq_bulk(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    try:
+        questions = request.POST.get('questions', '').strip()
+        if not questions:
+            return JsonResponse({'error': 'Missing "questions" in request'}, status=400)
+        files = request.FILES.getlist('images')
+        if not files:
+            return JsonResponse({'error': 'No files provided'}, status=400)
+
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            for file in files:
+                image = file
+                supported_mime_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]
+                if image.content_type not in supported_mime_types:
+                    return JsonResponse({'error': 'Unsupported image type.'}, status=400)
+                try:
+                    image_data = base64.b64encode(image.read()).decode('utf-8')
+                except Exception:
+                    return JsonResponse({'error': 'Failed to process image file.'}, status=500)
+                try:
+                    response = await sync_to_async(euro_saq_bulk_grading)(questions, image_data)
+                    file_name = f"{file.name}_response.txt"
+                    zip_file.writestr(file_name, response)
+                except Exception as e:
+                    return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
+
+        zip_buffer.seek(0)
+        response = HttpResponse(zip_buffer, content_type='application/zip')
+        response['Content-Disposition'] = 'attachment; filename="responses.zip"'
+        return response
+    except Exception as e:
+        return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
 
 @csrf_exempt
 def bulk_grading_dbq(request):

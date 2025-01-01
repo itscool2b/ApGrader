@@ -9,5 +9,6 @@ urlpatterns = [
     path("ApEuroLEQ", views.ApEuroLEQ, name='ApEuroLEQ'),
     path("ApEuroSAQ", views.eurosaq_view, name='ApEuroSAQ'),
     path("ApEuroLEQbulk", views.euro_leq_bulk, name='ApEuroLEQbulk'),
+    path("ApEuroSAQbulk", views.euro_saq_bulk, name='ApEuroSAQbulk')
     
 ]
