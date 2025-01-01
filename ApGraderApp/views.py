@@ -198,7 +198,7 @@ async def dbq_view(request):
         return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
     
 @csrf_exempt
-async def euro_leq_bulk(request):
+async def bulk_grading_leq(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
     try:
@@ -221,7 +221,8 @@ async def euro_leq_bulk(request):
                 except Exception:
                     return JsonResponse({'error': 'Failed to process image file.'}, status=500)
                 try:
-                    response = await sync_to_async(euro_leq_bulk)(prompt, image_data)
+                    # Call the async function directly
+                    response = await euro_leq_bulk(prompt, image_data)
                     file_name = f"{file.name}_response.txt"
                     zip_file.writestr(file_name, response)
                 except Exception as e:
@@ -260,7 +261,7 @@ async def euro_saq_bulk(request):
                 except Exception:
                     return JsonResponse({'error': 'Failed to process image file.'}, status=500)
                 try:
-                    response = await sync_to_async(euro_saq_bulk_grading)(questions, image_data)
+                    response = await sync_to_async(euro_saq_bulk_grading)(questions, image_data,)
                     file_name = f"{file.name}_response.txt"
                     zip_file.writestr(file_name, response)
                 except Exception as e:

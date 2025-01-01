@@ -313,7 +313,7 @@ def essay_vision_node(state):
     try:
         image_data = state.get('student_essay_image')
         if not image_data:
-            state["student_essay"] = None
+            state["student_essay_image"] = None
             return state
 
         if not image_data.startswith("data:"):
@@ -500,19 +500,20 @@ def evaluateeurosaq(questions: str, essay: str, image: Optional[Union[str, bytes
     else:
         raise ValueError("Summation not found in the final state.")
 
-def euro_saq_bulk_grading(questions: str, essay: str, image: Optional[Union[str, bytes]]) -> str:
+def euro_saq_bulk_grading(questions: str, essay: str, stim: Optional[Union[str, bytes]]) -> str:
     state = {
         "questions": questions,
         "case1_generation": None,
         "case2_generation": None,
-        "student_essay": essay,
-        "student_essay_image": None,
+        "student_essay": None,
+        "student_essay_image": essay,
         "factchecking_generation": None,
         "relevant_chapters": [],
         "summation": None,
-        "image": image,
+        "image": stim,
         "stimulus_description": None,
     }
+    state = essay_vision_node(state)
     state = vision_node(state)
     state = chapters(state)
     state = grading_node(state)
