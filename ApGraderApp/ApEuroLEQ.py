@@ -345,7 +345,7 @@ def essay_vision_node(state):
                     "content": [
                         {
                             "type": "text",
-                            "text": "What is in this image?",
+                            "text": "print out the text from this image exactly. You should only output the text nothing else.",
                         },
                         {
                             "type": "image_url",

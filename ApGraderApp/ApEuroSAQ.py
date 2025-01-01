@@ -308,6 +308,11 @@ class Graphstate(TypedDict):
     student_essay_image: Optional[Union[str, bytes]]
 
 
+def optional(state):
+
+    try:
+        image = state.get('student_essay_image')
+
 def chapters(state):
     try:
         essay = state["student_essay"]
