@@ -537,7 +537,7 @@ def evaluateeuroleq(prompt: str, essay: str) -> str:
     else:
         raise ValueError("Summation not found in the final state.")
 
-def euro_leq_bulk(prompt: str, essay: str) -> str:
+def euro_leq_bulk(prompt, essay):
     
     state = {
         "prompt": prompt,
