@@ -444,6 +444,7 @@ class GraphState(TypedDict):
     evidence_generation: str
     complexunderstanding_generation: str
     factchecking_generation: str
+    student_essay_image: Optional[Union[str, bytes]]
     doc1: Optional[Union[str, bytes]]
     doc2: Optional[Union[str, bytes]]
     doc3: Optional[Union[str, bytes]]
@@ -459,6 +460,50 @@ class GraphState(TypedDict):
     doc6_desc: str
     doc7_desc: str
     summation: str
+
+
+
+
+def essay_vision_node(state):
+
+    try:
+        image_data = state.get('student_essay_image')
+        if not image_data:
+            state["student_essay_image"] = None
+            return state
+
+        if not image_data.startswith("data:"):
+            image_data = f"data:image/jpeg;base64,{image_data}"  
+
+        response = client.chat.completions.create(
+            model="gpt-4o",  
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "print out the text from this image exactly. You should only output the text nothing else.",
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": image_data},  
+                        },
+                    ],
+                }
+            ],
+            max_tokens=300,
+        )
+
+        
+        essay = response.choices[0].message.content
+        state["student_essay"] = essay
+        print(essay)
+        return state
+
+    except Exception as e:
+        raise ValueError(f"Error in vision_node: {e}")
+
 
 def classify_prompt_node(state: GraphState) -> GraphState:
     logging.info("Classifying prompt.")
@@ -672,6 +717,7 @@ def evaluateeurodbq(prompt: str, essay: str, images: List[Optional[str]] = None)
         "thesis_generation": None,
         "contextualization_generation": None,
         "evidence_generation": None,
+        "student_essay_image": None,
         "evidence_beyond_generation": None,
         "complexunderstanding_generation": None,
         "factchecking_generation": None,
@@ -693,6 +739,70 @@ def evaluateeurodbq(prompt: str, essay: str, images: List[Optional[str]] = None)
     }
 
     try:
+        state = classify_prompt_node(state)
+        state = vision_node(state)
+        state = thesis_grading_node(state)
+        state = contextualization_grading_node(state)
+        state = evidence_grading_node(state)
+        state = evidence_beyond_grading_node(state)
+        state = complex_understanding_grading_node(state)
+        state = factchecking_node(state)
+        
+        state = summation_node(state)
+    except Exception as e:
+        raise ValueError(f"An error occurred during evaluation: {e}")
+
+    if "summation" in state and state["summation"]:
+        return state["summation"]
+    else:
+        raise ValueError("Summation not found in the final state.")
+    
+def evaluateeurodbq(prompt: str, essay: str, images: List[Optional[str]] = None) -> str:
+    """
+    Evaluate function to process the prompt, essay, and optional image inputs.
+
+    Args:
+        prompt (str): The essay prompt.
+        essay (str): The student's essay.
+        images (List[Optional[str]]): List of up to 7 image data in Base64 format. Defaults to an empty list if not provided.
+
+    Returns:
+        str: Evaluation result from the workflow.
+    """
+    if images is None:
+        images = []
+    images = images[:7] + [None] * (7 - len(images))
+
+    state = {
+        "prompt": prompt,
+        "prompt_type": None,
+        "student_essay": None,
+        "student_essay_image": essay,
+        "thesis_generation": None,
+        "contextualization_generation": None,
+        "evidence_generation": None,
+        "evidence_beyond_generation": None,
+        "complexunderstanding_generation": None,
+        "factchecking_generation": None,
+        "doc1": images[0],
+        "doc2": images[1],
+        "doc3": images[2],
+        "doc4": images[3],
+        "doc5": images[4],
+        "doc6": images[5],
+        "doc7": images[6],
+        "doc1_desc": None,
+        "doc2_desc": None,
+        "doc3_desc": None,
+        "doc4_desc": None,
+        "doc5_desc": None,
+        "doc6_desc": None,
+        "doc7_desc": None,
+        "summation": None,
+    }
+
+    try:
+        state = essay_vision_node(state)
         state = classify_prompt_node(state)
         state = vision_node(state)
         state = thesis_grading_node(state)
