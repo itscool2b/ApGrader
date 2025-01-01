@@ -354,13 +354,14 @@ def essay_vision_node(state):
                     ],
                 }
             ],
-            max_tokens=300,
+            max_tokens=3000,
         )
 
         
         essay = response.choices[0].message.content
         state["student_essay"] = essay
         print(essay)
+        
         return state
 
     except Exception as e:
