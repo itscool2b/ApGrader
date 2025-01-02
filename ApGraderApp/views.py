@@ -85,29 +85,31 @@ async def saq_view(request):
         if not questions:
             return JsonResponse({'error': 'Missing "questions" in request'}, status=400)
 
-        try:
-            questions = json.loads(questions)
-        except json.JSONDecodeError:
-            return JsonResponse({'error': 'Invalid JSON format for "questions"'}, status=400)
-
         
         essay_text = None
         if 'essay_file' in request.FILES:
+            
             pdf_file = request.FILES['essay_file']
             try:
                 pdf_stream = io.BytesIO(pdf_file.read())
                 reader = PdfReader(pdf_stream)
-                essay_text = "".join([page.extract_text() for page in reader.pages if page.extract_text()])
+                essay_text = ""
+                for page in reader.pages:
+                    extracted = page.extract_text() or ""
+                    essay_text += extracted
                 if not essay_text.strip():
                     return JsonResponse({'error': 'Empty or unreadable PDF file'}, status=400)
             except Exception:
                 return JsonResponse({'error': 'Failed to process PDF file'}, status=500)
         else:
+            
             essay_text = request.POST.get("essay_text", "").strip()
             if not essay_text:
-                return JsonResponse({'error': 'Either "essay_file" or "essay_text" is required'}, status=400)
+                return JsonResponse({
+                    'error': 'Either "essay_file" or "essay_text" is required'
+                }, status=400)
 
-       
+        
         image_data = None
         if 'image' in request.FILES:
             image = request.FILES['image']
@@ -120,13 +122,13 @@ async def saq_view(request):
             except Exception:
                 return JsonResponse({'error': 'Failed to process image file.'}, status=500)
 
-       
+        
         try:
-            response = await sync_to_async(evaluate1)(questions, essay_text,image_data)
+            
+            response = await sync_to_async(evaluate1)(questions, essay_text, image_data)
         except Exception as e:
             return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
 
-        
         return JsonResponse({"response": {"output": response}}, status=200)
 
     except Exception as e:
@@ -257,7 +259,7 @@ async def euro_saq_bulk(request):
             stim_data = base64.b64encode(stim_data.read()).decode('utf-8')
         else:
             stim_data = None
-            
+
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
             for file in files:
