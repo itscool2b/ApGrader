@@ -251,8 +251,13 @@ async def euro_saq_bulk(request):
         if not files:
             return JsonResponse({'error': 'No files provided'}, status=400)
 
-        stim = request.POST.get('stimulus')
-        stim_data = base64.b64encode(stim.read()).decode('utf-8')
+        stim_data = request.FILES.get('stimulus', None)
+        if stim_data:
+
+            stim_data = base64.b64encode(stim_data.read()).decode('utf-8')
+        else:
+            stim_data = None
+            
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
             for file in files:
@@ -495,6 +500,7 @@ async def apushleqbulk(request):
     
 
 from .ApushSAQ import evaluate11
+
 @csrf_exempt
 async def apushsaqbulk(request):
     if request.method != 'POST':
@@ -507,8 +513,12 @@ async def apushsaqbulk(request):
         if not files:
             return JsonResponse({'error': 'No files provided'}, status=400)
 
-        stim = request.POST.get('stimulus')
-        stim_data = base64.b64encode(stim.read()).decode('utf-8')
+        stim_data = request.FILES.get('stimulus', None)
+        if stim_data:
+
+            stim_data = base64.b64encode(stim_data.read()).decode('utf-8')
+        else:
+            stim_data = None
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
             for file in files:
