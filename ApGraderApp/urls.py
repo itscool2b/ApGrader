@@ -12,6 +12,7 @@ urlpatterns = [
     path("ApEuroSAQbulk", views.euro_saq_bulk, name='ApEuroSAQbulk'),
     path("ApushLEQbulk", views.apushleqbulk, name='ApEuroLEQbulk'),
     path("ApushSAQbulk", views.apushsaqbulk, name='ApEuroSAQbulk'),
-    path("ApushDBQbulk", views.apushdbqbulk, name='ApEuroDBQbulk')
+    path("ApushDBQbulk", views.apushdbqbulk, name='ApEuroDBQbulk'),
+    path('ApEuroDBQbulk', views.euro_dbq_bulk, name='ApEuroDBQbulk')
     
 ]
