@@ -226,7 +226,7 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
 @csrf_exempt
-async def euro_dbq_bulk(request):
+async def eurodbq(request):
     if request.method != "POST":
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
@@ -235,61 +235,55 @@ async def euro_dbq_bulk(request):
         if not prompt:
             return JsonResponse({'error': 'Missing "prompt" in request'}, status=400)
 
+        essay_text = ""
+
+        
+        if 'essays' in request.FILES:
+            try:
+                pdf_file = request.FILES['essays']
+                pdf_stream = io.BytesIO(pdf_file.read())
+                reader = PdfReader(pdf_stream)
+                essay_text = "".join([page.extract_text() for page in reader.pages if page.extract_text()])
+                if not essay_text.strip():
+                    return JsonResponse({'error': 'Empty or unreadable PDF file'}, status=400)
+            except Exception as e:
+                return JsonResponse({'error': f'Failed to process PDF file: {str(e)}'}, status=500)
+        else:
+            
+            essay_text = request.POST.get("essays", "").strip()
+            if not essay_text:
+                return JsonResponse({'error': 'Either a PDF file or essay text is required'}, status=400)
+
         images = []
-        for key in request.FILES:
-            if key.startswith('image_'):
-                image = request.FILES[key]
-                supported_mime_types = ["image/jpeg", "image/png", "image/webp"]
+        for i in range(1, 8):
+            imagekey = f'image_{i}'  
+            if imagekey in request.FILES:
+                image = request.FILES[imagekey]
+                supported_mime_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]
                 if image.content_type not in supported_mime_types:
-                    return JsonResponse({'error': f'Unsupported image type for {key}.'}, status=400)
+                    return JsonResponse({'error': f'Unsupported image type for {imagekey}.'}, status=400)
                 try:
                     image_data = base64.b64encode(image.read()).decode('utf-8')
                     images.append(image_data)
                 except Exception as e:
-                    return JsonResponse({'error': f'Failed to process {key}: {str(e)}'}, status=500)
+                    return JsonResponse({'error': f'Failed to process {imagekey}: {str(e)}'}, status=500)
 
-        essays = request.FILES.getlist('essays')
-        if not essays:
-            return JsonResponse({'error': 'No essays provided.'}, status=400)
+        images = images[:7] + [None] * (7 - len(images))
 
-        
-        allowed_image_mime_types = ["image/jpeg", "image/png", "image/webp"]
+        try:
+           
+            response = await sync_to_async(evaluateeurodbq)(prompt, essay_text, images)
+        except Exception as e:
+            return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
 
-        for essay in essays:
-            if essay.content_type not in allowed_image_mime_types:
-                return JsonResponse({
-                    'error': f'Unsupported file type for essay "{essay.name}". '
-                             f'Allowed types: {allowed_image_mime_types}'
-                }, status=400)
-
-        zip_buffer = io.BytesIO()
-        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-            for essay in essays:
-                try:
-                    essay_data = base64.b64encode(essay.read()).decode('utf-8')
-                    if not essay_data:
-                        return JsonResponse({'error': f'Empty or unreadable essay: {essay.name}'}, status=400)
-
-                    
-                    response_text = await sync_to_async(evaluateeurodbqbulk)(prompt, essay_data, images)
-                    file_name = f"{essay.name}_response.txt"
-                    zip_file.writestr(file_name, response_text)
-                except Exception as e:
-                    return JsonResponse({
-                        'error': f'Evaluation failed for {essay.name}',
-                        'details': str(e)
-                    }, status=500)
-
-        zip_buffer.seek(0)
-        response = HttpResponse(zip_buffer, content_type='application/zip')
-        response['Content-Disposition'] = 'attachment; filename="responses.zip"'
-        return response
+        return JsonResponse({"response": {"output": response}}, status=200)
 
     except Exception as e:
         return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
 from .ApushDBQ import evaluate22
 @csrf_exempt
-async def apushdbqbulk(request):
+
+async def eurodbq(request):
     if request.method != "POST":
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
@@ -298,55 +292,49 @@ async def apushdbqbulk(request):
         if not prompt:
             return JsonResponse({'error': 'Missing "prompt" in request'}, status=400)
 
+        essay_text = ""
+
+        
+        if 'essays' in request.FILES:
+            try:
+                pdf_file = request.FILES['essays']
+                pdf_stream = io.BytesIO(pdf_file.read())
+                reader = PdfReader(pdf_stream)
+                essay_text = "".join([page.extract_text() for page in reader.pages if page.extract_text()])
+                if not essay_text.strip():
+                    return JsonResponse({'error': 'Empty or unreadable PDF file'}, status=400)
+            except Exception as e:
+                return JsonResponse({'error': f'Failed to process PDF file: {str(e)}'}, status=500)
+        else:
+            
+            essay_text = request.POST.get("essays", "").strip()
+            if not essay_text:
+                return JsonResponse({'error': 'Either a PDF file or essay text is required'}, status=400)
+
         images = []
-        for key in request.FILES:
-            if key.startswith('image_'):
-                image = request.FILES[key]
-                supported_mime_types = ["image/jpeg", "image/png", "image/webp"]
+        for i in range(1, 8):
+            imagekey = f'image_{i}'  
+            if imagekey in request.FILES:
+                image = request.FILES[imagekey]
+                supported_mime_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]
                 if image.content_type not in supported_mime_types:
-                    return JsonResponse({'error': f'Unsupported image type for {key}.'}, status=400)
+                    return JsonResponse({'error': f'Unsupported image type for {imagekey}.'}, status=400)
                 try:
                     image_data = base64.b64encode(image.read()).decode('utf-8')
                     images.append(image_data)
                 except Exception as e:
-                    return JsonResponse({'error': f'Failed to process {key}: {str(e)}'}, status=500)
+                    return JsonResponse({'error': f'Failed to process {imagekey}: {str(e)}'}, status=500)
 
-        essays = request.FILES.getlist('essays')
-        if not essays:
-            return JsonResponse({'error': 'No essays provided.'}, status=400)
+       
+        images = images[:7] + [None] * (7 - len(images))
 
-        
-        allowed_image_mime_types = ["image/jpeg", "image/png", "image/webp"]
+        try:
+           
+            response = await sync_to_async(evaluate22)(prompt, essay_text, images)
+        except Exception as e:
+            return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
 
-        for essay in essays:
-            if essay.content_type not in allowed_image_mime_types:
-                return JsonResponse({
-                    'error': f'Unsupported file type for essay "{essay.name}". '
-                             f'Allowed types: {allowed_image_mime_types}'
-                }, status=400)
-
-        zip_buffer = io.BytesIO()
-        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-            for essay in essays:
-                try:
-                    essay_data = base64.b64encode(essay.read()).decode('utf-8')
-                    if not essay_data:
-                        return JsonResponse({'error': f'Empty or unreadable essay: {essay.name}'}, status=400)
-
-                    
-                    response_text = await sync_to_async(evaluate22)(prompt, essay_data, images)
-                    file_name = f"{essay.name}_response.txt"
-                    zip_file.writestr(file_name, response_text)
-                except Exception as e:
-                    return JsonResponse({
-                        'error': f'Evaluation failed for {essay.name}',
-                        'details': str(e)
-                    }, status=500)
-
-        zip_buffer.seek(0)
-        response = HttpResponse(zip_buffer, content_type='application/zip')
-        response['Content-Disposition'] = 'attachment; filename="responses.zip"'
-        return response
+        return JsonResponse({"response": {"output": response}}, status=200)
 
     except Exception as e:
         return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
