@@ -289,7 +289,7 @@ async def euro_dbq_bulk(request):
         return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
 from .ApushDBQ import evaluate22
 @csrf_exempt
-async def euro_dbq_bulk(request):
+async def apushdbqbulk(request):
     if request.method != "POST":
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
