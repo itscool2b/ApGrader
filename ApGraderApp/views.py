@@ -607,7 +607,7 @@ async def eurodbq(request):
     except Exception as e:
         return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
 @csrf_exempt
-async def dbq_view(request):
+async def eurodbq(request):
     if request.method != "POST":
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
@@ -617,30 +617,26 @@ async def dbq_view(request):
         if not prompt:
             return JsonResponse({'error': 'Missing "prompt" in request'}, status=400)
 
-        
         essay_text = ""
-
-        
-        if 'essay_file' in request.FILES:
+        if 'essays' in request.FILES: 
             try:
-                pdf_file = request.FILES['essay_file']
+                pdf_file = request.FILES['essays']
                 pdf_stream = io.BytesIO(pdf_file.read())
                 reader = PdfReader(pdf_stream)
                 essay_text = "".join([page.extract_text() for page in reader.pages if page.extract_text()])
                 if not essay_text.strip():
                     return JsonResponse({'error': 'Empty or unreadable PDF file'}, status=400)
             except Exception as e:
-                return JsonResponse({'error': f'Failed to process PDF file: {str(e)}'}, status=500)
-        else:
-            
-            essay_text = request.POST.get("essay_text", "").strip()
+                return JsonResponse({'error': f'Failed to process PDF file: {str(e)}'}, status=400)
+        else:  
+            essay_text = request.POST.get("essays", "").strip()
             if not essay_text:
                 return JsonResponse({'error': 'Either a PDF file or essay text is required'}, status=400)
 
-       
+        
         images = []
         for i in range(1, 8):
-            image_key = f'image_{i}'  
+            image_key = f'image_{i}'
             if image_key in request.FILES:
                 image = request.FILES[image_key]
                 supported_mime_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]
