@@ -283,7 +283,7 @@ async def eurodbq(request):
 from .ApushDBQ import evaluate22
 @csrf_exempt
 
-async def eurodbq(request):
+async def apushdbqbulk(request):
     if request.method != "POST":
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
