@@ -226,7 +226,7 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
 @csrf_exempt
-async def eurodbq(request):
+async def euro_dbq_bulk(request):
     if request.method != "POST":
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
