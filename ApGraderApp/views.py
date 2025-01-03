@@ -557,14 +557,13 @@ async def eurodbq(request):
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
     try:
+        
         prompt = request.POST.get("prompt", "").strip()
         if not prompt:
             return JsonResponse({'error': 'Missing "prompt" in request'}, status=400)
 
         essay_text = ""
-
-        
-        if 'essays' in request.FILES:
+        if 'essays' in request.FILES: 
             try:
                 pdf_file = request.FILES['essays']
                 pdf_stream = io.BytesIO(pdf_file.read())
@@ -573,32 +572,32 @@ async def eurodbq(request):
                 if not essay_text.strip():
                     return JsonResponse({'error': 'Empty or unreadable PDF file'}, status=400)
             except Exception as e:
-                return JsonResponse({'error': f'Failed to process PDF file: {str(e)}'}, status=500)
-        else:
-           
+                return JsonResponse({'error': f'Failed to process PDF file: {str(e)}'}, status=400)
+        else:  
             essay_text = request.POST.get("essays", "").strip()
             if not essay_text:
                 return JsonResponse({'error': 'Either a PDF file or essay text is required'}, status=400)
 
+        
         images = []
         for i in range(1, 8):
-            imagekey = f'image_{i}'  
-            if imagekey in request.FILES:
-                image = request.FILES[imagekey]
+            image_key = f'image_{i}'
+            if image_key in request.FILES:
+                image = request.FILES[image_key]
                 supported_mime_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]
                 if image.content_type not in supported_mime_types:
-                    return JsonResponse({'error': f'Unsupported image type for {imagekey}.'}, status=400)
+                    return JsonResponse({'error': f'Unsupported image type for {image_key}.'}, status=400)
                 try:
                     image_data = base64.b64encode(image.read()).decode('utf-8')
                     images.append(image_data)
                 except Exception as e:
-                    return JsonResponse({'error': f'Failed to process {imagekey}: {str(e)}'}, status=500)
+                    return JsonResponse({'error': f'Failed to process {image_key}: {str(e)}'}, status=500)
 
         
         images = images[:7] + [None] * (7 - len(images))
 
+        
         try:
-            
             response = await sync_to_async(evaluateeurodbq)(prompt, essay_text, images)
         except Exception as e:
             return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
@@ -607,7 +606,6 @@ async def eurodbq(request):
 
     except Exception as e:
         return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
-    
 @csrf_exempt
 async def dbq_view(request):
     if request.method != "POST":
