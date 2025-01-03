@@ -607,7 +607,7 @@ async def eurodbq(request):
     except Exception as e:
         return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
 @csrf_exempt
-async def eurodbq(request):
+async def dbq_view(request):
     if request.method != "POST":
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
