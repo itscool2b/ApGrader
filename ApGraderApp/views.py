@@ -557,13 +557,14 @@ async def eurodbq(request):
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
     try:
-        
+        # Extract prompt
         prompt = request.POST.get("prompt", "").strip()
         if not prompt:
             return JsonResponse({'error': 'Missing "prompt" in request'}, status=400)
 
         essay_text = ""
-        if 'essays' in request.FILES: 
+
+        if 'essays' in request.FILES:  # If PDF file is uploaded
             try:
                 pdf_file = request.FILES['essays']
                 pdf_stream = io.BytesIO(pdf_file.read())
@@ -573,12 +574,14 @@ async def eurodbq(request):
                     return JsonResponse({'error': 'Empty or unreadable PDF file'}, status=400)
             except Exception as e:
                 return JsonResponse({'error': f'Failed to process PDF file: {str(e)}'}, status=400)
-        else:  
+        elif 'essays' in request.POST:  # If essay text is provided
             essay_text = request.POST.get("essays", "").strip()
-            if not essay_text:
-                return JsonResponse({'error': 'Either a PDF file or essay text is required'}, status=400)
 
-        
+        # If neither PDF nor text is provided, return an error
+        if not essay_text:
+            return JsonResponse({'error': 'Either a PDF file or essay text is required'}, status=400)
+
+        # Process images (up to 7)
         images = []
         for i in range(1, 8):
             image_key = f'image_{i}'
@@ -593,10 +596,10 @@ async def eurodbq(request):
                 except Exception as e:
                     return JsonResponse({'error': f'Failed to process {image_key}: {str(e)}'}, status=500)
 
-        
+        # Fill up to 7 image slots with None if fewer images are provided
         images = images[:7] + [None] * (7 - len(images))
 
-        
+        # Call evaluation function
         try:
             response = await sync_to_async(evaluateeurodbq)(prompt, essay_text, images)
         except Exception as e:
@@ -606,6 +609,7 @@ async def eurodbq(request):
 
     except Exception as e:
         return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
+    
 @csrf_exempt
 async def dbq_view(request):
     if request.method != "POST":
