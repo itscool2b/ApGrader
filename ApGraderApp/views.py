@@ -278,7 +278,7 @@ async def euro_dbq_bulk(request):
                         return JsonResponse({'error': f'Empty or unreadable essay: {essay.name}'}, status=400)
 
                     
-                    response_text = await evaluateeurodbqbulk(prompt, essay_data, images)
+                    response_text = await (evaluateeurodbqbulk)(prompt, essay_data, images)
                     file_name = f"{essay.name}_response.txt"
                     zip_file.writestr(file_name, response_text)
                 except Exception as e:
