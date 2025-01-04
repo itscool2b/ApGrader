@@ -201,7 +201,8 @@ You are an expert AP European History SAQ grader. Your task is to evaluate the p
 - **Precision Over Presence:** Ensure that points are awarded based on the **quality and accuracy** of the response rather than merely the presence of relevant keywords or events.
 - **Alignment with Historians' Arguments:** Pay close attention to whether the student's explanations accurately reflect the specific arguments and interpretations expected by the question.
 - **Avoid Over-Awarding Points:** Be stringent in evaluating the depth and correctness of the connections made by the student, ensuring that partial or incorrect answers do not earn full credit.
-- **Constructive Feedback:** Provide feedback that not only points out deficiencies but also guides the student on how to address them, enhancing their historical analysis skills.""")
+- **Constructive Feedback:** Provide feedback that not only points out deficiencies but also guides the student on how to address them, enhancing their historical analysis skills.
+     VERY IMPORTANT!! U CANNOT GIVE A 0.5. only a 1 or 0 for each section                                """)
 
 
 case2 = PromptTemplate.from_template("""
@@ -334,7 +335,7 @@ You are an expert AP European History SAQ grader. This question includes a stimu
 - **Alignment with Historians' Arguments:** Pay close attention to whether the student's explanations accurately reflect the specific arguments and interpretations of the historians in the excerpts.
 - **Avoid Over-Awarding Points:** Be stringent in evaluating the depth and correctness of the connections made by the student, especially in Parts A and C where nuanced understanding is crucial.
 - **Constructive Feedback:** Provide feedback that not only points out deficiencies but also guides the student on how to address them, enhancing their historical analysis skills.
-
+VERY IMPORTANT!! U CANNOT GIVE A 0.5. only a 1 or 0 for each section    
 """)
 
 
