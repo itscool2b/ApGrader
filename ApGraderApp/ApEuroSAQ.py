@@ -539,7 +539,7 @@ def vision_node(state):
                     "content": [
                         {
                             "type": "text",
-                            "text": "What is in this image?",
+                            "text": "Give a full complete and detailed analysis of the stimulus or image. Be very thorough.",
                         },
                         {
                             "type": "image_url",
@@ -548,7 +548,7 @@ def vision_node(state):
                     ],
                 }
             ],
-            max_tokens=300,
+            max_tokens=3000,
         )
 
         

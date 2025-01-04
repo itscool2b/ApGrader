@@ -169,7 +169,8 @@ Grading Tip: Evaluate whether the student moves beyond simple identification (e.
 - **Contextual Analysis (HIPP)** must clearly connect the document features to the argument.
 - **Descriptions and usage** of documents must be in the student's own words and relevant to the prompt.
 
-**Document Descriptions**:
+**Document Descriptions and analysis'**:
+Here is the descriptions and analysis of each doc.
 - **Document 1 Description:** {doc1}
 - **Document 2 Description:** {doc2}
 - **Document 3 Description:** {doc3}
@@ -185,6 +186,7 @@ Grading Tip: Evaluate whether the student moves beyond simple identification (e.
 
 **Instructions**:
 1. **Analyze the Use of Documents**:
+You have been given the analysis of each doc
    - Review each document description (Doc 1 to Doc 7) to determine how accurately and effectively they are described in the essay.
    - Assess whether the student has explained the content of each document in their own words and related it to the prompt.
    - Identify which documents are used to support the argument and how they contribute to the thesis.
@@ -518,7 +520,7 @@ def vision_node(state: GraphState) -> GraphState:
                         "content": [
                             {
                                 "type": "text",
-                                "text": "What is in this image?",
+                                "text": "Give a full complete and detailed analysis of the stimulus or image. Be very thorough.",
                             },
                             {
                                 "type": "image_url",
@@ -527,7 +529,7 @@ def vision_node(state: GraphState) -> GraphState:
                         ],
                     }
                 ],
-                max_tokens=500,
+                max_tokens=5000,
             )
 
             
