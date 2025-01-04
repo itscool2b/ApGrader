@@ -170,9 +170,17 @@ Steps for Grading:
         - Award points for correct and relevant integration of the stimulus with historical context or reasoning.
     
     - **For Subparts Requiring Historical Events Not in Stimulus (e.g., Parts B and C):**
-        - Ensure that the historical event or development referenced is **not directly mentioned in the provided excerpts**.
-        - Verify the accuracy, relevance, and depth based on the general rubric.
-        - **Do not award points if the event is directly mentioned in the excerpts.**
+        - **Originality Check:**
+            - Identify the historical event or development the student references.
+            - **Compare** the referenced event against the details in the provided stimulus to ensure it is **not directly mentioned**.
+        - **Evaluation Criteria:**
+            - **If the event is NOT mentioned in the stimulus:**
+                - **Accuracy:** Verify that the referenced event is historically accurate within the specified timeframe (1800 to 1848).
+                - **Relevance and Support:** Assess whether the event effectively supports the historian’s interpretation as required by the question.
+                - **Award points** based on the general rubric for historical evidence (accuracy, relevance, depth).
+            - **If the event IS mentioned in the stimulus:**
+                - **Do not award points.**
+                - Prepare feedback indicating that the referenced event is directly mentioned in the stimulus and does not demonstrate originality.
     
     - **For Other Subparts:**
         - Grade based on the general rubric for historical evidence (accuracy, relevance, depth).
@@ -184,7 +192,9 @@ Steps for Grading:
     
     - **If the response does not earn the point:**
         - Explain what is missing, incorrect, or vague.
-        - For Parts B and C, specifically address if the historical event used is from the stimulus and instruct to use events not covered in the excerpts.
+        - **For Subparts Requiring Historical Events Not in Stimulus (e.g., Parts B and C):**
+            - Specifically address if the historical event used is from the stimulus.
+            - Instruct the student to use events not covered in the excerpts to demonstrate originality.
 
 5. **Summarize the Total Score:**
 
@@ -204,7 +214,7 @@ Steps for Grading:
 
 - **For Subparts Requiring Historical Events Not in Stimulus (e.g., Parts B and C):**
     - **Originality:**
-        - Is the historical event or development referenced not directly mentioned in the provided excerpts?
+        - Is the historical event or development referenced **not directly mentioned** in the provided excerpts?
     - **Accuracy:**
         - Is the referenced event historically accurate within the specified timeframe (1800 to 1848)?
     - **Relevance and Support:**
@@ -239,8 +249,8 @@ Steps for Grading:
     - **Strengths:** Highlight what the student did well.
     - **Areas for Improvement:** Suggest specific ways to improve their response.
     - **Originality Note:** Comment on the originality of supporting evidence used in Parts B and C.
-                                   
-                                     """)
+""")
+
 
 ch_prompt = PromptTemplate.from_template("""
 This is the student essay - {essay}
