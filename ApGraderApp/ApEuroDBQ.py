@@ -520,7 +520,7 @@ def vision_node(state: GraphState) -> GraphState:
                         "content": [
                             {
                                 "type": "text",
-                                "text": "Give a full complete and detailed analysis of the stimulus or image. Be very thorough.",
+                                "text": "Give a full complete description and detailed analysis of the stimulus or image. Be very thorough.",
                             },
                             {
                                 "type": "image_url",

@@ -535,7 +535,7 @@ def vision_node(state):
                     "content": [
                         {
                             "type": "text",
-                            "text": "Give a full complete and detailed analysis of the stimulus or image. Be very thorough.",
+                            "text": "Give a full complete and detailed description and analysis of the stimulus or image. Be very thorough.",
                         },
                         {
                             "type": "image_url",
