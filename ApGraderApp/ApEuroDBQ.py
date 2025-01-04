@@ -69,13 +69,13 @@ llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4o")
 classification_prompt = PromptTemplate.from_template(
     """
         You are a highly accurate and strict teaching assistant for an AP European History class. Your task is to read the LEQ prompt provided by a student and determine which of the three main ApEuro LEQ types it falls under:
-        
+
 Comparison: The prompt asks the student to compare and/or contrast historical developments, events, policies, or societies.
 Causation: The prompt asks the student to explain causes and/or effects of historical events or developments.
 Continuity and Change Over Time (CCOT): The prompt asks the student to analyze what changed and what remained the same over a particular time frame.
 
         Instructions:
-        
+
 Read the provided LEQ prompt carefully.
 Identify whether the prompt is a Comparison, Causation, or CCOT prompt.
 Respond with only one of the three exact words: "Comparison", "Causation", or "CCOT". Do not include any additional text, explanations, or characters. Should be one word
@@ -85,7 +85,6 @@ Respond with only one of the three exact words: "Comparison", "Causation", or "C
         Your Response:
 """
 )
-
 thesis_prompt = PromptTemplate.from_template(
     """Evaluate the thesis statement in the following essay based on the provided rubric and evaluation standards:
 
@@ -135,7 +134,6 @@ Output:
 Score (0 or 1): Indicate whether the contextualization earns the point.
 Feedback: Provide a brief explanation justifying the score. Highlight which criteria were met or not met.
 """)
-
 evidence_prompt = PromptTemplate.from_template(
     """You are an AP European History (ApEuro) DBQ grader. Your task is to evaluate the Evidence section of a student's essay based on the provided rubric. Follow the instructions carefully to ensure accurate and consistent grading.
 
@@ -212,7 +210,6 @@ Grading Tip: Evaluate whether the student moves beyond simple identification (e.
     - *Explanation:* Brief explanation for why the point was earned or not.
 - **Overall Feedback**: Provide a summary of the strengths and areas for improvement."""
 )
-
 evidence_beyond_prompt = PromptTemplate.from_template(
     """You are an AP European History (ApEuro) DBQ grader. Your task is to evaluate the "Evidence Beyond the Documents" point of a student's essay based on the provided rubric. Follow the instructions carefully to ensure accurate and consistent grading.
 
@@ -275,7 +272,6 @@ evidence_beyond_prompt = PromptTemplate.from_template(
   - **If earned**: Quote the specific outside evidence used and explain how it meets the criteria.
   - **If not earned**: Explain why the criteria were not met without mentioning specific documents."""
 )
-
 complex_understanding_prompt = PromptTemplate.from_template(
     """You are an AP European History (ApEuro) DBQ grader. Your task is to evaluate the "Complex Understanding" point of a student's essay based on the provided rubric. Follow the instructions carefully to ensure accurate and consistent grading.
 
@@ -325,8 +321,6 @@ Outside Evidence: The essay includes relevant and accurate outside information t
 - **Feedback**:
   feedback"""
 )
-
-
 summation_prompt = PromptTemplate.from_template(
     """
 Your task is to output the final feedback in the exact format below. 
@@ -391,8 +385,6 @@ Overall feedback -
 Be thorough with the feed back, explain why they earned or lost the point in each section. Again this data has been given to u above before.
 """
 )
-
-
 factchecking_prompt = PromptTemplate.from_template("""You are an expert AP European History essay fact-checker. Your task is to fact-check the content of a student's essay based on the chapters and topics retrieved from a vector database. Follow these instructions carefully:
 
 Fact-Check the Essay: Review the essay for historical accuracy. Corss reference with ur accurate knowdlege. Focus on ensuring the essay aligns with the correct historical events, dates, figures, and interpretations.
@@ -414,7 +406,6 @@ Example Structure for Your Feedback:
 Identified Mistake: "In your essay, you stated that [incorrect information]. However, according to [chapter/topic], the correct information is [correct information]."
 General Accuracy: "Overall, your essay is accurate in its portrayal of [topic], but keep an eye on [specific areas]."
 Focus on being supportive and informative. Your goal is to help the student learn and improve their historical understanding without penalizing them for mistakes.""")
-
 class GraphState(TypedDict):
     prompt: str
     prompt_type: str
@@ -425,6 +416,7 @@ class GraphState(TypedDict):
     evidence_generation: str
     complexunderstanding_generation: str
     factchecking_generation: str
+    student_essay_image: Optional[Union[str, bytes]]
     doc1: Optional[Union[str, bytes]]
     doc2: Optional[Union[str, bytes]]
     doc3: Optional[Union[str, bytes]]
@@ -432,7 +424,6 @@ class GraphState(TypedDict):
     doc5: Optional[Union[str, bytes]]
     doc6: Optional[Union[str, bytes]]
     doc7: Optional[Union[str, bytes]]
-    student_essay_image: Optional[Union[str, bytes]]
     doc1_desc: str
     doc2_desc: str
     doc3_desc: str
@@ -441,6 +432,50 @@ class GraphState(TypedDict):
     doc6_desc: str
     doc7_desc: str
     summation: str
+
+
+
+
+def essay_vision_node(state):
+
+    try:
+        image_data = state.get('student_essay_image')
+        if not image_data:
+            state["student_essay_image"] = None
+            return state
+
+        if not image_data.startswith("data:"):
+            image_data = f"data:image/jpeg;base64,{image_data}"  
+
+        response = client.chat.completions.create(
+            model="gpt-4o",  
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "print out the text from this image exactly. You should only output the text nothing else.",
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": image_data},  
+                        },
+                    ],
+                }
+            ],
+            max_tokens=3000,
+        )
+
+        
+        essay = response.choices[0].message.content
+        state["student_essay"] = essay
+        print(essay)
+        return state
+
+    except Exception as e:
+        raise ValueError(f"Error in vision_node: {e}")
+
 
 def classify_prompt_node(state: GraphState) -> GraphState:
     logging.info("Classifying prompt.")
@@ -604,46 +639,6 @@ def summation_node(state):
     return state
 
 
-def essay_vision_node(state):
-
-    try:
-        image_data = state.get('student_essay_image')
-        if not image_data:
-            state["student_essay_image"] = None
-            return state
-
-        if not image_data.startswith("data:"):
-            image_data = f"data:image/jpeg;base64,{image_data}"  
-
-        response = client.chat.completions.create(
-            model="gpt-4o",  
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": "print out the text from this image exactly. You should only output the text nothing else.",
-                        },
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": image_data},  
-                        },
-                    ],
-                }
-            ],
-            max_tokens=3000,
-        )
-
-        
-        essay = response.choices[0].message.content
-        state["student_essay"] = essay
-        print(essay)
-        return state
-
-    except Exception as e:
-        raise ValueError(f"Error in vision_node: {e}")
-
 workflow = StateGraph(GraphState)
 
 workflow.add_node("classify_prompt", classify_prompt_node)
@@ -671,7 +666,7 @@ workflow.add_edge("final_summation_node", END)
 
 app = workflow.compile()
 
-def evaluate2(prompt: str, essay: str, images: List[Optional[str]] = None) -> str:
+def evaluateeurodbq(prompt: str, essay: str, images: List[Optional[str]] = None) -> str:
     """
     Evaluate function to process the prompt, essay, and optional image inputs.
 
@@ -694,7 +689,7 @@ def evaluate2(prompt: str, essay: str, images: List[Optional[str]] = None) -> st
         "thesis_generation": None,
         "contextualization_generation": None,
         "evidence_generation": None,
-        'student_essay_image': None,
+        "student_essay_image": None,
         "evidence_beyond_generation": None,
         "complexunderstanding_generation": None,
         "factchecking_generation": None,
@@ -734,7 +729,7 @@ def evaluate2(prompt: str, essay: str, images: List[Optional[str]] = None) -> st
     else:
         raise ValueError("Summation not found in the final state.")
     
-def evaluate22(prompt: str, essay, images: List[Optional[str]] = None) -> str:
+def evaluateeurodbqbulk(prompt: str, essay, images: List[Optional[str]] = None) -> str:
     """
     Evaluate function to process the prompt, essay, and optional image inputs.
 
@@ -754,9 +749,9 @@ def evaluate22(prompt: str, essay, images: List[Optional[str]] = None) -> str:
         "prompt": prompt,
         "prompt_type": None,
         "student_essay": None,
+        "student_essay_image": essay,
         "thesis_generation": None,
         "contextualization_generation": None,
-        "student_essay_image": essay,
         "evidence_generation": None,
         "evidence_beyond_generation": None,
         "complexunderstanding_generation": None,
