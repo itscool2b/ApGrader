@@ -153,6 +153,9 @@ Steps for Grading:
       {stimulus}
     
     - Carefully review the stimulus and identify its key details (e.g., captions, labels, or visual elements).
+    - **List Historical Events or Developments in the Stimulus:**
+        - Identify and list all historical events or developments mentioned in the stimulus.
+        - This list will be used to verify the originality of supporting evidence in subparts B and C.
     - Understand how the stimulus relates to the historical context and themes referenced in the question.
 
 2. **Read the SAQ Question and Student Response:**
@@ -166,21 +169,26 @@ Steps for Grading:
 3. **Grade Each Subpart (A, B, C, etc.):**
 
     - **For Subparts Requiring Stimulus Analysis:**
-        - Evaluate if the student accurately references and interprets the details or themes from the stimulus.
-        - Award points for correct and relevant integration of the stimulus with historical context or reasoning.
+        - **Evaluation:**
+            - Determine if the student accurately references and interprets the details or themes from the stimulus.
+            - Assess the correctness and relevance of the integration between the stimulus and historical context or reasoning.
+        - **Scoring:**
+            - Award points based on the accuracy, relevance, and depth of the response as per the general rubric.
     
     - **For Subparts Requiring Historical Events Not in Stimulus (e.g., Parts B and C):**
+        - **Identify the Historical Event or Development Referenced:**
+            - Determine the specific historical event or development the student is using to support the interpretation.
         - **Originality Check:**
-            - Identify the historical event or development the student references.
-            - **Compare** the referenced event against the details in the provided stimulus to ensure it is **not directly mentioned**.
-        - **Evaluation Criteria:**
-            - **If the event is NOT mentioned in the stimulus:**
-                - **Accuracy:** Verify that the referenced event is historically accurate within the specified timeframe (1800 to 1848).
-                - **Relevance and Support:** Assess whether the event effectively supports the historian’s interpretation as required by the question.
-                - **Award points** based on the general rubric for historical evidence (accuracy, relevance, depth).
-            - **If the event IS mentioned in the stimulus:**
+            - **Compare** the referenced event against the list of historical events from the stimulus.
+            - **If the event is directly mentioned or covered in the stimulus:**
                 - **Do not award points.**
                 - Prepare feedback indicating that the referenced event is directly mentioned in the stimulus and does not demonstrate originality.
+            - **If the event is NOT mentioned in the stimulus:**
+                - **Evaluate the Response:**
+                    - **Accuracy:** Verify that the referenced event is historically accurate within the specified timeframe (1800 to 1848).
+                    - **Relevance and Support:** Assess whether the event effectively supports the historian’s interpretation as required by the question.
+                - **Scoring:**
+                    - Award points based on the accuracy, relevance, and depth of the response as per the general rubric.
     
     - **For Other Subparts:**
         - Grade based on the general rubric for historical evidence (accuracy, relevance, depth).
@@ -194,7 +202,7 @@ Steps for Grading:
         - Explain what is missing, incorrect, or vague.
         - **For Subparts Requiring Historical Events Not in Stimulus (e.g., Parts B and C):**
             - Specifically address if the historical event used is from the stimulus.
-            - Instruct the student to use events not covered in the excerpts to demonstrate originality.
+            - Instruct the student to use events not covered in the stimulus to demonstrate originality.
 
 5. **Summarize the Total Score:**
 
@@ -214,7 +222,7 @@ Steps for Grading:
 
 - **For Subparts Requiring Historical Events Not in Stimulus (e.g., Parts B and C):**
     - **Originality:**
-        - Is the historical event or development referenced **not directly mentioned** in the provided excerpts?
+        - Is the historical event or development referenced **not directly mentioned** in the provided stimulus?
     - **Accuracy:**
         - Is the referenced event historically accurate within the specified timeframe (1800 to 1848)?
     - **Relevance and Support:**
@@ -231,7 +239,7 @@ Steps for Grading:
 
 - **Stimulus Reference:**
     - Explanation of how the stimulus relates to the question.
-
+  
 - **Feedback for Each Subpart:**
 
     - **A: (Score: X/1)**  
@@ -245,7 +253,7 @@ Steps for Grading:
 
 - **Total Score and Summary:**
 
-    - **Total Score:** X/Y (e.g., 2/3 for a 3-part question).
+    - **Total Score:** X/Y (e.g., 1/3 for a 3-part question).
     - **Strengths:** Highlight what the student did well.
     - **Areas for Improvement:** Suggest specific ways to improve their response.
     - **Originality Note:** Comment on the originality of supporting evidence used in Parts B and C.
