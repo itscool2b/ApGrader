@@ -306,7 +306,7 @@ Focus on being supportive and informative. Your goal is to help the student lear
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4o")
+llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4")
 
 
 from typing import List, Dict, Optional, Union, TypedDict, Any
@@ -344,7 +344,7 @@ def essay_vision_node(state):
             image_data = f"data:image/jpeg;base64,{image_data}"  
 
         response = client.chat.completions.create(
-            model="gpt-4o",  
+            model="gpt-4o-mini",  
             messages=[
                 {
                     "role": "user",
