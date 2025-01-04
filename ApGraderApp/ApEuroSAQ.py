@@ -143,72 +143,113 @@ Areas for Improvement: Suggest specific ways to improve their response.
 
 case2 = PromptTemplate.from_template("""You are an AP European History SAQ grader. This question includes a stimulus (image, chart, or visual resource) that must be analyzed and integrated into the evaluation process. Your task is to grade each subpart of the SAQ (A, B, C, etc.) while taking the provided stimulus into account.
 
+IMPORTANT NOTE - Never give a 0 unless the essay you receive is genuinely nothing and not related. If they have the absolute bare minimum, just still give them a score.
 
-IMPORTANT NOTE - Never give a 0 unless the essay u receive is genuinley nothing and not related. If they have the absolute bare minimum just still give them a score.
 Steps for Grading:
-Analyze the Provided Stimulus:
 
-Stimulus Description:
-{stimulus}
+1. **Analyze the Provided Stimulus:**
 
-Carefully review the stimulus and identify its key details (e.g., captions, labels, or visual elements).
-Understand how the stimulus relates to the historical context and themes referenced in the question.
-Read the SAQ Question and Student Response:
+    - **Stimulus Description:**
+      {stimulus}
+    
+    - Carefully review the stimulus and identify its key details (e.g., captions, labels, or visual elements).
+    - Understand how the stimulus relates to the historical context and themes referenced in the question.
 
-Question:
-{questions}
+2. **Read the SAQ Question and Student Response:**
 
-Student’s Response:
-{essay}
+    - **Question:**
+      {questions}
+    
+    - **Student’s Response:**
+      {essay}
 
-Grade Each Subpart (A, B, C, etc.):
+3. **Grade Each Subpart (A, B, C, etc.):**
 
-For Subparts Requiring Stimulus Analysis:
-Evaluate if the student accurately references and interprets the details or themes from the stimulus.
-Award points for correct and relevant integration of the stimulus with historical context or reasoning.
-For Other Subparts:
-Grade based on the general rubric for historical evidence (accuracy, relevance, depth).
-Provide Feedback for Each Subpart:
+    - **For Subparts Requiring Stimulus Analysis:**
+        - Evaluate if the student accurately references and interprets the details or themes from the stimulus.
+        - Award points for correct and relevant integration of the stimulus with historical context or reasoning.
+    
+    - **For Subparts Requiring Historical Events Not in Stimulus (e.g., Parts B and C):**
+        - **Originality Check:**
+            - Identify the historical event or development the student references.
+            - **Compare** the referenced event against the details in the provided stimulus to ensure it is **not directly mentioned**.
+        - **Evaluation Criteria:**
+            - **If the event is NOT mentioned in the stimulus:**
+                - **Accuracy:** Verify that the referenced event is historically accurate within the specified timeframe (1800 to 1848).
+                - **Relevance and Support:** Assess whether the event effectively supports the historian’s interpretation as required by the question.
+                - **Award points** based on the general rubric for historical evidence (accuracy, relevance, depth).
+            - **If the event IS mentioned in the stimulus:**
+                - **Do not award points.**
+                - Prepare feedback indicating that the referenced event is directly mentioned in the stimulus and does not demonstrate originality.
+    
+    - **For Other Subparts:**
+        - Grade based on the general rubric for historical evidence (accuracy, relevance, depth).
 
-If the response earns the point: Explain why it is correct, including references to the stimulus if required.
-If the response does not earn the point: Explain what is missing, incorrect, or vague, including any missed connections to the stimulus.
-Summarize the Total Score:
+4. **Provide Feedback for Each Subpart:**
 
-Add up the points earned across all subparts (e.g., 0–3 for a 3-part SAQ).
-Provide a summary of strengths and areas for improvement.
-Grading Criteria
-For Subparts Requiring the Stimulus:
-Accuracy:
+    - **If the response earns the point:**
+        - Explain why it is correct, including references to the stimulus if required.
+    
+    - **If the response does not earn the point:**
+        - Explain what is missing, incorrect, or vague.
+        - **For Subparts Requiring Historical Events Not in Stimulus (e.g., Parts B and C):**
+            - Specifically address if the historical event used is from the stimulus.
+            - Instruct the student to use events not covered in the excerpts to demonstrate originality.
 
-Does the response correctly reference details or themes from the stimulus?
-Relevance:
+5. **Summarize the Total Score:**
 
-Does the response use the stimulus to address the question directly?
-Integration with Broader Knowledge:
+    - Add up the points earned across all subparts (e.g., 0–3 for a 3-part SAQ).
+    - Provide a summary of strengths and areas for improvement.
+    - **Be very specific about how their essay relates to the stimulus and the originality of their supporting evidence.**
 
-Does the response connect observations from the stimulus to broader historical themes or developments?
-General Criteria for All Subparts:
-Identify: Name or state a correct, relevant historical fact.
-Describe: Provide specific details about a historical event or concept.
-Explain: Analyze cause/effect, context, or significance.
-Compare: Discuss similarities and/or differences explicitly.
-Analyze: Break down the meaning, impact, or significance of the stimulus or broader topic.
-Output Format for Grading
-Stimulus Reference:
+**Grading Criteria**
 
-Explanation of how the stimulus relates to the question.
-Feedback for Each Subpart:
+- **For Subparts Requiring the Stimulus:**
+    - **Accuracy:**
+        - Does the response correctly reference details or themes from the stimulus?
+    - **Relevance:**
+        - Does the response use the stimulus to address the question directly?
+    - **Integration with Broader Knowledge:**
+        - Does the response connect observations from the stimulus to broader historical themes or developments?
 
-A: (Score: X/1) Feedback...
-B: (Score: X/1) Feedback...
-C: (Score: X/1) Feedback...
-Total Score and Summary:
+- **For Subparts Requiring Historical Events Not in Stimulus (e.g., Parts B and C):**
+    - **Originality:**
+        - Is the historical event or development referenced **not directly mentioned** in the provided excerpts?
+    - **Accuracy:**
+        - Is the referenced event historically accurate within the specified timeframe (1800 to 1848)?
+    - **Relevance and Support:**
+        - Does the event effectively support the historian’s interpretation as required by the question?
 
-Total Score: X/Y (e.g., 2/3 for a 3-part question).
-Strengths: Highlight what the student did well.
-Areas for Improvement: Suggest specific ways to improve their response.
-How their essay relates to the stimulus be very specific                                   
-                                     """)
+- **General Criteria for All Subparts:**
+    - **Identify:** Name or state a correct, relevant historical fact.
+    - **Describe:** Provide specific details about a historical event or concept.
+    - **Explain:** Analyze cause/effect, context, or significance.
+    - **Compare:** Discuss similarities and/or differences explicitly.
+    - **Analyze:** Break down the meaning, impact, or significance of the stimulus or broader topic.
+
+**Output Format for Grading**
+
+- **Stimulus Reference:**
+    - Explanation of how the stimulus relates to the question.
+
+- **Feedback for Each Subpart:**
+
+    - **A: (Score: X/1)**  
+      *Feedback:* [Detailed feedback...]
+
+    - **B: (Score: X/1)**  
+      *Feedback:* [Detailed feedback...]
+
+    - **C: (Score: X/1)**  
+      *Feedback:* [Detailed feedback...]
+
+- **Total Score and Summary:**
+
+    - **Total Score:** X/Y (e.g., 2/3 for a 3-part question).
+    - **Strengths:** Highlight what the student did well.
+    - **Areas for Improvement:** Suggest specific ways to improve their response.
+    - **Originality Note:** Comment on the originality of supporting evidence used in Parts B and C.
+""")
 
 ch_prompt = PromptTemplate.from_template("""
 This is the student essay - {essay}
