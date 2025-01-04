@@ -196,7 +196,6 @@ async def euro_saq_bulk(request):
             stim_data = base64.b64encode(stim_data.read()).decode('utf-8')
         else:
             stim_data = None
-
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
             for file in files:
