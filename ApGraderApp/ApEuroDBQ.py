@@ -25,7 +25,7 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 
 index = get_index()
 
-def retriever(query: str, top_k: int = 100) -> List[Dict]:
+def retriever(query: str, top_k: int = 1) -> List[Dict]:
     """
     Generalized function to retrieve relevant documents from Pinecone based on a query.
 
@@ -68,14 +68,14 @@ llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4o")
 
 classification_prompt = PromptTemplate.from_template(
     """
-        You are a highly accurate and strict teaching assistant for an AP European History class. Your task is to read the LEQ prompt provided by a student and determine which of the three main ApEuro LEQ types it falls under:
-
+        You are a highly accurate and strict teaching assistant for an AP European History class. Your task is to read the LEQ prompt provided by a student and determine which of the three main APUSH LEQ types it falls under:
+        
 Comparison: The prompt asks the student to compare and/or contrast historical developments, events, policies, or societies.
 Causation: The prompt asks the student to explain causes and/or effects of historical events or developments.
 Continuity and Change Over Time (CCOT): The prompt asks the student to analyze what changed and what remained the same over a particular time frame.
 
         Instructions:
-
+        
 Read the provided LEQ prompt carefully.
 Identify whether the prompt is a Comparison, Causation, or CCOT prompt.
 Respond with only one of the three exact words: "Comparison", "Causation", or "CCOT". Do not include any additional text, explanations, or characters. Should be one word
@@ -85,19 +85,20 @@ Respond with only one of the three exact words: "Comparison", "Causation", or "C
         Your Response:
 """
 )
+
 thesis_prompt = PromptTemplate.from_template(
     """Evaluate the thesis statement in the following essay based on the provided rubric and evaluation standards:
 
 Rubric for Thesis / Claim:
-Responds to the prompt with a historically defensible thesis or claim that establishes a line of reasoning.
-Makes a claim that responds directly to the prompt, rather than merely restating or rephrasing it.
-Consists of one or more sentences located in one place, either in the introduction or conclusion of the essay.
+Refer to the rubric and grade the thesis accordingly based on the rubric.
+{rubric}
 
 Evaluation Standards:
 Ignore grammar and spelling errors as long as the meaning is clear.
 Award 1 point if the thesis meets the rubric criteria, even if it is not perfectly worded or explicitly labeled.
 Recognize minimally defensible theses that establish a line of reasoning, even if they are embedded in the introduction or conclusion.
 Focus on whether the thesis responds to the prompt and establishes a line of reasoning, rather than penalizing for lack of sophistication or minor flaws.
+Follow the rubric, be strict but fair. Only award point if the thesis aligns with the rubrics requierments.
 
 Essay to Evaluate:
 {essay}
@@ -114,9 +115,7 @@ contextualization_prompt = PromptTemplate.from_template(
     """Evaluate the contextualization in the following essay based on the provided rubric and evaluation standards:
 
 Rubric for Contextualization:
-Describes a broader historical context relevant to the prompt.
-The response must relate the topic of the prompt to broader historical events, developments, or processes that occur before, during, or continue after the time frame of the question.
-This point is not awarded for merely a phrase or a reference.
+{rubric}
 
 Evaluation Standards:
 Ignore grammar and spelling errors as long as the meaning is clear.
@@ -135,31 +134,10 @@ Output:
 Score (0 or 1): Indicate whether the contextualization earns the point.
 Feedback: Provide a brief explanation justifying the score. Highlight which criteria were met or not met.
 """)
+
 evidence_prompt = PromptTemplate.from_template(
-    """You are an AP European States History (ApEuro) DBQ grader. Your task is to evaluate the Evidence section of a student's essay based on the provided rubric. Follow the instructions carefully to ensure accurate and consistent grading.
+    """You are an AP European History (ApEuro) DBQ grader. Your task is to evaluate the Evidence section of a student's essay based on the provided rubric. Follow the instructions carefully to ensure accurate and consistent grading.
 
-**DBQ Evidence Rubric**:
-
-1. **First Evidence Point (1 Point):**
-   - **Requirement:** Accurately describe the content of at least three documents and address the topic of the prompt.
-   - **Key Detail:** Simply quoting the documents doesn’t count; you need to explain what the document is saying in your own words and relate them back to the prompt. Award this point if at least three documents are referenced explicitly or implicitly and connected to the prompt.
-   - **Important Note:** MAKE SURE THAT AT LEAST 3 DOCUMENTS ARE ADDRESSED FOR STUDENTS TO EARN THIS POINT.
-
-2. **Second Evidence Point (1 Point):**
-   - **Requirement:** Use at least four documents to support an argument in response to the prompt.
-   - **Key Detail:** This means you’re not just describing the documents, but actively using them as evidence to back up your thesis or main argument.
-   - **Important Note:** MAKE SURE THAT AT LEAST 4 DOCUMENTS ARE ADDRESSED AND USED TO SUPPORT AND ARGUMENT FOR STUDENTS TO EARN THIS POINT. IF 4 DOCUMENTS ARE NOT USED, DO NOT AWARD THIS POINT. 
-
-3. **HIPP (Contextual Analysis) Point (1 Point):**
-   Requirement: For at least two documents, provide an in-depth explanation of how or why the document’s Historical Situation, Intended Audience, Point of View (POV), or Purpose (HIPP) is relevant to the argument.
-   - Historical Situation: Explain the broader context or events that influenced the creation of the document. How does this context shape the document's content or meaning?
-   - Intended Audience: Identify the target audience and explain why the document is written in a way that appeals to or persuades that audience.
-   - Point of View (POV): Analyze the author's perspective, including their social, political, or personal position, and how that affects the reliability or focus of the document.
-   - Purpose: Determine why the document was created (e.g., to persuade, inform, justify, etc.) and explain how this purpose relates to the argument.
-   How to Earn It: To award this point, look for:
-   - A clear and accurate identification of one HIPP element for two documents.
-   - A logical explanation of how or why that HIPP element strengthens or connects to the student's argument.
-   - Independence: This point is independent of the description and support points. It can be awarded even if the student does not fully describe or use the document to support their thesis.
 
 Grading Tip: Evaluate whether the student moves beyond simple identification (e.g., "The purpose was to inform…") and provides a meaningful explanation of how the HIPP element enhances their argument in the context of the prompt.
 
@@ -179,6 +157,7 @@ Here is the descriptions and analysis of each doc.
 - **Document 5 Description:** {doc5}
 - **Document 6 Description:** {doc6}
 - **Document 7 Description:** {doc7}
+Analyze each document.
 
 **Essay to Evaluate**:
 {essay}
@@ -191,11 +170,12 @@ Here is the descriptions and analysis of each doc.
    - Review each document description (Doc 1 to Doc 7) to determine how accurately and effectively they are described in the essay. 
    - Assess whether the student has explained the content of each document in their own words and related it to the prompt.
    - Identify which documents are used to support the argument and how they contribute to the thesis.
+   
+DBQ Evidence Rubric:
+{rubric}
 
 2. **Evaluate Each Evidence Point**:
-   - Evaluate and grade the essay based on the DBQ Evidence Rubric given to you above.
-   - Explicit references: Look for direct mentions or quotations of documents.
-   - Implicit references: Look for paraphrased or summarized content that aligns with the provided document descriptions.
+   - Evaluate and grade the three evidence points based on the DBQ Evidence Rubric given to you above.
 
 3. **Assign Scores and Provide Feedback**:
    - **Total Score (0–3)**: Sum the points earned across the three Evidence points.
@@ -217,12 +197,29 @@ Here is the descriptions and analysis of each doc.
 - **Overall Feedback**: Provide a summary of the strengths and areas for improvement."""
 )
 evidence_beyond_prompt = PromptTemplate.from_template(
-    """You are an AP European History (ApEuro) DBQ grader. Your task is to evaluate the "Evidence Beyond the Documents" point of a student's essay based on the provided rubric. Follow the instructions carefully to ensure accurate and consistent grading.
+    """You are an AP European history (ApEuro) DBQ grader. Your task is to evaluate the "Evidence Beyond the Documents" point of a student's essay based on the provided rubric. Follow the instructions carefully to ensure accurate and consistent grading.
+    
+**Document Descriptions and analysis'**:
+Here is the descriptions and analysis of each doc.
+- **Document 1 Description:** {doc1}
+- **Document 2 Description:** {doc2}
+- **Document 3 Description:** {doc3}
+- **Document 4 Description:** {doc4}
+- **Document 5 Description:** {doc5}
+- **Document 6 Description:** {doc6}
+- **Document 7 Description:** {doc7}
+Analyze each document.
+
+**Analyze the Use of Documents**:
+    You have been given the analysis of each doc
+   - Review each document description (Doc 1 to Doc 7) to determine how accurately and effectively they are described in the essay. 
+   - Assess whether the student has explained the content of each document in their own words and related it to the prompt.
+   - Identify which documents are used to support the argument and how they contribute to the thesis.
 
 **DBQ Evidence Beyond the Documents Rubric**:
 
 1. **Requirement:**
-   - The student must provide specific evidence that is not in the provided documents.
+   - The student must provide specific evidence that is not in the provided documents. Be sure to look at the analysis of the documents to see if the student is using outside information.
    - This evidence must:
      - Be relevant to the argument.
      - Be fully described, not just a simple phrase or reference.
@@ -258,12 +255,8 @@ evidence_beyond_prompt = PromptTemplate.from_template(
    - Ensure the evidence is **different** from the evidence used for contextualization.
 
 2. **Evaluate the Evidence Beyond the Documents Point**:
-   - **Award 1 point** if all the following criteria are met:
-     - Specific evidence not in the documents is provided.
-     - The evidence is fully described and explained.
-     - The evidence is relevant to the argument.
-     - The evidence is different from contextualization evidence.
-   - **Do not award the point** if any of the above criteria are not met.
+    Assign the score based on the rubric for Evidence beyond the documents.
+    {rubric}
 
 3. **Provide Feedback**:
    - **If the point is earned**:
@@ -278,20 +271,12 @@ evidence_beyond_prompt = PromptTemplate.from_template(
   - **If earned**: Quote the specific outside evidence used and explain how it meets the criteria.
   - **If not earned**: Explain why the criteria were not met without mentioning specific documents."""
 )
+
 complex_understanding_prompt = PromptTemplate.from_template(
     """You are an AP European History (ApEuro) DBQ grader. Your task is to evaluate the "Complex Understanding" point of a student's essay based on the provided rubric. Follow the instructions carefully to ensure accurate and consistent grading.
 
 **DBQ Complex Understanding Rubric**:
-
-1. Sophisticated Argumentation:
-Nuanced Analysis: The student demonstrates an ability to explore multiple themes, perspectives, or complexities in the historical development. Look for depth, not surface-level analysis.
-Balanced Comparisons: The essay explains both sides of a comparison (e.g., similarity and difference, continuity and change, or causes and effects) with clear, supported examples.
-Broader Connections: The student makes insightful connections across time periods, regions, or themes, tying the argument to broader historical trends or global contexts.
-
-2. Effective Use of Evidence:
-Comprehensive Use of Documents: The student effectively incorporates all seven documents, integrating them seamlessly into their argument. Each document should have a purpose in supporting their thesis.
-HIPP Analysis: At least four documents are analyzed with depth using HIPP (Historical Situation, Intended Audience, Point of View, Purpose). The analysis must explain how or why the HIPP element is relevant to the argument.
-Outside Evidence: The essay includes relevant and accurate outside information that is directly tied to the argument. This adds depth and context, going beyond the documents.
+{rubric}
 
 **Evaluation Standards**:
 - **Ignore grammar and spelling errors** as long as the meaning is clear.
@@ -327,6 +312,8 @@ Outside Evidence: The essay includes relevant and accurate outside information t
 - **Feedback**:
   feedback"""
 )
+
+
 summation_prompt = PromptTemplate.from_template(
     """
 Your task is to output the final feedback in the exact format below. 
@@ -391,6 +378,8 @@ Overall feedback -
 Be thorough with the feed back, explain why they earned or lost the point in each section. Again this data has been given to u above before.
 """
 )
+
+
 factchecking_prompt = PromptTemplate.from_template("""You are an expert AP European History essay fact-checker. Your task is to fact-check the content of a student's essay based on the chapters and topics retrieved from a vector database. Follow these instructions carefully:
 
 Fact-Check the Essay: Review the essay for historical accuracy. Corss reference with ur accurate knowdlege. Focus on ensuring the essay aligns with the correct historical events, dates, figures, and interpretations.
@@ -413,6 +402,7 @@ Identified Mistake: "In your essay, you stated that [incorrect information]. How
 General Accuracy: "Overall, your essay is accurate in its portrayal of [topic], but keep an eye on [specific areas]."
 Focus on being supportive and informative. Your goal is to help the student learn and improve their historical understanding without penalizing them for mistakes.""")
 class GraphState(TypedDict):
+    rubric: List[dict]
     prompt: str
     prompt_type: str
     student_essay: str
@@ -441,6 +431,12 @@ class GraphState(TypedDict):
 
 
 
+def retrieve_rubric_node(state):
+
+    query = "ap euro dbq rubric"
+    state["rubric"] = retriever(query)
+
+    return state
 
 def essay_vision_node(state):
 
@@ -461,7 +457,7 @@ def essay_vision_node(state):
                     "content": [
                         {
                             "type": "text",
-                            "text": "print out the text from this image exactly. You should only output the text nothing else.",
+                            "text": "print out the text from this image exactly. You should only output the text nothing else.If you are absolutley unable to read it, just say the handwriting is not readable.",
                         },
                         {
                             "type": "image_url",
@@ -548,28 +544,29 @@ def thesis_grading_node(state: GraphState) -> GraphState:
     """
     Node 4: Grade the thesis statement.
     """
+    rubric=state['rubric']
     essay = state["student_essay"]
     prompt_type = state["prompt_type"]
 
-    formatted_prompt = thesis_prompt.format(prompt_type=prompt_type,essay=essay)
+    formatted_prompt = thesis_prompt.format(prompt_type=prompt_type,essay=essay,rubric=rubric)
     response = llm.invoke(formatted_prompt)
     state["thesis_generation"] = response.content.strip()
     return state
 
 
 def contextualization_grading_node(state: GraphState) -> GraphState:
-
+    rubric=state['rubric']
     essay = state["student_essay"]
     prompt_type = state["prompt_type"]
 
-    formatted_prompt = contextualization_prompt.format(essay=essay,prompt_type=prompt_type)
+    formatted_prompt = contextualization_prompt.format(essay=essay,prompt_type=prompt_type,rubric=rubric)
     response = llm.invoke(formatted_prompt)
     state["contextualization_generation"] = response.content.strip()
 
     return state
 
 def evidence_grading_node(state: GraphState) -> GraphState:
-   
+    rubric=state['rubric']
     d1 = state["doc1_desc"]
     d2 = state["doc2_desc"]
     d3 = state["doc3_desc"]
@@ -581,14 +578,14 @@ def evidence_grading_node(state: GraphState) -> GraphState:
     essay = state["student_essay"]
     prompt_type = state["prompt_type"]
 
-    formatted_prompt = evidence_prompt.format(essay=essay,prompt_type=prompt_type,doc1=d1,doc2=d2,doc3=d3,doc4=d4,doc5=d5,doc6=d6,doc7=d7)
+    formatted_prompt = evidence_prompt.format(essay=essay,prompt_type=prompt_type,doc1=d1,doc2=d2,doc3=d3,doc4=d4,doc5=d5,doc6=d6,doc7=d7,rubric=rubric)
     response = llm.invoke(formatted_prompt)
 
     state["evidence_generation"] = response.content.strip()
     return state
 
 def evidence_beyond_grading_node(state: GraphState) -> GraphState:
-   
+    rubric=state['rubric']
     d1 = state["doc1_desc"]
     d2 = state["doc2_desc"]
     d3 = state["doc3_desc"]
@@ -600,18 +597,18 @@ def evidence_beyond_grading_node(state: GraphState) -> GraphState:
     essay = state["student_essay"]
     prompt_type = state["prompt_type"]
 
-    formatted_prompt = evidence_beyond_prompt.format(essay=essay,prompt_type=prompt_type,doc1=d1,doc2=d2,doc3=d3,doc4=d4,doc5=d5,doc6=d6,doc7=d7)
+    formatted_prompt = evidence_beyond_prompt.format(essay=essay,prompt_type=prompt_type,doc1=d1,doc2=d2,doc3=d3,doc4=d4,doc5=d5,doc6=d6,doc7=d7,rubric=rubric)
     response = llm.invoke(formatted_prompt)
 
     state["evidence_beyond_generation"] = response.content.strip()
     return state
 
 def complex_understanding_grading_node(state):
-    
+    rubric=state['rubric']
     essay = state["student_essay"]
     prompt_type = state["prompt_type"]
 
-    formatted_prompt = complex_understanding_prompt.format(essay=essay,prompt_type=prompt_type)
+    formatted_prompt = complex_understanding_prompt.format(essay=essay,prompt_type=prompt_type,rubric=rubric)
     response = llm.invoke(formatted_prompt)
     state["complexunderstanding_generation"] = response.content.strip()
 
@@ -689,6 +686,7 @@ def evaluateeurodbq(prompt: str, essay: str, images: List[Optional[str]] = None)
     images = images[:7] + [None] * (7 - len(images))
 
     state = {
+        "rubric": [],
         "prompt": prompt,
         "prompt_type": None,
         "student_essay": essay,
@@ -717,6 +715,7 @@ def evaluateeurodbq(prompt: str, essay: str, images: List[Optional[str]] = None)
     }
 
     try:
+        state = retrieve_rubric_node(state)
         state = classify_prompt_node(state)
         state = vision_node(state)
         state = thesis_grading_node(state)
@@ -752,6 +751,7 @@ def evaluateeurodbqbulk(prompt: str, essay, images: List[Optional[str]] = None) 
     images = images[:7] + [None] * (7 - len(images))
 
     state = {
+        'rubric': [],
         "prompt": prompt,
         "prompt_type": None,
         "student_essay": None,
@@ -780,6 +780,7 @@ def evaluateeurodbqbulk(prompt: str, essay, images: List[Optional[str]] = None) 
     }
 
     try:
+        state = retrieve_rubric_node(state)
         state = essay_vision_node(state)
         state = classify_prompt_node(state)
         state = vision_node(state)

@@ -473,7 +473,7 @@ def essay_vision_node(state):
                     "content": [
                         {
                             "type": "text",
-                            "text": "print out the text from this image exactly. You should only output the text nothing else.",
+                            "text": "print out the text from this image exactly. You should only output the text nothing else.If you are absolutley unable to read it, just say the handwriting is not readable.",
                         },
                         {
                             "type": "image_url",
