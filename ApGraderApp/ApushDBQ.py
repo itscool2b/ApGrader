@@ -96,9 +96,9 @@ Consists of one or more sentences located in one place, either in the introducti
 
 Evaluation Standards:
 Ignore grammar and spelling errors as long as the meaning is clear.
-Award 1 point only if the thesis fully meets all rubric criteria.
-Do not award partial credit for incomplete, vague, or partially correct theses.
-Be strict but fair and adhere strictly to the rubric.
+Award 1 point if the thesis meets the rubric criteria, even if it is not perfectly worded or explicitly labeled.
+Recognize minimally defensible theses that establish a line of reasoning, even if they are embedded in the introduction or conclusion.
+Focus on whether the thesis responds to the prompt and establishes a line of reasoning, rather than penalizing for lack of sophistication or minor flaws.
 
 Essay to Evaluate:
 {essay}
@@ -108,6 +108,7 @@ Prompt Type: {prompt_type}
 Output:
 Score (0 or 1): Indicate whether the thesis earns the point.
 Feedback: Provide a brief explanation justifying the score. Highlight which criteria were met or not met.
+Be specific: If the thesis earns the point, explain how it meets the rubric criteria. If it does not, explain what is missing or unclear.
 """
 )
 contextualization_prompt = PromptTemplate.from_template(
@@ -143,7 +144,7 @@ evidence_prompt = PromptTemplate.from_template(
 
 1. **First Evidence Point (1 Point):**
    - **Requirement:** Accurately describe the content of at least three documents and address the topic of the prompt.
-   - **Key Detail:** Simply quoting the documents doesn’t count; you need to explain what the document is saying in your own words and relate them back to the prompt.
+   - **Key Detail:** Simply quoting the documents doesn’t count; you need to explain what the document is saying in your own words and relate them back to the prompt. Award this point if at least three documents are referenced explicitly or implicitly and connected to the prompt.
    - **Important Note:** MAKE SURE THAT AT LEAST 3 DOCUMENTS ARE ADDRESSED FOR STUDENTS TO EARN THIS POINT.
 
 2. **Second Evidence Point (1 Point):**
@@ -195,6 +196,8 @@ Here is the descriptions and analysis of each doc.
 
 2. **Evaluate Each Evidence Point**:
    - Evaluate and grade the essay based on the DBQ Evidence Rubric given to you above.
+   - Explicit references: Look for direct mentions or quotations of documents.
+   - Implicit references: Look for paraphrased or summarized content that aligns with the provided document descriptions.
 
 3. **Assign Scores and Provide Feedback**:
    - **Total Score (0–3)**: Sum the points earned across the three Evidence points.
@@ -215,7 +218,6 @@ Here is the descriptions and analysis of each doc.
     - *Explanation:* Brief explanation for why the point was earned or not.
 - **Overall Feedback**: Provide a summary of the strengths and areas for improvement."""
 )
-
 evidence_beyond_prompt = PromptTemplate.from_template(
     """You are an AP U.S. History (APUSH) DBQ grader. Your task is to evaluate the "Evidence Beyond the Documents" point of a student's essay based on the provided rubric. Follow the instructions carefully to ensure accurate and consistent grading.
 

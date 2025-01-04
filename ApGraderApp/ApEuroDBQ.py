@@ -95,9 +95,9 @@ Consists of one or more sentences located in one place, either in the introducti
 
 Evaluation Standards:
 Ignore grammar and spelling errors as long as the meaning is clear.
-Award 1 point only if the thesis fully meets all rubric criteria.
-Do not award partial credit for incomplete, vague, or partially correct theses.
-Be strict but fair and adhere strictly to the rubric.
+Award 1 point if the thesis meets the rubric criteria, even if it is not perfectly worded or explicitly labeled.
+Recognize minimally defensible theses that establish a line of reasoning, even if they are embedded in the introduction or conclusion.
+Focus on whether the thesis responds to the prompt and establishes a line of reasoning, rather than penalizing for lack of sophistication or minor flaws.
 
 Essay to Evaluate:
 {essay}
@@ -107,6 +107,7 @@ Prompt Type: {prompt_type}
 Output:
 Score (0 or 1): Indicate whether the thesis earns the point.
 Feedback: Provide a brief explanation justifying the score. Highlight which criteria were met or not met.
+Be specific: If the thesis earns the point, explain how it meets the rubric criteria. If it does not, explain what is missing or unclear.
 """
 )
 contextualization_prompt = PromptTemplate.from_template(
@@ -135,13 +136,13 @@ Score (0 or 1): Indicate whether the contextualization earns the point.
 Feedback: Provide a brief explanation justifying the score. Highlight which criteria were met or not met.
 """)
 evidence_prompt = PromptTemplate.from_template(
-    """You are an AP European History (ApEuro) DBQ grader. Your task is to evaluate the Evidence section of a student's essay based on the provided rubric. Follow the instructions carefully to ensure accurate and consistent grading.
+    """You are an AP European States History (ApEuro) DBQ grader. Your task is to evaluate the Evidence section of a student's essay based on the provided rubric. Follow the instructions carefully to ensure accurate and consistent grading.
 
 **DBQ Evidence Rubric**:
 
 1. **First Evidence Point (1 Point):**
    - **Requirement:** Accurately describe the content of at least three documents and address the topic of the prompt.
-   - **Key Detail:** Simply quoting the documents doesn’t count; you need to explain what the document is saying in your own words and relate them back to the prompt.
+   - **Key Detail:** Simply quoting the documents doesn’t count; you need to explain what the document is saying in your own words and relate them back to the prompt. Award this point if at least three documents are referenced explicitly or implicitly and connected to the prompt.
    - **Important Note:** MAKE SURE THAT AT LEAST 3 DOCUMENTS ARE ADDRESSED FOR STUDENTS TO EARN THIS POINT.
 
 2. **Second Evidence Point (1 Point):**
@@ -186,13 +187,15 @@ Here is the descriptions and analysis of each doc.
 
 **Instructions**:
 1. **Analyze the Use of Documents**:
-You have been given the analysis of each doc
-   - Review each document description (Doc 1 to Doc 7) to determine how accurately and effectively they are described in the essay.
+    You have been given the analysis of each doc
+   - Review each document description (Doc 1 to Doc 7) to determine how accurately and effectively they are described in the essay. 
    - Assess whether the student has explained the content of each document in their own words and related it to the prompt.
    - Identify which documents are used to support the argument and how they contribute to the thesis.
 
 2. **Evaluate Each Evidence Point**:
    - Evaluate and grade the essay based on the DBQ Evidence Rubric given to you above.
+   - Explicit references: Look for direct mentions or quotations of documents.
+   - Implicit references: Look for paraphrased or summarized content that aligns with the provided document descriptions.
 
 3. **Assign Scores and Provide Feedback**:
    - **Total Score (0–3)**: Sum the points earned across the three Evidence points.
