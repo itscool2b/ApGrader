@@ -217,7 +217,7 @@ You are an expert AP European History SAQ grader. This question includes a stimu
 
 #### **1. Analyze the Provided Stimulus:**
 
-- **Stimulus Description:**
+- **Stimulus Description and complete analysis:**
   {stimulus}
 
 - **Actions:**

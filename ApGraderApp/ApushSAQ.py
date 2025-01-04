@@ -216,7 +216,7 @@ You are an expert AP U.S. History SAQ grader. This question includes a stimulus 
 
 #### **1. Analyze the Provided Stimulus:**
 
-- **Stimulus Description:**
+- **Stimulus Description and complete analysis:**
   {stimulus}
 
 - **Actions:**
