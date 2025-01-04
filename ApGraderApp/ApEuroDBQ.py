@@ -142,11 +142,12 @@ evidence_prompt = PromptTemplate.from_template(
 1. **First Evidence Point (1 Point):**
    - **Requirement:** Accurately describe the content of at least three documents and address the topic of the prompt.
    - **Key Detail:** Simply quoting the documents doesn’t count; you need to explain what the document is saying in your own words and relate them back to the prompt.
-   - **Important Note:** If this point is not earned, it should not affect the second or third evidence point. The second and third should be analyzed independantly.
+   - **Important Note:** MAKE SURE THAT AT LEAST 3 DOCUMENTS ARE ADDRESSED FOR STUDENTS TO EARN THIS POINT.
 
 2. **Second Evidence Point (1 Point):**
    - **Requirement:** Use at least four documents to support an argument in response to the prompt.
    - **Key Detail:** This means you’re not just describing the documents, but actively using them as evidence to back up your thesis or main argument.
+   - **Important Note:** MAKE SURE THAT AT LEAST 4 DOCUMENTS ARE ADDRESSED AND USED TO SUPPORT AND ARGUMENT FOR STUDENTS TO EARN THIS POINT. IF 4 DOCUMENTS ARE NOT USED, DO NOT AWARD THIS POINT. 
 
 3. **HIPP (Contextual Analysis) Point (1 Point):**
    Requirement: For at least two documents, provide an in-depth explanation of how or why the document’s Historical Situation, Intended Audience, Point of View (POV), or Purpose (HIPP) is relevant to the argument.
