@@ -272,6 +272,9 @@ complex understanding feedback -
 fact-checking feedback - (Include only if exists; summarize any content mistakes and corrections.)
 overall feedback - 
 Be thorough with the feed back, explain why they earned or lost the point in each section. Again this data has been given to u above before.
+Also just output extracted essay - student essay. Also output "Here is the extarcted essay. Make sure everything was extarcted properly for peak accuracy. Resubmitt threough text if neccecary. copy the extracted text below, add on some missing parts if needed, and resubmit through the text entry for peak accuracy. If nothing was left it, the given score is accurate"
+output - 
+extracted essay - {student_essay}
 """
 )
 
@@ -481,13 +484,14 @@ def final_node(state: dict) -> dict:
         complexu = state["complexunderstanding_generation"]
         ptype = state["prompt_type"]
         fact = state["factchecking_generation"]
-        
+        student_essay = state['student_essay']
         formatted_prompt = summation_prompt.format(
             thesis_generation=thesis,
             contextualization_generation=cont,
             evidence_generation=evidence,
             complexunderstanding_generation=complexu,
             fact_checking_feedback=fact,
+            student_essay=student_essay
         )
 
         

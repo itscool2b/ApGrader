@@ -376,6 +376,9 @@ Complex understanding feedback -
 Fact-checking feedback - (Include only if exists; summarize any content mistakes and corrections.)
 Overall feedback - 
 Be thorough with the feed back, explain why they earned or lost the point in each section. Again this data has been given to u above before.
+Also just output extracted essay - student essay. Also output "Here is the extarcted essay. Make sure everything was extarcted properly for peak accuracy. Resubmitt threough text if neccecary. copy the extracted text below, add on some missing parts if needed, and resubmit through the text entry for peak accuracy. If nothing was left it, the given score is accurate"
+output - 
+extracted essay - {student_essay}
 """
 )
 
@@ -635,8 +638,8 @@ def summation_node(state):
     beyond = state["evidence_beyond_generation"]
     complx = state["complexunderstanding_generation"]
     factcheck = state["factchecking_generation"]
-
-    formatted_prompt = summation_prompt.format(thesis_generation=thesis,contextualization_generation=context,evidence_beyond_generation=beyond,complexunderstanding_generation=complx,fact_checking_feedback=factcheck,evidence_generation=evidence)
+    s = state['student_essay']
+    formatted_prompt = summation_prompt.format(thesis_generation=thesis,contextualization_generation=context,evidence_beyond_generation=beyond,complexunderstanding_generation=complx,fact_checking_feedback=factcheck,evidence_generation=evidence,student_essay=s)
     response = llm.invoke(formatted_prompt)
     state["summation"] = response.content.strip()
     print(state["summation"])
