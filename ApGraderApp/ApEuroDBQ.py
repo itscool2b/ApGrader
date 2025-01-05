@@ -362,15 +362,15 @@ Thesis feedback -
 Contextualization feedback - 
 Evidence feedback - 
 Give evidence feedback in this format:
-**Total Score (0–3)**: Provide a total score.
-- **Breakdown**:
-  - **First Evidence Point (1 Point)**: Yes/No
-    - *Explanation:* Brief explanation for why the point was earned or not.
-  - **Second Evidence Point (1 Point)**: Yes/No
-    - *Explanation:* Brief explanation for why the point was earned or not.
-  - **HIPP Point (1 Point)**: Yes/No
-    - *Explanation:* Brief explanation for why the point was earned or not.
-- **Overall Feedback**: Provide a summary of the strengths and areas for improvement.
+Total Evidence Score (0–3): Provide a total score.
+- Breakdown:
+  - First Evidence Point (1 Point): Yes/No
+    - Explanation: Brief explanation for why the point was earned or not.
+  - Second Evidence Point (1 Point): Yes/No
+    - Explanation: Brief explanation for why the point was earned or not.
+  - HIPP Point (1 Point): Yes/No
+    - Explanation: Brief explanation for why the point was earned or not.
+- Overall Feedback: Provide a summary of the strengths and areas for improvement.
 Edivence beyond feedback -
 Complex understanding feedback - 
 Fact-checking feedback - (Include only if exists; summarize any content mistakes and corrections.)
