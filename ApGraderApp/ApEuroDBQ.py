@@ -438,86 +438,46 @@ def retrieve_rubric_node(state):
 
     return state
 
-import pytesseract
-from PIL import Image
-import base64
-import io
+def essay_vision_node(state):
 
-# Preprocess image using OCR
-def preprocess_image_with_ocr(image_data):
     try:
-        if image_data.startswith("data:"):
-            image_data = image_data.split(",")[1]  # Remove metadata
-        img = Image.open(io.BytesIO(base64.b64decode(image_data)))
-        ocr_text = pytesseract.image_to_string(img)
-        return ocr_text.strip()
-    except Exception as e:
-        raise ValueError(f"Error during OCR preprocessing: {e}")
-
-# Vision node function with retry
-def essay_vision_node(state, max_retries=2):
-    try:
-        # Get the image data from the state
-        image_data = state.get("student_essay_image")
+        image_data = state.get('student_essay_image')
         if not image_data:
             state["student_essay_image"] = None
             return state
 
         if not image_data.startswith("data:"):
-            image_data = f"data:image/jpeg;base64,{image_data}"
+            image_data = f"data:image/jpeg;base64,{image_data}"  
 
-        # Step 1: Preprocess the image using OCR
-        ocr_text = preprocess_image_with_ocr(image_data)
-
-        for attempt in range(max_retries + 1):  # Allow retries
-            # Step 2: Use GPT-4o to refine the extracted OCR text
-            response = client.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {
-                        "role": "user",
-                        "content": f"The following text was extracted using OCR:\n\n{ocr_text}\n\n"
-                                   "Please correct the text based on the image provided. Ensure accuracy, grammar, and structure while retaining document references (e.g., '(Doc 7)'). "
-                                   "Do not skip or omit any document references. Output the corrected text only.",
-                    },
-                    {
-                        "role": "system",
-                        "content": "Image attached for reference:",
-                    },
-                    {
-                        "role": "user",
-                        "content": {
-                            "type": "image_url",
-                            "image_url": {"url": image_data},
+        response = client.chat.completions.create(
+            model="gpt-4o",  
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "Extract the text from the provided essay while ensuring it is grammatically correct, well-structured, and easy to read. Fix any spelling or typographical errors but do not alter the meaning, tone, or intent of the original content. Group ideas logically to improve flow, but preserve the original structure as much as possible. Avoid including irrelevant page numbers, headings, or formatting instructions unless they are part of the essay's content. Pay special attention to preserving references to documents (e.g., '(Doc 7)', '(Doc 5)'), ensuring they are included exactly as written and placed correctly in the text.  Group ideas logically to improve flow, but do not omit or rephrase any document referencesOutput the text only with nothing else.",
                         },
-                    },
-                ],
-                max_tokens=10000,
-                temperature=0,
-            )
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": image_data},  
+                        },
+                    ],
+                }
+            ],
+            max_tokens=10000,
+            temperature=0,
+        )
 
-            # Step 3: Extract the refined essay from GPT response
-            essay = response.choices[0].message.content
-
-            # Step 4: Validate the output
-            if any(f"(Doc {i})" in essay for i in range(1, 10)):
-                state["student_essay"] = essay
-                print(f"Valid output found on attempt {attempt + 1}")
-                return state  # Return the valid essay
-
-            print(f"Validation failed on attempt {attempt + 1}. Retrying...")
-
-            # Adjust the prompt slightly for retries
-            if attempt < max_retries:
-                ocr_text = f"{ocr_text}\n\nEnsure all document references are explicitly included in the next refinement."
-
-        # Fallback to OCR-only output if retries fail
-        print("Retries exhausted. Using OCR-only output.")
-        state["student_essay"] = ocr_text
+        
+        essay = response.choices[0].message.content
+        state["student_essay"] = essay
+        print(essay)
         return state
 
     except Exception as e:
-        raise ValueError(f"Error in essay_vision_node: {e}")
+        raise ValueError(f"Error in vision_node: {e}")
 
 
 def classify_prompt_node(state: GraphState) -> GraphState:
