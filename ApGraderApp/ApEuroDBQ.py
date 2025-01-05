@@ -492,12 +492,12 @@ def essay_vision_node(state, max_retries=2):
                         },
                     },
                 ],
-                max_tokens=15000,
+                max_tokens=10000,
                 temperature=0,
             )
 
             # Step 3: Extract the refined essay from GPT response
-            essay = response.choices[0].message.content.strip()
+            essay = response.choices[0].message.content
 
             # Step 4: Validate the output
             if any(f"(Doc {i})" in essay for i in range(1, 10)):
