@@ -457,7 +457,8 @@ def essay_vision_node(state):
                     "content": [
                         {
                             "type": "text",
-                            "text": "Extract the text from the provided essay while ensuring it is grammatically correct, well-structured, and easy to read. Fix any spelling or typographical errors but do not alter the meaning, tone, or intent of the original content. Group ideas logically to improve flow, but preserve the original structure as much as possible. Avoid including irrelevant page numbers, headings, or formatting instructions unless they are part of the essay's content. Pay special attention to preserving references to documents (e.g., '(Doc 7)', '(Doc 5)'), ensuring they are included exactly as written and placed correctly in the text.  Group ideas logically to improve flow, but do not omit or rephrase any document referencesOutput the text only with nothing else.",
+                            "text": "Extract the text from the provided essay and ensure it is accurate, grammatically correct, and well-structured for easy readability. Correct any spelling or typographical errors while preserving the original meaning, tone, and intent of the content. Maintain the logical structure and flow of ideas as closely as possible to the original essay. Preserve all references to documents (e.g., (Doc 7), (Doc 5)) exactly as they appear in the essay, ensuring they are included in their correct context and not omitted or rephrased. Exclude irrelevant elements such as page numbers, headings, or formatting instructions unless they are explicitly part of the essay content. Your output should be a clear and polished version of the essay text only, without any additional commentary, explanations, or metadata.",
+                
                         },
                         {
                             "type": "image_url",
