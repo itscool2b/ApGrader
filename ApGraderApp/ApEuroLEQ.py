@@ -354,7 +354,7 @@ def essay_vision_node(state):
                     ],
                 }
             ],
-            max_tokens=3000,
+            max_tokens=30000,
         )
 
         
