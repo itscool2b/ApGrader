@@ -272,9 +272,7 @@ complex understanding feedback -
 fact-checking feedback - (Include only if exists; summarize any content mistakes and corrections.)
 overall feedback - 
 Be thorough with the feed back, explain why they earned or lost the point in each section. Again this data has been given to u above before.
-Also just output extracted essay - student essay. Also output "Here is the extarcted essay. Make sure everything was extarcted properly for peak accuracy. Resubmitt threough text if neccecary. copy the extracted text below, add on some missing parts if needed, and resubmit through the text entry for peak accuracy. If nothing was left it, the given score is accurate"
-output - 
-extracted essay - {student_essay}
+
 """
 )
 
@@ -491,19 +489,17 @@ def final_node(state: dict) -> dict:
             evidence_generation=evidence,
             complexunderstanding_generation=complexu,
             fact_checking_feedback=fact,
-            student_essay=student_essay
+          
         )
 
         
         response = llm.invoke(formatted_prompt)
+        t = ' \n \nThis is the text that our Ai was able to extract from the image of your essay. If you feel the score is innacurate, please make sure that the Ai has accurately analyzed and extracted the text from the essay. If not, please make the needed edits to the extracted text and paste it into our text submission for accurate grading: \n \n '
+        full = response.content.strip() + t + student_essay
 
+        return full
         
-        if hasattr(response, "content") and response.content.strip():
-            state["summation"] = response.content.strip()
-        else:
-            raise ValueError("Summation generation failed.")
-
-        return state
+        
 
     except Exception as e:
         raise RuntimeError(f"Error in final_node: {e}")
@@ -535,13 +531,10 @@ def evaluateeuroleq(prompt: str, essay: str) -> str:
     state = evidence_grading_node(state)  
     state = analysis_grading_node(state)  
     state = fact_check_node(state)  
-    state = final_node(state)  
+    final = final_node(state)  
 
     
-    if "summation" in state and state["summation"]:
-        return state["summation"]
-    else:
-        raise ValueError("Summation not found in the final state.")
+    return final
 
 def euro_leq_bulk(prompt, essay):
     
@@ -567,10 +560,7 @@ def euro_leq_bulk(prompt, essay):
     state = evidence_grading_node(state)  
     state = analysis_grading_node(state)  
     state = fact_check_node(state)  
-    state = final_node(state)  
+    final = final_node(state)  
 
     
-    if "summation" in state and state["summation"]:
-        return state["summation"]
-    else:
-        raise ValueError("Summation not found in the final state.")
+    return final

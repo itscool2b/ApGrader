@@ -376,9 +376,7 @@ Complex understanding feedback -
 Fact-checking feedback - (Include only if exists; summarize any content mistakes and corrections.)
 Overall feedback - 
 Be thorough with the feed back, explain why they earned or lost the point in each section. Again this data has been given to u above before.
-Also just output extracted essay - student essay. Also output "Here is the extarcted essay. Make sure everything was extarcted properly for peak accuracy. Resubmitt threough text if neccecary. copy the extracted text below, add on some missing parts if needed, and resubmit through the text entry for peak accuracy. If nothing was left it, the given score is accurate"
-output - 
-extracted essay - {student_essay}
+
 """
 )
 
@@ -599,9 +597,11 @@ def summation_node(state):
 
     formatted_prompt = summation_prompt.format(student_essay=s,thesis_generation=thesis,contextualization_generation=context,evidence_beyond_generation=beyond,complexunderstanding_generation=complx,fact_checking_feedback=factcheck,evidence_generation=evidence)
     response = llm.invoke(formatted_prompt)
-    state["summation"] = response.content.strip()
+    sum = response.content.strip()
+    t = ' \n \nThis is the text that our Ai was able to extract from the image of your essay. If you feel the score is innacurate, please make sure that the Ai has accurately analyzed and extracted the text from the essay. If not, please make the needed edits to the extracted text and paste it into our text submission for accurate grading: \n \n '
+    full = sum + t + s
     print(state["summation"])
-    return state
+    return full
 
 
 def essay_vision_node(state):
@@ -732,10 +732,7 @@ def evaluate2(prompt: str, essay: str, images: List[Optional[str]] = None) -> st
     except Exception as e:
         raise ValueError(f"An error occurred during evaluation: {e}")
 
-    if "summation" in state and state["summation"]:
-        return state["summation"]
-    else:
-        raise ValueError("Summation not found in the final state.")
+    return state
     
 def evaluate22(prompt: str, essay, images: List[Optional[str]] = None) -> str:
     """
@@ -798,7 +795,4 @@ def evaluate22(prompt: str, essay, images: List[Optional[str]] = None) -> str:
     except Exception as e:
         raise ValueError(f"An error occurred during evaluation: {e}")
 
-    if "summation" in state and state["summation"]:
-        return state["summation"]
-    else:
-        raise ValueError("Summation not found in the final state.")
+    return state

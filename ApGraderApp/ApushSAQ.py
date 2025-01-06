@@ -435,9 +435,7 @@ summation_prompt = PromptTemplate.from_template("""You are tasked with summarizi
   - List all factual inaccuracies detected in the student’s response.
   - Include corrections for each mistake.
   - Emphasize that these mistakes do not impact the total score.
-Also just output extracted essay - student essay. Also output "Here is the extarcted essay. Make sure everything was extarcted properly for peak accuracy. Resubmitt threough text if neccecary. copy the extracted text below, add on some missing parts if needed, and resubmit through the text entry for peak accuracy. If nothing was left it, the given score is accurate"
-output - 
-extracted essay - {student_essay}
+
                                                 """)
 
 class Graphstate(TypedDict):
@@ -600,9 +598,11 @@ def summation_node(state):
         s = state['student_essay']
         formatted_prompt = summation_prompt.format(generation=generation, factchecking=feedback,student_essay=s)
         response = llm.invoke(formatted_prompt)
-        state["summation"] = response.content.strip()
+        sum = response.content.strip()
+        t = ' \n \nThis is the text that our Ai was able to extract from the image of your essay. If you feel the score is innacurate, please make sure that the Ai has accurately analyzed and extracted the text from the essay. If not, please make the needed edits to the extracted text and paste it into our text submission for accurate grading: \n \n '
+        full = sum + t + s
        
-        return state
+        return full
     except Exception as e:
         raise ValueError(f"Error in summation_node: {e}")
 
@@ -641,10 +641,8 @@ def evaluate1(questions: str, essay: str, image: Optional[Union[str, bytes]]) ->
     state = grading_node(state)
     state = factchecking_node(state)
     state = summation_node(state)
-    if "summation" in state and state["summation"]:
-        return state["summation"]
-    else:
-        raise ValueError("Summation not found in the final state.")
+    
+    return state
 
 def evaluate11(questions: str, essay, image: Optional[Union[str, bytes]]) -> str:
     state = {
@@ -665,8 +663,6 @@ def evaluate11(questions: str, essay, image: Optional[Union[str, bytes]]) -> str
     state = grading_node(state)
     state = factchecking_node(state)
     state = summation_node(state)
-    if "summation" in state and state["summation"]:
-        return state["summation"]
-    else:
-        raise ValueError("Summation not found in the final state.")
+    
+    return state
 
