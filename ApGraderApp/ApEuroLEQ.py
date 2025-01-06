@@ -69,93 +69,80 @@ def retriever(query: str, top_k: int = 1) -> List[Dict]:
 
 classification_prompt = PromptTemplate.from_template(
     """
-You are a highly accurate and strict teaching assistant for an AP European History class. Your task is to read the LEQ prompt provided by a student and determine which of the three main APEuro LEQ types it falls under:
-Comparison: The prompt asks the student to compare and/or contrast historical developments, events, policies, or societies.
-Causation: The prompt asks the student to explain causes and/or effects of historical events or developments.
-Continuity and Change Over Time (CCOT): The prompt asks the student to analyze what changed and what remained the same over a particular time frame.
+You are a highly accurate and strict teaching assistant for an AP U.S. History class. Your task is to read the LEQ prompt provided by a student and determine which of the three main APUSH LEQ types it falls under:
+- **Comparison**: The prompt asks the student to compare and/or contrast historical developments, events, policies, or societies.
+- **Causation**: The prompt asks the student to explain causes and/or effects of historical events or developments.
+- **Continuity and Change Over Time (CCOT)**: The prompt asks the student to analyze what changed and what remained the same over a particular time frame.
 
-Instructions:
-Read the provided LEQ prompt carefully.
-Identify whether the prompt is a Comparison, Causation, or CCOT prompt.
-Respond with only one of the three exact words: "Comparison", "Causation", or "CCOT". Do not include any additional text, explanations, or characters. Should be one word
+**Instructions**:
+1. Read the provided LEQ prompt carefully.
+2. Identify whether the prompt is a **Comparison**, **Causation**, or **CCOT** prompt.
+3. **Respond with only one of the three exact words**: "Comparison", "Causation", or "CCOT". **Do not include any additional text, explanations, or characters. Should be one word**
 
-Student’s Prompt to Classify: {prompt}
+**Student’s Prompt to Classify**: {prompt}
 
-Your Response:
-"""
-) 
-thesis_prompt = PromptTemplate.from_template(
-    """Evaluate the thesis statement in the following essay based on the provided rubric and evaluation standards:
-
-Rubric for Thesis / Claim:
-Responds to the prompt with a historically defensible thesis or claim.
-Establishes a line of reasoning.
-Makes a claim that responds to the prompt (not merely restating or rephrasing it).
-Consists of one or more sentences located in one place, either in the introduction or conclusion.
-{rubric}
-
-Evaluation Standards:
-Ignore grammar and spelling errors as long as the meaning is clear.
-Award 1 point only if the thesis meets all rubric criteria.
-Do not award partial credit for incomplete or vague responses.
-Be strict and apply no leniency.
-
-Essay to Evaluate:
-{essay}
-
-Prompt Type: {prompt_type}
-
-Output:
-Score (0 or 1): Indicate whether the thesis earns the point.
-Feedback: Provide a brief explanation justifying the score.
+**Your Response**:
 """
 )
 
+
+
+thesis_prompt = PromptTemplate.from_template(
+    """Evaluate the thesis statement in the following essay based on the provided rubric and evaluation standards:
+
+**Rubric for Thesis / Claim**:
+Grade the point based off of this rubric.
+{rubric}
+
+**Evaluation Standards**:
+- Ignore grammar and spelling errors as long as the meaning is clear.
+- Award 1 point only if the thesis meets all rubric criteria.
+- Do not award partial credit for incomplete or vague responses.
+- Be strict and apply no leniency.
+
+**Essay to Evaluate**:
+{essay}
+
+**Prompt Type**: {prompt_type}
+
+**Output**:
+- **Score (0 or 1)**: Indicate whether the thesis earns the point.
+- **Feedback**: Provide a brief explanation justifying the score.
+"""
+)
 
 contextualization_prompt = PromptTemplate.from_template(
     """
 Evaluate the contextualization in the following essay based on the provided rubric and evaluation standards:
 
-Rubric for Contextualization:
-Describes a broader historical context relevant to the prompt.
-Relates the topic to broader historical events, developments, or processes before, during, or after the time frame of the question.
-Not awarded for merely a phrase or reference.
+**Rubric for contextulization**:
+Grade the point based off of this rubric.
 {rubric}
 
-Evaluation Standards:
-Ignore grammar and spelling errors as long as the meaning is clear.
-Award 1 point only if the contextualization meets all rubric criteria.
-Do not award partial credit for incomplete or vague contextualization.
-Be strict and apply no leniency.
-Contextualization must describe a broader historical event, development, or process relevant to the topic.
-A single phrase or reference does not qualify as contextualization.
+**Evaluation Standards**:
+- Ignore grammar and spelling errors as long as the meaning is clear.
+- Award 1 point only if the contextualization meets all rubric criteria.
+- Do not award partial credit for incomplete or vague contextualization.
+- Be strict and apply no leniency.
+- Contextualization must describe a broader historical event, development, or process relevant to the topic.
+- A single phrase or reference does not qualify as contextualization.
 
-Essay to Evaluate:
+**Essay to Evaluate**:
 {essay}
 
-Prompt Type: {prompt_type}
+**Prompt Type**: {prompt_type}
 
-Output:
-Score (0 or 1): Indicate whether the contextualization earns the point.
-Feedback: Provide a brief explanation justifying the score.
+**Output**:
+- **Score (0 or 1)**: Indicate whether the contextualization earns the point.
+- **Feedback**: Provide a brief explanation justifying the score.
 """
 )
 
 evidence_prompt = PromptTemplate.from_template(
-    """You are a highly accurate and accurate AP European history LEQ essay grader. Your task is to evaluate the evidence and support for the argument in the following essay based on the rubric and evaluation standards:
+    """Evaluate the evidence and support for the argument in the following essay based on the rubric and evaluation standards:
 
 **Rubric for Evidence & Support for Argument**:
-
-1. **Evidence Usage (1 point)**:
-   - The response must provide at least two specific historical examples relevant to the topic of the prompt.
-   - Examples must be concrete and historically accurate, such as specific events, dates, policies, or figures.
-   - Vague references or generalizations do not satisfy this requirement.
-
-2. **Evidence Supporting Argument (1 point)**:
-   - The response must use at least two specific and relevant pieces of historical evidence to support an argument in response to the prompt.
-   - Evidence must be integrated into the argument, demonstrating how it supports the thesis.
-   - Analysis and explanation are required to establish a clear connection between the evidence and the thesis.
-   - Simply listing evidence without analysis does not meet this criterion.
+Grade the point based off of this rubric.
 {rubric}
 
 **Evaluation Standards**:
@@ -179,29 +166,14 @@ evidence_prompt = PromptTemplate.from_template(
   - Specific examples of evidence identified.
   - An assessment of how well the evidence supports the argument.
   - Reasons for any points not awarded.
-""")
+"""
+)
 
 complexunderstanding_prompt = PromptTemplate.from_template(
     """Evaluate the analysis and reasoning in the following essay based on the rubric and evaluation standards. The evaluation must take into account the type of prompt (Comparison, Causation, or CCOT) when awarding points for historical reasoning.
 
 **Rubric for Analysis and Reasoning**:
-
-1. **Historical Reasoning (1 point)**:
-   - The response must use historical reasoning (e.g., comparison, causation, continuity and change over time) to frame or structure an argument that addresses the prompt.
-   - To earn this point:
-     - The reasoning should align with the specific type of prompt provided (e.g., comparison must compare and contrast, causation must address causes or effects, CCOT must highlight changes and continuities).
-     - The reasoning may be uneven, imbalanced, or general, but it must clearly demonstrate an attempt to structure the argument around historical reasoning.
-
-2. **Complex Understanding (1 point)**:
-   - The response must demonstrate a complex understanding of the historical development that is the focus of the prompt.
-   - To earn this point, the essay must incorporate sophisticated argumentation and/or effective use of evidence. This can include:
-     - **Exploring nuance** by analyzing multiple themes or perspectives.
-     - **Explaining both sides of a concept**, such as similarity and difference, continuity and change, or multiple causes or effects.
-     - **Drawing insightful connections** within and across historical periods or regions.
-     - **Using evidence effectively** to highlight varying perspectives relevant to the prompt.
-     - **Explaining at least four specific pieces of evidence** to support a nuanced or complex argument.
-   - This understanding must be integrated into the argument and cannot be demonstrated through a single phrase or reference.
-   - **This point can only be awarded if the Historical Reasoning point is awarded.**
+Grade the point based off of this rubric.
 {rubric}
 
 **Evaluation Standards**:
@@ -273,9 +245,9 @@ fact-checking feedback - (Include only if exists; summarize any content mistakes
 overall feedback - 
 Be thorough with the feed back, explain why they earned or lost the point in each section. Again this data has been given to u above before.
 
+
 """
 )
-
 
 
 factchecking_prompt = PromptTemplate.from_template("""You are an expert AP US History essay fact-checker. Your task is to fact-check the content of a student's essay based on the chapters and topics retrieved from a vector database. Follow these instructions carefully:
