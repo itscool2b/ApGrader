@@ -219,10 +219,6 @@ Grade the points based on this rubric.
   - Apply the rubric strictly, but allow for partial fulfillment of criteria when appropriate.
   - Award points based on the presence of key elements rather than requiring every aspect to be fully developed.
   - Recognize different ways sophistication can be demonstrated, such as through thematic exploration, evidence integration, or insightful connections.
-- **Guidelines for Awarding Points**:
-  - **Partial Fulfillment**: Award points based on the presence of key elements even if not all criteria are fully met.
-  - **Diverse Demonstrations**: Recognize various ways sophistication can be demonstrated, such as thematic exploration, evidence integration, or insightful connections.
-  - **Evidence Integration**: Consider how well the essay integrates evidence into its argument, not just the quantity of evidence presented.
 
 **Essay to Evaluate**:
 {essay}
