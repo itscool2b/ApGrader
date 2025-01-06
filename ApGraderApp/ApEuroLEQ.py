@@ -130,7 +130,6 @@ Grade the point based off of this rubric.
 **Essay to Evaluate**:
 {essay}
 
-**Prompt Type**: {prompt_type}
 
 **Output**:
 - **Score (0 or 1)**: Indicate whether the contextualization earns the point.
@@ -141,31 +140,36 @@ Grade the point based off of this rubric.
 evidence_prompt = PromptTemplate.from_template(
     """Evaluate the evidence and support for the argument in the following essay based on the rubric and evaluation standards:
 
-**Rubric for Evidence & Support for Argument**:
+Rubric for Evidence & Support for Argument:
 Grade the point based off of this rubric.
 {rubric}
 
-**Evaluation Standards**:
-- Ignore grammar and spelling errors as long as the meaning is clear.
-- Award the first point (**Evidence Usage**) only if at least two specific historical examples are identified and relevant.
-- Award the second point (**Evidence Supporting Argument**) only if:
-  1. The first point (**Evidence Usage**) has been awarded.
-  2. The response uses at least two specific and relevant pieces of historical evidence to support an argument, with clear and logical connections to the thesis.
-- Be strict and apply no leniency.
-- Do not award partial credit for incomplete, vague, or irrelevant responses.
-- Ensure that all evidence is historically accurate and directly supports the argument.
+Evaluation Standards:
+Ignore grammar and spelling errors as long as the meaning is clear.
+Award the first point (Evidence Usage) only if at least two specific historical examples are identified and relevant.
+Award the second point (Evidence Supporting Argument) only if:
+The first point (Evidence Usage) has been awarded.
+The response uses at least two specific and relevant pieces of historical evidence to support an argument, with clear and logical connections to the thesis.
+Be strict and apply no leniency.
+Do not award partial credit for incomplete, vague, or irrelevant responses.
+Ensure that all evidence is historically accurate and directly supports the argument.
 
-**Essay to Evaluate**:
+Essay to Evaluate:
 {essay}
 
-**Prompt Type**: {prompt_type}
+Prompt Type: {prompt_type}
 
-**Output**:
-- **Score (0, 1, or 2)**: Indicate the total points awarded for the Evidence & Support for Argument section.
-- **Feedback**: Provide a brief explanation for the score, including:
-  - Specific examples of evidence identified.
-  - An assessment of how well the evidence supports the argument.
-  - Reasons for any points not awarded.
+Output:
+Total Score (0–2): Provide a total score.
+Breakdown:
+First Evidence Point (1 Point): Yes/No
+Explanation: Brief explanation for why the point was earned or not.
+Second Evidence Point (1 Point): Yes/No
+Explanation: Brief explanation for why the point was earned or not.
+Feedback: Provide a brief explanation for the score, including:
+Specific examples of evidence identified.
+An assessment of how well the evidence supports the argument.
+Reasons for any points not awarded.
 """
 )
 
