@@ -153,7 +153,7 @@ The first point (Evidence Usage) has been awarded.
 The response uses at least two specific and relevant pieces of historical evidence to support an argument, with clear and logical connections to the thesis.
 Be strict and apply no leniency.
 Do not award partial credit for incomplete, vague, or irrelevant responses.
-Ensure that all evidence is historically accurate and directly supports the argument.
+This is very important. Analyze the entire essay holisticly and understand the argument the student is making. Make sure that the evidence points awarded, are historically accurate and dirrectly support the argument.
 
 Essay to Evaluate:
 {essay}
