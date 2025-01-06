@@ -181,19 +181,44 @@ Feedback: Provide a detailed explanation for the score, including:
 )
 
 complexunderstanding_prompt = PromptTemplate.from_template(
-    """Evaluate the analysis and reasoning in the following essay based on the rubric and evaluation standards. The evaluation must take into account the type of prompt (Comparison, Causation, or CCOT) when awarding points for historical reasoning.
+    """Evaluate the Analysis and Reasoning in the following essay based on the provided rubric and evaluation standards. The evaluation must consider the type of prompt (Comparison, Causation, or CCOT) when awarding points for historical reasoning.
 
 **Rubric for Analysis and Reasoning**:
-Grade the point based off of this rubric.
+Grade the points based on this rubric.
 {rubric}
 
 **Evaluation Standards**:
-- Ignore grammar and spelling errors as long as the meaning is clear.
-- Award the Historical Reasoning point only if the response uses reasoning aligned with the specific type of prompt (**Comparison**, **Causation**, **CCOT**).
-- Award the Complex Understanding point only if:
-  1. The Historical Reasoning point has been awarded.
-  2. The essay demonstrates sophisticated argumentation and/or nuanced use of evidence as outlined in the rubric.
-- Be strict and apply no leniency. Do not award partial credit for incomplete, vague, or irrelevant responses.
+- **Grammar and Spelling**: Ignore any errors as long as the meaning is clear.
+- **Historical Reasoning**:
+  - **Comparison**: Use comparative analysis to highlight similarities and differences between two or more historical developments.
+  - **Causation**: Explain cause-and-effect relationships, identifying multiple causes or effects as relevant to the prompt.
+  - **CCOT (Continuity and Change Over Time)**: Analyze both continuities and changes, explaining how and why specific elements persisted or transformed over the specified period.
+- **Award Historical Reasoning Points**:
+  - **0 Points**: No use of appropriate historical reasoning.
+  - **1 Point**: Demonstrates the use of historical reasoning aligned with the prompt type, but may lack depth or completeness.
+  - **2 Points**: Effectively uses historical reasoning aligned with the prompt type, demonstrating clear and comprehensive understanding.
+- **Complex Understanding**:
+  - **Award Complex Understanding Points Only If**:
+    1. The Historical Reasoning point has been awarded (either 1 or 2).
+    2. The essay demonstrates sophisticated argumentation and/or nuanced use of evidence as outlined in the rubric.
+  - **Criteria for Complex Understanding**:
+    - **Sophisticated Argumentation**:
+      - Explores multiple themes or perspectives.
+      - Analyzes similarities and differences, continuities and changes, or multiple causes and effects.
+      - Makes insightful connections within and across periods or geographical areas.
+      - Considers and integrates different viewpoints or counterarguments.
+    - **Effective Use of Evidence**:
+      - Uses at least four specific and relevant pieces of evidence.
+      - Integrates evidence seamlessly to support a nuanced or complex argument.
+      - Demonstrates an understanding of different perspectives relevant to the prompt.
+  - **Scoring for Complex Understanding**:
+    - **0 Points**: Does not demonstrate sophisticated argumentation or nuanced use of evidence.
+    - **1 Point**: Demonstrates some aspects of sophisticated argumentation and/or nuanced use of evidence but lacks completeness or depth.
+    - **2 Points**: Fully demonstrates sophisticated argumentation and/or nuanced use of evidence, meeting all criteria effectively.
+- **Strictness**:
+  - Apply the rubric strictly, but allow for partial fulfillment of criteria when appropriate.
+  - Award points based on the presence of key elements rather than requiring every aspect to be fully developed.
+  - Recognize different ways sophistication can be demonstrated, such as through thematic exploration, evidence integration, or insightful connections.
 
 **Essay to Evaluate**:
 {essay}
@@ -203,9 +228,9 @@ Grade the point based off of this rubric.
 **Output**:
 - **Score (0, 1, or 2)**: Indicate the total points awarded for the Analysis and Reasoning section.
 - **Feedback**: Provide a brief explanation for the score, including:
-  - For Historical Reasoning: How the response used reasoning aligned with the specific type of prompt (e.g., comparison, causation, CCOT).
-  - For Complex Understanding: How the response demonstrated a nuanced or sophisticated argument, referencing specific elements of the essay.
-  - Reasons for any points not awarded.
+  - **Historical Reasoning**: How the response used reasoning aligned with the specific type of prompt (e.g., comparison, causation, CCOT).
+  - **Complex Understanding**: How the response demonstrated a nuanced or sophisticated argument, referencing specific elements of the essay.
+  - **Reasons for Points Not Awarded**: Clearly state why certain points were not awarded based on the rubric criteria.
 """
 )
 
