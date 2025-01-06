@@ -480,7 +480,7 @@ def essay_vision_node(state):
                     ],
                 }
             ],
-            max_tokens=10000,
+            max_tokens=16384,
             temperature=0,
         )
 
