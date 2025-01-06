@@ -248,6 +248,16 @@ FEEDBACK -
 Thesis feedback - 
 contextualization feedback - 
 evidence feedback - 
+Total Score (0–2): Provide a total score.
+Breakdown:
+First Evidence Point (1 Point): Yes/No
+Explanation: Brief explanation for why the point was earned or not.
+Second Evidence Point (1 Point): Yes/No
+Explanation: Brief explanation for why the point was earned or not.
+Feedback: Provide a brief explanation for the score, including:
+Specific examples of evidence identified.
+An assessment of how well the evidence supports the argument.
+Reasons for any points not awarded.
 complex understanding feedback - 
 fact-checking feedback - (Include only if exists; summarize any content mistakes and corrections.)
 overall feedback - 
@@ -256,7 +266,6 @@ Be thorough with the feed back, explain why they earned or lost the point in eac
 
 """
 )
-
 factchecking_prompt = PromptTemplate.from_template("""You are an expert AP US History essay fact-checker. Your task is to fact-check the content of a student's essay based on the chapters and topics retrieved from a vector database. Follow these instructions carefully:
 
 Fact-Check the Essay: Review the essay for historical accuracy. Cross-reference claims and information in the essay with the content provided in the {chapters} from the vector database. Focus on ensuring the essay aligns with the correct historical events, dates, figures, and interpretations.
