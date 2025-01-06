@@ -128,7 +128,7 @@ A single phrase or reference does not qualify as contextualization.
 Essay to Evaluate:
 {essay}
 
-Prompt Type: {prompt_type}
+
 
 Output:
 Score (0 or 1): Indicate whether the contextualization earns the point.
