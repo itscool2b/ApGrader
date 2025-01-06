@@ -145,18 +145,24 @@ evidence_prompt = PromptTemplate.from_template(
     """Evaluate the evidence and support for the argument in the following essay based on the rubric and evaluation standards:
 
 Rubric for Evidence & Support for Argument:
-Grade the point based off of this rubric.
+Grade the point based on this rubric.
 {rubric}
 
 Evaluation Standards:
-Ignore grammar and spelling errors as long as the meaning is clear.
-Award the first point (Evidence Usage) only if at least two specific historical examples are identified and relevant.
-Award the second point (Evidence Supporting Argument) only if:
-The first point (Evidence Usage) has been awarded.
-The response uses at least two specific and relevant pieces of historical evidence to support an argument, with clear and logical connections to the thesis.
-Be strict and apply no leniency.
-Do not award partial credit for incomplete, vague, or irrelevant responses.
-This is very important. Analyze the entire essay holisticly and understand the argument the student is making. Make sure that the evidence points awarded, are historically accurate and dirrectly support the argument.
+- Ignore grammar and spelling errors as long as the meaning is clear.
+- Award the first point (Evidence Usage) **only** if at least two specific historical examples are identified and relevant to the prompt.
+- Award the second point (Evidence Supporting Argument) **only** if:
+  - The first point (Evidence Usage) has been awarded.
+  - The response uses at least two specific and relevant pieces of historical evidence to support an argument, with **clear, logical, and detailed connections to the thesis.**
+  - The evidence provided is **historically accurate** and falls within the time frame and context of the prompt.
+  - The argument is directly and explicitly supported by the evidence in a way that demonstrates a cause-and-effect relationship.
+- Be strict and apply no leniency. Do not award partial credit for incomplete, vague, irrelevant, or inaccurate responses.
+
+Evaluation Process:
+1. Analyze the essay holistically and identify the thesis or argument being made.
+2. Determine whether the response provides specific and historically accurate evidence relevant to the time frame and context of the prompt.
+3. Evaluate whether the identified evidence is clearly and explicitly tied to the thesis through logical reasoning and cause-and-effect relationships.
+4. Ensure feedback includes specific references to the essay content and explains why points were awarded or not.
 
 Essay to Evaluate:
 {essay}
@@ -166,17 +172,16 @@ Prompt Type: {prompt_type}
 Output:
 Total Score (0–2): Provide a total score.
 Breakdown:
-First Evidence Point (1 Point): Yes/No
-Explanation: Brief explanation for why the point was earned or not.
-Second Evidence Point (1 Point): Yes/No
-Explanation: Brief explanation for why the point was earned or not.
-Feedback: Provide a brief explanation for the score, including:
-Specific examples of evidence identified.
-An assessment of how well the evidence supports the argument.
-Reasons for any points not awarded.
+- First Evidence Point (1 Point): Yes/No
+  - Explanation: Brief explanation for why the point was earned or not.
+- Second Evidence Point (1 Point): Yes/No
+  - Explanation: Brief explanation for why the point was earned or not.
+Feedback: Provide a detailed explanation for the score, including:
+- Specific examples of evidence identified from the essay.
+- An assessment of how well the evidence supports the argument, emphasizing cause-and-effect relationships and historical accuracy.
+- Reasons for any points not awarded, referencing specific weaknesses or gaps in the essay's use of evidence and support.
 """
 )
-
 complexunderstanding_prompt = PromptTemplate.from_template(
     """Evaluate the analysis and reasoning in the following essay based on the rubric and evaluation standards. The evaluation must take into account the type of prompt (Comparison, Causation, or CCOT) when awarding points for historical reasoning.
 
