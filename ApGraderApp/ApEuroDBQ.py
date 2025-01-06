@@ -376,9 +376,6 @@ Complex understanding feedback -
 Fact-checking feedback - (Include only if exists; summarize any content mistakes and corrections.)
 Overall feedback - 
 Be thorough with the feed back, explain why they earned or lost the point in each section. Again this data has been given to u above before.
-Also just output extracted essay - student essay. Also output "Here is the extarcted essay. Make sure everything was extarcted properly for peak accuracy. Resubmitt threough text if neccecary. copy the extracted text below, add on some missing parts if needed, and resubmit through the text entry for peak accuracy. If nothing was left it, the given score is accurate"
-output - 
-extracted essay - {student_essay}
 """
 )
 
@@ -639,39 +636,16 @@ def summation_node(state):
     complx = state["complexunderstanding_generation"]
     factcheck = state["factchecking_generation"]
     s = state['student_essay']
-    formatted_prompt = summation_prompt.format(thesis_generation=thesis,contextualization_generation=context,evidence_beyond_generation=beyond,complexunderstanding_generation=complx,fact_checking_feedback=factcheck,evidence_generation=evidence,student_essay=s)
+    formatted_prompt = summation_prompt.format(thesis_generation=thesis,contextualization_generation=context,evidence_beyond_generation=beyond,complexunderstanding_generation=complx,fact_checking_feedback=factcheck,evidence_generation=evidence)
     response = llm.invoke(formatted_prompt)
     state["summation"] = response.content.strip()
+    sum = response.content.strip()
+
+    full = sum + s
     print(state["summation"])
-    return state
+    return full
 
 
-workflow = StateGraph(GraphState)
-
-workflow.add_node("classify_prompt", classify_prompt_node)
-workflow.add_node("vision", vision_node)
-workflow.add_node("thesis_grading", thesis_grading_node)
-workflow.add_node("contextualization_grading", contextualization_grading_node)
-workflow.add_node("evidence_grading", evidence_grading_node)
-workflow.add_node("evidence_beyond_grading", evidence_beyond_grading_node)
-workflow.add_node("complex_understanding_grading", complex_understanding_grading_node)
-workflow.add_node("factchecking_grading", factchecking_node)
-
-
-workflow.add_node("final_summation_node", summation_node)
-
-workflow.add_edge(START, "classify_prompt")
-workflow.add_edge("classify_prompt", "vision")
-workflow.add_edge("vision", "thesis_grading")
-workflow.add_edge("thesis_grading", "contextualization_grading")
-workflow.add_edge("contextualization_grading", "evidence_grading")
-workflow.add_edge("evidence_grading", "evidence_beyond_grading")
-workflow.add_edge("evidence_beyond_grading", "complex_understanding_grading")
-workflow.add_edge("complex_understanding_grading", "factchecking_grading")
-workflow.add_edge("factchecking_grading", "final_summation_node")
-workflow.add_edge("final_summation_node", END)
-
-app = workflow.compile()
 
 def evaluateeurodbq(prompt: str, essay: str, images: List[Optional[str]] = None) -> str:
     """
@@ -729,14 +703,11 @@ def evaluateeurodbq(prompt: str, essay: str, images: List[Optional[str]] = None)
         state = complex_understanding_grading_node(state)
         state = factchecking_node(state)
         
-        state = summation_node(state)
+        full_result = summation_node(state)
     except Exception as e:
         raise ValueError(f"An error occurred during evaluation: {e}")
 
-    if "summation" in state and state["summation"]:
-        return state["summation"]
-    else:
-        raise ValueError("Summation not found in the final state.")
+    return full_result
     
 def evaluateeurodbqbulk(prompt: str, essay, images: List[Optional[str]] = None) -> str:
     """
@@ -795,11 +766,8 @@ def evaluateeurodbqbulk(prompt: str, essay, images: List[Optional[str]] = None) 
         state = complex_understanding_grading_node(state)
         state = factchecking_node(state)
         
-        state = summation_node(state)
+        full_result = summation_node(state)
     except Exception as e:
         raise ValueError(f"An error occurred during evaluation: {e}")
 
-    if "summation" in state and state["summation"]:
-        return state["summation"]
-    else:
-        raise ValueError("Summation not found in the final state.")
+    return full_result
