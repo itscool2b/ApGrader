@@ -640,7 +640,7 @@ def summation_node(state):
     response = llm.invoke(formatted_prompt)
     state["summation"] = response.content.strip()
     sum = response.content.strip()
-    t = 'This is the text that our Ai was able to extract from the image of your essay. If you feel the score is innacurate, please make sure that the Ai has accurately analyzed and extracted the text from the essay. If not, please make the needed edits to the extracted text and paste it into our text submission for accurate grading: OUTPUT THE EXTRACTED TEXT HERE'
+    t = ' \n \nThis is the text that our Ai was able to extract from the image of your essay. If you feel the score is innacurate, please make sure that the Ai has accurately analyzed and extracted the text from the essay. If not, please make the needed edits to the extracted text and paste it into our text submission for accurate grading: \n \n '
     full = sum + t + s
     print(state["summation"])
     return full
