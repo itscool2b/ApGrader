@@ -112,27 +112,31 @@ Be specific: If the thesis earns the point, explain how it meets the rubric crit
 """
 )
 contextualization_prompt = PromptTemplate.from_template(
-    """Evaluate the contextualization in the following essay based on the provided rubric and evaluation standards:
+    """
+Evaluate the contextualization in the following essay based on the provided rubric and evaluation standards:
 
-Rubric for Contextualization:
+Rubric for contextulization:
+Grade the point based off of this rubric.
 {rubric}
 
 Evaluation Standards:
 Ignore grammar and spelling errors as long as the meaning is clear.
-Award 1 point only if the contextualization fully meets all rubric criteria.
-Do not award partial credit for incomplete, vague, or partially correct contextualization.
-Be strict but fair and adhere strictly to the rubric.
-Contextualization must describe a broader historical event, development, or process relevant to the topic.
+Award 1 point only if the contextualization meets all rubric criteria.
+Do not award partial credit for incomplete or vague contextualization.
+Be strict and apply no leniency.
+Contextualization must describe a broader historical event, development, or process relevant to the topic. However, apply leniency when grading for the time frame of the contextualization.
 A single phrase or reference does not qualify as contextualization.
 
 Essay to Evaluate:
 {essay}
 
 
+
 Output:
 Score (0 or 1): Indicate whether the contextualization earns the point.
-Feedback: Provide a brief explanation justifying the score. Highlight which criteria were met or not met.
-""")
+Feedback: Provide a brief explanation justifying the score.
+"""
+)
 
 evidence_prompt = PromptTemplate.from_template(
     """You are an AP European History (ApEuro) DBQ grader. Your task is to evaluate the Evidence section of a student's essay based on the provided rubric. Follow the instructions carefully to ensure accurate and consistent grading.
@@ -559,7 +563,7 @@ def contextualization_grading_node(state: GraphState) -> GraphState:
     essay = state["student_essay"]
     prompt_type = state["prompt_type"]
 
-    formatted_prompt = contextualization_prompt.format(essay=essay,prompt_type=prompt_type,rubric=rubric)
+    formatted_prompt = contextualization_prompt.format(essay=essay,rubric=rubric)
     response = llm.invoke(formatted_prompt)
     state["contextualization_generation"] = response.content.strip()
 

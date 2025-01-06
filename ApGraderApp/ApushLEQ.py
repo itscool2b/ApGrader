@@ -118,26 +118,26 @@ contextualization_prompt = PromptTemplate.from_template(
     """
 Evaluate the contextualization in the following essay based on the provided rubric and evaluation standards:
 
-**Rubric for contextulization**:
+Rubric for contextulization:
 Grade the point based off of this rubric.
 {rubric}
 
-**Evaluation Standards**:
-- Ignore grammar and spelling errors as long as the meaning is clear.
-- Award 1 point only if the contextualization meets all rubric criteria.
-- Do not award partial credit for incomplete or vague contextualization.
-- Be strict and apply no leniency.
-- Contextualization must describe a broader historical event, development, or process relevant to the topic.
-- A single phrase or reference does not qualify as contextualization.
+Evaluation Standards:
+Ignore grammar and spelling errors as long as the meaning is clear.
+Award 1 point only if the contextualization meets all rubric criteria.
+Do not award partial credit for incomplete or vague contextualization.
+Be strict and apply no leniency.
+Contextualization must describe a broader historical event, development, or process relevant to the topic. However, apply leniency when grading for the time frame of the contextualization.
+A single phrase or reference does not qualify as contextualization.
 
-**Essay to Evaluate**:
+Essay to Evaluate:
 {essay}
 
-**Prompt Type**: {prompt_type}
 
-**Output**:
-- **Score (0 or 1)**: Indicate whether the contextualization earns the point.
-- **Feedback**: Provide a brief explanation justifying the score.
+
+Output:
+Score (0 or 1): Indicate whether the contextualization earns the point.
+Feedback: Provide a brief explanation justifying the score.
 """
 )
 
@@ -438,7 +438,7 @@ def contextualization_grading_node(state: GraphState) -> GraphState:
     essay = state["student_essay"]
     prompt_type = state["prompt_type"]
 
-    formatted_prompt = contextualization_prompt.format(rubric=rubric,essay=essay,prompt_type=prompt_type)
+    formatted_prompt = contextualization_prompt.format(rubric=rubric,essay=essay)
     response = llm.invoke(formatted_prompt)
     state["contextualization_generation"] = response.content.strip()
 
