@@ -3,13 +3,9 @@ aiohttp==3.11.11
 aiosignal==1.3.2
 annotated-types==0.7.0
 anyio==4.8.0
-asgiref==3.8.1              # For async support with Django
 attrs==24.3.0
-boto3==1.28.50              # AWS SDK for Python for S3 and other AWS services
 certifi==2024.12.14
 charset-normalizer==3.4.1
-django==5.1.3               # Django framework for the web application
-django-cors-headers==4.6.0  # To handle Cross-Origin Resource Sharing (CORS)
 distro==1.9.0
 frozenlist==1.5.0
 h11==0.14.0
@@ -19,27 +15,20 @@ idna==3.10
 jiter==0.8.2
 jsonpatch==1.33
 jsonpointer==3.0.0
-langchain==0.3.13           # LangChain for LLM workflows
 langchain-cerebras==0.4.0
-langchain-community==0.3.13 # Additional community-driven LangChain integrations
-langchain-core==0.3.29      # Core LangChain utilities
-langchain-openai==0.2.14    # LangChain OpenAI support
-langchain-pinecone==0.2.0   # LangChain Pinecone integration
+langchain-core==0.3.29
+langchain-openai==0.2.14
 langsmith==0.2.10
-langgraph>=0.0.1            # StateGraph utility used for workflow definition
 llamaapi==0.1.36
 multidict==6.1.0
 nest-asyncio==1.6.0
-openai==1.59.4              # OpenAI API client
+openai==1.59.4
 orjson==3.10.13
 packaging==24.2
-pinecone-client==5.0.1      # Pinecone API client
-Pillow==9.5.0
 propcache==0.2.1
 pydantic==2.10.4
 pydantic_core==2.27.2
-python-dotenv==1.0.1        # For loading environment variables from .env file
-PyPDF2==3.0.1               # To extract text from PDF files
+PyYAML==6.0.2
 regex==2024.11.6
 requests==2.32.3
 requests-toolbelt==1.0.0
@@ -49,5 +38,5 @@ tiktoken==0.8.0
 tqdm==4.67.1
 typing_extensions==4.12.2
 urllib3==2.3.0
-uvicorn==0.32.1             # ASGI server to run the application
 yarl==1.18.3
+uvicorn==0.32.1 
