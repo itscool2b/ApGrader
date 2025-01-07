@@ -18,13 +18,17 @@ from langchain_cerebras import ChatCerebras
 from llamaapi import LlamaAPI
 load_dotenv()
 from langchain_experimental.llms import ChatLlamaAPI
-key = os.getenv('cerebras_key')
+
+if "CEREBRAS_API_KEY" not in os.environ:
+    os.environ["CEREBRAS_API_KEY"] = getpass.getpass("Enter your Cerebras API key: ")
+
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-llama = LlamaAPI(key)
+
 llm = ChatCerebras(
     model="llama-3.3-70b",
     temperature=0,
 )
+
 if not OPENAI_API_KEY:
     raise ValueError("OPENAI_API_KEY not found. Please set it in your environment.")
 
