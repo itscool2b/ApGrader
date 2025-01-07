@@ -24,10 +24,8 @@ if "CEREBRAS_API_KEY" not in os.environ:
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-llm = ChatCerebras(
-    model="llama-3.3-70b",
-    temperature=0,
-)
+api_key = os.getenv("CEREBRAS_API_KEY")
+llm = ChatCerebras(model="llama-3.3-70b", api_key=api_key)
 
 if not OPENAI_API_KEY:
     raise ValueError("OPENAI_API_KEY not found. Please set it in your environment.")
