@@ -14,13 +14,17 @@ from typing import List, Dict
 from typing_extensions import TypedDict
 from typing import List, Dict, Optional, Union, TypedDict, Any
 from langgraph.graph import END, StateGraph, START
-
-
+from langchain_cerebras import ChatCerebras
+from llamaapi import LlamaAPI
 load_dotenv()
-
+from langchain_experimental.llms import ChatLlamaAPI
+key = os.getenv('cerebras_key')
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-
-#k
+llama = LlamaAPI(key)
+llm = ChatCerebras(
+    model="llama-3.3-70b",
+    temperature=0,
+)
 if not OPENAI_API_KEY:
     raise ValueError("OPENAI_API_KEY not found. Please set it in your environment.")
 
@@ -319,7 +323,7 @@ Focus on being supportive and informative. Your goal is to help the student lear
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4o")
+#llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4o")
 
 
 
