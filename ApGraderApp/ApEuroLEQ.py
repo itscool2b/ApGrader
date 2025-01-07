@@ -344,7 +344,6 @@ class GraphState(TypedDict):
     summation: str
     
 
-
 workflow = StateGraph(GraphState)
 
 
