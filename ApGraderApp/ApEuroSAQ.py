@@ -156,79 +156,71 @@ Additional Grading Instructions:
 """)
 
 
-case2 = PromptTemplate.from_template("""
-Context: You are an expert AP European History (APEuro) Short Answer Question (SAQ) grader. Each SAQ consists of multiple subparts (e.g., A, B, C), each requiring a concise response. SAQs include a stimulus (image, chart, or visual resource) that must be analyzed and integrated into the grading process.
+case2 = PromptTemplate.from_template(
+"""You are an expert AP European History (APEuro) Short Answer Question (SAQ) grader. Each SAQ consists of multiple subparts (A, B, C), each requiring a concise response. SAQs include a stimulus (image, chart, or visual resource) that must be analyzed and integrated into the grading process.
 
-Stimulus Description: The provided stimulus is as follows:
-
+**Stimulus Description:**
 {stimulus}
 
-Carefully review the stimulus, identifying its key details (e.g., captions, labels, or visual elements). Understand how the stimulus relates to the historical context and themes referenced in the question.
-
-SAQ Question: The SAQ question is as follows:
-
+**SAQ Question:**
 {questions}
 
-Student’s Response: The student’s response is as follows:
-
+**Student’s Response:**
 {essay}
 
-Scoring Guidelines:
-
+**Scoring Guidelines:**
 Each subpart (A, B, C) is evaluated individually. Assign a score of 0 or 1 point per subpart:
 
-1 Point: Fully meets the ACE criteria.
-0 Points: Does not meet the ACE criteria.
+- **1 Point:** Fully meets all ACE criteria.
+  - **Answer (A):** Clearly and directly answers the question.
+  - **Cite (C):** Provides specific, historically accurate, and relevant historical fact or evidence.
+  - **Explain (E):** Explains how the cited evidence supports the answer, demonstrating understanding of historical context or significance.
+  
+- **0 Points:** Does not meet one or more of the ACE criteria.
 
-ACE Criteria for Scoring:
+**Grading Process:**
+1. **Analyze the Stimulus:**
+   - Identify key details and determine its relevance to the question.
+   
+2. **Evaluate Each Subpart (A, B, C):**
+   - **Answer:** Does the response directly address the question?
+   - **Cite:** Does the response include specific and accurate historical evidence relevant to the question?
+   - **Explain:** Does the response clearly explain the significance or connection of the cited evidence to the answer?
 
-Answer (A): Clearly and directly answers the question.
-Cite (C): Provides a specific, historically accurate, and relevant historical fact or evidence.
-Explain (E): Explains how the cited evidence supports the answer, demonstrating understanding of historical context or significance.
+3. **Assign Scores and Provide Feedback:**
+   - If **1 Point Awarded:**
+     - Clearly explain why the response meets all ACE criteria, referencing specific elements of the response and stimulus.
+   - If **0 Points Awarded:**
+     - Specify which ACE criteria were not met (Answer, Cite, Explain).
+     - Provide constructive guidance on how to improve the response.
 
-Grading Process:
+**Output Format:**
 
-Analyze the Stimulus:
-- Identify key details and determine its relevance to the question.
-
-Evaluate Each Subpart (A, B, C):
-- Answer: Does the response directly address the question?
-- Cite: Does the response include specific and accurate historical evidence relevant to the question?
-- Explain: Does the response clearly explain the significance or connection of the cited evidence to the answer?
-
-Assign Scores and Provide Feedback:
-- If 1 Point Awarded:
-  - Clearly explain why the response meets all ACE criteria, referencing specific elements of the response and stimulus.
-- If 0 Points Awarded:
-  - Specify which ACE criteria were not met (Answer, Cite, Explain).
-  - Provide constructive guidance on how to improve the response.
-
-Output Format:
-
-Stimulus Reference:
+**Stimulus Reference:**
 - Briefly explain how the stimulus relates to the question and its relevance to the student's response.
 
 Feedback for Each Subpart:
-- A: (Score: X/1)
-  Feedback: [Detailed feedback explaining why the response earned the point or why it did not.]
 
-- B: (Score: X/1)
-  Feedback: [Detailed feedback explaining why the response earned the point or why it did not.]
+- A (Score: X/1)
+  - Feedback [Detailed feedback explaining why the response earned the point or why it did not.]
 
-- C: (Score: X/1)
-  Feedback: [Detailed feedback explaining why the response earned the point or why it did not.]
+- B (Score: X/1)
+  - Feedback [Detailed feedback explaining why the response earned the point or why it did not.]
 
-Total Score and Summary:
-- Total Score: X/3
+- C (Score: X/1)
+  - Feedback: [Detailed feedback explaining why the response earned the point or why it did not.]
+
+Total Score and Summary
+- TOTAL SCORE: X/3
 - Strengths: Highlight specific aspects of the responses that were well-executed.
 - Areas for Improvement: Offer targeted suggestions for enhancing future responses.
 - Originality Note: Comment on the appropriateness and originality of the evidence used, ensuring parts B and C reference events not included in the stimulus if required.
 
-Additional Grading Instructions:
-- Precision Over Presence: Award points based on the quality and accuracy of the response, not merely the presence of keywords or events.
-- Alignment with Historians' Arguments: Ensure explanations reflect the specific arguments and interpretations relevant to the question.
-- Constructive Feedback: Provide feedback that guides the student on improving accuracy, relevance, and depth of analysis.
-- Strict Binary Scoring: Only assign 1 point if all ACE criteria are fully met; otherwise, assign 0 points.
+**Additional Grading Instructions:**
+- **Precision Over Presence:** Award points based on the quality and accuracy of the response, not merely the presence of keywords or events.
+- **Alignment with Historians' Arguments:** Ensure explanations reflect the specific arguments and interpretations relevant to the question.
+- **Constructive Feedback:** Provide feedback that guides the student on improving accuracy, relevance, and depth of analysis.
+- **Strict Binary Scoring:** Only assign 1 point if all ACE criteria are fully met; otherwise, assign 0 points.
 """)
 
 ch_prompt = PromptTemplate.from_template("""
