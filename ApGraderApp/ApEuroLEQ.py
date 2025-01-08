@@ -364,14 +364,14 @@ Your Task:
    - Specify any changes made to scores, including the original score, the new score, and the reason for the change.
    - Accurately calculate the total score by summing the scores from each section (after changes, if any).
 
-Output Format:
+Output Format that u should adapt to and fill out.
 1. **Section Scores**:
-   - Thesis (0-1): Extracted score and explanation, e.g., "You put 0 but the thesis meets rubric criteria, so 1 point was awarded."
-   - Contextualization (0-1): Extracted score and explanation, e.g., "You put 1 but the context is vague, so 0 point was awarded."
-   - Evidence (0-2): Extracted score and explanation, e.g., "You put 2 but the evidence lacks connection to the thesis, so 1 point was awarded."
-   - Analysis and Reasoning (0-2): Extracted score and explanation, e.g., "You put 1 but the reasoning was detailed and meets rubric criteria, so 2 points were awarded."
+   - Thesis (0-1): Extracted score and explanation - 
+   - Contextualization (0-1): Extracted score and explanation - 
+   - Evidence (0-2): Extracted score and explanation - 
+   - Analysis and Reasoning (0-2): Extracted score and explanation - 
    - Fact-Checking Feedback: Highlight any factual errors and their impact on scoring, if applicable.
-    **these section scores when i give the examples with the quotes u have to adapt ur feedback to that if u make changes. Those are just templates dont actually print those out. Use if needed obviously.
+    
 2. **Total Score (0-6)**:
    - Total Score: Sum the extracted scores explicitly provided in the generations. Reflect any changes here if scores were updated during review.
 
@@ -536,7 +536,7 @@ def analysis_grading_node(state: GraphState) -> GraphState:
     rubric = state["rubric"]
     essay = state["student_essay"]
     prompt_type = state["prompt_type"]
-      
+
     formatted_prompt = complexunderstanding_prompt.format(rubric=rubric,essay=essay,prompt_type=prompt_type)
     response = llm.invoke(formatted_prompt)
 
