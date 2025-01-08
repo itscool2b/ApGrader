@@ -325,6 +325,47 @@ Identified Mistake: "In your essay, you stated that [incorrect information]. How
 General Accuracy: "Overall, your essay is accurate in its portrayal of [topic], but keep an eye on [specific areas]."
 Focus on being supportive and informative. Your goal is to help the student learn and improve their historical understanding without penalizing them for mistakes.""")
 
+
+reflection = PromptTemplate.from_template(
+    """
+You are a self-reflecting evaluator tasked with reviewing your grading for an AP U.S. History LEQ. Below are the inputs and outputs for grading. Your job is to verify the accuracy, consistency, and clarity of the feedback, and ensure the total score is calculated directly from the individual section scores provided in the generated outputs.
+
+**Inputs**:
+- **Rubric**:
+  {rubric}
+- **Student Essay**:
+  {essay}
+
+**Generated Outputs**:
+- **Thesis Evaluation**:
+  {thesis_generation}
+- **Contextualization Evaluation**:
+  {contextualization_generation}
+- **Evidence Evaluation**:
+  {evidence_generation}
+- **Analysis and Reasoning Evaluation**:
+  {complexunderstanding_generation}
+- **Fact-Checking Feedback**:
+  {factchecking_generation} (if any)
+
+**Your Task**:
+1. **Accurate Summation**:
+   - Calculate the total score by **extracting the explicit scores provided in each section** (e.g., "Thesis: 1," "Contextualization: 1," etc.).
+   - Add these scores **exactly as stated**, without any interpolation or assumptions.
+
+2. **Feedback Verification**:
+   - Review the feedback provided for each section. If the feedback contradicts the rubric or the score, revise it in the format: **"You put X but Y."**
+   - Ensure all feedback is actionable, clear, and aligned with the rubric.
+
+3. **Changes**:
+   - Make changes only if something clearly stands out as incorrect (e.g., the score conflicts with the rubric or feedback).
+   - Explicitly note any changes, explaining why they were made, and include both the original and updated scores.
+
+4. **Final Output**:
+   - Follow the format below exactly.
+"""
+)
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4o")
@@ -345,11 +386,11 @@ class GraphState(TypedDict):
     evidence_generation: str
     complexunderstanding_generation: str
     factchecking_generation: str
+    reflection: str
     summation: str
     
 
 workflow = StateGraph(GraphState)
-
 
 def essay_vision_node(state):
 
@@ -481,7 +522,6 @@ def analysis_grading_node(state: GraphState) -> GraphState:
 
     return state
 
-
 def fact_check_node(state):
     
     essay = state["student_essay"]
@@ -491,6 +531,22 @@ def fact_check_node(state):
     response = llm.invoke(formatted_prompt)
 
     state["factchecking_generation"] = response.content.strip()
+
+    return state
+
+
+def self_reflection(state):
+    thesis = state['thesis_generation']
+    contextualization = state['contextualization_generation']
+    complex = state['complexunderstanding_generation']
+    evidence = state['evidence_generation']
+    factcheck = state['factchecking_generation']
+    rubric = state['rubric']
+    essay = state['student_essay']
+    
+    formatted_prompt = reflection.format(thesis_generation=thesis,contextualization_generation=contextualization,complexunderstanding_generation=complex,evidence_generation=evidence,rubric=rubric,essay=essay,factchecking_generation=factcheck)
+    response = llm.invoke(formatted_prompt)
+    state['reflection'] = response.content.strip()
 
     return state
 
@@ -516,10 +572,11 @@ def final_node(state: dict) -> dict:
           
         )
 
-        
+        final_reflection = state['reflection']
+        final = f"\n\n this is the ai's final reflection of ur essay. the initial thought process is above, this is more refined and accurate. THIS IS IN BETA REFLECTION HERE - {final_reflection}"
         response = llm.invoke(formatted_prompt)
         t = ' \n \nThis is the text that our Ai was able to extract from the image of your essay. If you feel the score is innacurate, please make sure that the Ai has accurately analyzed and extracted the text from the essay. If not, please make the needed edits to the extracted text and paste it into our text submission for accurate grading: \n \n '
-        full = response.content.strip() + t + student_essay
+        full = response.content.strip() + t + student_essay + final
 
         return full
         
@@ -527,7 +584,6 @@ def final_node(state: dict) -> dict:
 
     except Exception as e:
         raise RuntimeError(f"Error in final_node: {e}")
-
 
 
 
@@ -555,6 +611,7 @@ def evaluateeuroleq(prompt: str, essay: str) -> str:
     state = evidence_grading_node(state)  
     state = analysis_grading_node(state)  
     state = fact_check_node(state)  
+    state = self_reflection(state)
     final = final_node(state)  
 
     
@@ -584,6 +641,7 @@ def euro_leq_bulk(prompt, essay):
     state = evidence_grading_node(state)  
     state = analysis_grading_node(state)  
     state = fact_check_node(state)  
+    state = self_reflection(state)
     final = final_node(state)  
 
     
