@@ -61,7 +61,7 @@ def retriever(query: str, top_k: int = 1) -> List[Dict]:
         logging.error(f"Error in retriever: {e}")
         raise RuntimeError("Error in retriever function.") from e
     
-llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4o")
+llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4o", temperature=0)
 
 
 

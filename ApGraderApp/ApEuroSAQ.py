@@ -90,7 +90,7 @@ def retriever(query: str, top_k: int = 100) -> List[Dict]:
         raise RuntimeError("Error in retriever function.") from e
 
 from typing import Any, Dict
-llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4o")
+llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4o", temperature=0)
 
 case1 = PromptTemplate.from_template("""
 Context: You are an expert AP European History (ApEuro) Short Answer Question (SAQ) grader. Each SAQ consists of multiple subparts (e.g., A, B, C), each requiring a concise response.

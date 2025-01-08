@@ -158,15 +158,15 @@ Evaluation Standards:
 - Award the first point (Evidence Usage) **only** if at least two specific historical examples are identified and relevant to the prompt.
 - Award the second point (Evidence Supporting Argument) **only** if:
   - The first point (Evidence Usage) has been awarded.
-  - The response uses at least two specific and relevant pieces of historical evidence to support an argument, with **clear, logical, and detailed connections to the thesis.**
+  - The response uses at least two specific and relevant pieces of historical evidence to support an argument, it should connect to the thesis.**
   - The evidence provided is **historically accurate** and falls within the time frame and context of the prompt.
-  - The argument is directly and explicitly supported by the evidence in a way that demonstrates a cause-and-effect relationship.
-- Be strict and apply no leniency. Do not award partial credit for incomplete, vague, irrelevant, or inaccurate responses.
+  - The evidence supports the argument that the student is making in a logical way.
+- Be strict and apply no leniency. But be fair, recognize attempts of reasoning. Do not award partial credit for incomplete, vague, irrelevant, or inaccurate responses.
 
 Evaluation Process:
 1. Analyze the essay holistically and identify the thesis or argument being made.
 2. Determine whether the response provides specific and historically accurate evidence relevant to the time frame and context of the prompt.
-3. Evaluate whether the identified evidence is clearly and explicitly tied to the thesis through logical reasoning and cause-and-effect relationships.
+3. Evaluate whether the identified evidence is clearly and explicitly tied to the thesis through logic.
 4. Ensure feedback includes specific references to the essay content and explains why points were awarded or not.
 
 Essay to Evaluate:
