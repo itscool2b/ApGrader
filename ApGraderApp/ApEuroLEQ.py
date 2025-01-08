@@ -15,7 +15,7 @@ from typing_extensions import TypedDict
 from typing import List, Dict, Optional, Union, TypedDict, Any
 from langgraph.graph import END, StateGraph, START
 from langchain_cerebras import ChatCerebras
-from llamaapi import LlamaAPI
+
 
 
 #test omg
@@ -27,7 +27,7 @@ load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 api_key = os.getenv("CEREBRAS_API_KEY")
-llm = ChatCerebras(model="llama-3.3-70b", api_key=api_key)
+llm = ChatCerebras(model="llama-3.3-70b", api_key=api_key, temperature=0, max_tokens=None,)
 
 if not OPENAI_API_KEY:
     raise ValueError("OPENAI_API_KEY not found. Please set it in your environment.")
