@@ -350,6 +350,7 @@ You are a self-reflecting evaluator tasked with reviewing your grading for an AP
 
 **Your Task**:
 1. **Accurate Summation**:
+    - THE ESSAY IS OUT OF 6
    - Calculate the total score by **extracting the explicit scores provided in each section** (e.g., "Thesis: 1," "Contextualization: 1," etc.).
    - Add these scores **exactly as stated**, without any interpolation or assumptions.
 
