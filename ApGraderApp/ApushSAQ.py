@@ -92,266 +92,141 @@ from typing import Any, Dict
 llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4o")
 
 case1 = PromptTemplate.from_template("""
-You are an expert AP U.S. History SAQ grader. Your task is to evaluate the provided essay response for a specific SAQ question. Each question may contain multiple subparts (e.g., A, B, C), and you must analyze and grade each subpart individually based on the provided rubric.
+Context: You are an expert AP U.S History (APUSH) Short Answer Question (SAQ) grader. Each SAQ consists of multiple subparts (e.g., A, B, C), each requiring a concise response.
 
-**IMPORTANT NOTE**: 
-- Do not award a 0 unless the essay is entirely unrelated or lacks any substantive content.
-- Award partial credit based on the quality and accuracy of each subpart's response.
+SAQ Question: The SAQ question is as follows:
 
-### **Grading Process:**
+{questions}
 
-#### **1. Read the SAQ Question and Student Response:**
+Student’s Response: The student’s response is as follows:
 
-- **Question:**
-  {questions}
+{essay}
 
-- **Student’s Response:**
-  {essay}
+Scoring Guidelines:
 
-#### **2. Analyze the Structure:**
+Each subpart (A, B, C) is evaluated individually. Assign a score of 0 or 1 point per subpart:
 
-- **Identify Subparts:**
-  - Determine how many subparts (A, B, C, etc.) the question contains.
-  - Understand the specific task each subpart is asking for based on the task verbs (e.g., Identify, Describe, Explain).
+1 Point: Fully meets the ACE criteria.
+0 Points: Does not meet the ACE criteria.
 
-#### **3. Grade Each Subpart (A, B, C, etc.):**
+ACE Criteria for Scoring:
 
-- **General Criteria for All Subparts:**
-  - **Identify:** Correctly name or state a relevant historical fact.
-  - **Describe:** Provide specific details about a historical fact, event, or concept beyond mere terminology.
-  - **Explain:** Analyze cause/effect, context, or significance with clear connections.
-  - **Accuracy:** Ensure all content is historically defensible and accurate.
-  - **Relevance:** Ensure responses directly address the prompt and are pertinent to the historians' arguments or the question's requirements.
+Answer (A): Clearly and directly answers the question.
+Cite (C): Provides a specific, historically accurate, and relevant historical fact or evidence.
+Explain (E): Explains how the cited evidence supports the answer, demonstrating understanding of historical context or significance.
 
-- **Specific Criteria Based on Task Verbs:**
-  
-  - **For "Identify":**
-    - **Accuracy:** Correctly names a relevant historical fact or figure.
-    - **Relevance:** The identified fact directly pertains to the question.
-  
-  - **For "Describe":**
-    - **Specificity:** Provides detailed information about the event or concept.
-    - **Depth:** Goes beyond surface-level details to convey a deeper understanding.
-  
-  - **For "Explain":**
-    - **Cause/Effect:** Clearly articulates the relationship between events or concepts.
-    - **Context:** Demonstrates an understanding of the broader historical context.
-    - **Significance:** Highlights the importance or impact of the event or concept.
-  
-  - **For "Compare":**
-    - **Similarity/Difference:** Clearly discusses both similarities and/or differences.
-    - **Connection:** Directly relates the comparison to the question's focus.
+Grading Process:
 
-#### **4. Provide Feedback for Each Subpart:**
+Evaluate Each Subpart (A, B, C):
+- Answer: Does the response directly address the question?
+- Cite: Does the response include specific and accurate historical evidence relevant to the question?
+- Explain: Does the response clearly explain the significance or connection of the cited evidence to the answer?
 
-- **If the response earns the point:**
-  - **Explain why it is correct**, referencing specific aspects of the response that meet the criteria.
-  - **Highlight the alignment** between the student’s explanation and the expected historical interpretation or analysis.
+Assign Scores and Provide Feedback:
+- If 1 Point Awarded:
+  - Clearly explain why the response meets all ACE criteria, referencing specific elements of the response and stimulus.
+- If 0 Points Awarded:
+  - Specify which ACE criteria were not met (Answer, Cite, Explain).
+  - Provide constructive guidance on how to improve the response.
 
-- **If the response does not earn the point:**
-  - **Explain what is missing, incorrect, or vague**.
-  - **Provide constructive guidance** on how to improve the response, focusing on accuracy, relevance, and depth of analysis.
+Output Format:
 
-#### **5. Summarize the Total Score:**
+Feedback for Each Subpart:
+- A: (Score: X/1)
+  Feedback: [Detailed feedback explaining why the response earned the point or why it did not.]
 
-- **Total Score:** Sum the points earned across all subparts (e.g., 0–3 for a 3-part SAQ).
-- **Strengths:** Highlight specific aspects of the student's responses that were well-executed.
-- **Areas for Improvement:** Suggest targeted ways to enhance their responses, focusing on accuracy, relevance, and depth.
-- **Originality Note:** *(Only if applicable)* Comment on the originality and appropriateness of supporting evidence used, ensuring they reference events or concepts not superficially mentioned.
+- B: (Score: X/1)
+  Feedback: [Detailed feedback explaining why the response earned the point or why it did not.]
 
-### **Grading Criteria:**
+- C: (Score: X/1)
+  Feedback: [Detailed feedback explaining why the response earned the point or why it did not.]
 
-- **Accuracy:**
-  - Responses must be historically defensible and free from significant factual errors.
-  
-- **Relevance:**
-  - Responses must directly address the question and remain focused on the task.
-  
-- **Depth:**
-  - Responses should demonstrate a thorough understanding of the historical concepts, events, or figures involved.
-  
-- **Specificity:**
-  - Vague or generalized answers will not earn full credit. Specific details and examples are required.
-  
-- **Clarity:**
-  - Responses should be clearly written and logically organized, making the argument easy to follow.
+Total Score and Summary:
+- Total Score: X/3
+- Strengths: Highlight specific aspects of the responses that were well-executed.
+- Areas for Improvement: Offer targeted suggestions for enhancing future responses.
+- Originality Note: Comment on the appropriateness and originality of the evidence used.
 
-### **Output Format for Grading:**
-
-- **Feedback for Each Subpart:**
-
-  - **A: (Score: X/1)**  
-    *Feedback:* [Detailed feedback...]
-
-  - **B: (Score: X/1)**  
-    *Feedback:* [Detailed feedback...]
-
-  - **C: (Score: X/1)**  
-    *Feedback:* [Detailed feedback...]
-
-- **Total Score and Summary:**
-
-  - **Total Score:** X/Y (e.g., 2/3 for a 3-part question).
-  - **Strengths:** Highlight what the student did well, referencing specific parts of their responses.
-  - **Areas for Improvement:** Suggest specific ways to improve their response, focusing on accuracy, relevance, and depth.
-
-### **Additional Instructions:**
-
-- **Precision Over Presence:** Ensure that points are awarded based on the **quality and accuracy** of the response rather than merely the presence of relevant keywords or events.
-- **Alignment with Historians' Arguments:** Pay close attention to whether the student's explanations accurately reflect the specific arguments and interpretations expected by the question.
-- **Avoid Over-Awarding Points:** Be stringent in evaluating the depth and correctness of the connections made by the student, ensuring that partial or incorrect answers do not earn full credit.
-- **Constructive Feedback:** Provide feedback that not only points out deficiencies but also guides the student on how to address them, enhancing their historical analysis skills.
-                                     VERY IMPORTANT!! U CANNOT GIVE A 0.5. only a 1 or 0 for each section   VERY IMPORTANT. DONT BE LENIANT. if it fits the rubric give the point. otherwise be less leniant. """)
+Additional Grading Instructions:
+- Precision Over Presence: Award points based on the quality and accuracy of the response, not merely the presence of keywords or events.
+- Alignment with Historians' Arguments: Ensure explanations reflect the specific arguments and interpretations relevant to the question.
+- Constructive Feedback: Provide feedback that guides the student on improving accuracy, relevance, and depth of analysis.
+- Strict Binary Scoring: Only assign 1 point if all ACE criteria are fully met; otherwise, assign 0 points.
+""")
 
 case2 = PromptTemplate.from_template("""
-You are an expert AP U.S. History SAQ grader. This question includes a stimulus (image, chart, or visual resource) that must be analyzed and integrated into the evaluation process. Your task is to grade each subpart of the SAQ (A, B, C, etc.) while taking the provided stimulus into account.
+Context: You are an expert AP U.S. History (APUSH) Short Answer Question (SAQ) grader. Each SAQ consists of multiple subparts (e.g., A, B, C), each requiring a concise response. SAQs include a stimulus (image, chart, or visual resource) that must be analyzed and integrated into the grading process.
 
-**IMPORTANT NOTE**: 
-- Do not award a 0 unless the essay is entirely unrelated or lacks any substantive content.
-- **ONLY** award a 1 or 0 for each subpart. Do not give partial credit (e.g., 0.5).
-- Be **extremely stringent** in grading to ensure alignment with human AP History teachers' standards.
+Stimulus Description: The provided stimulus is as follows:
 
-### **Grading Process:**
+{stimulus}
 
-#### **1. Analyze the Provided Stimulus:**
+Carefully review the stimulus, identifying its key details (e.g., captions, labels, or visual elements). Understand how the stimulus relates to the historical context and themes referenced in the question.
 
-- **Stimulus Description and complete analysis:**
-  {stimulus}
+SAQ Question: The SAQ question is as follows:
 
-- **Actions:**
-  - Carefully review the stimulus and identify its key details (e.g., captions, labels, or visual elements).
-  - Understand how the stimulus relates to the historical context and themes referenced in the question.
-  - Determine if and how the stimulus should be integrated into the student's response based on the question's requirements.
+{questions}
 
-#### **2. Read the SAQ Question and Student Response:**
+Student’s Response: The student’s response is as follows:
 
-- **Question:**
-  {questions}
+{essay}
 
-- **Student’s Response:**
-  {essay}
+Scoring Guidelines:
 
-#### **3. Grade Each Subpart (A, B, C, etc.):**
+Each subpart (A, B, C) is evaluated individually. Assign a score of 0 or 1 point per subpart:
 
-- **General Criteria for All Subparts:**
-  - **Identify:** Correctly name or state a relevant historical fact.
-  - **Describe:** Provide specific details about a historical event or concept beyond mere terminology.
-  - **Explain:** Analyze cause/effect, context, or significance with clear connections.
-  - **Accuracy:** Ensure all content is historically defensible and accurate.
-  - **Relevance:** Ensure responses directly address the prompt and are pertinent to the historians' arguments.
-  - **Clarity and Depth:** Responses must be clear, well-organized, and demonstrate a thorough understanding of the topic.
+1 Point: Fully meets the ACE criteria.
+0 Points: Does not meet the ACE criteria.
 
-- **Specific Criteria Based on Subpart Requirements:**
+ACE Criteria for Scoring:
 
-  - **For Subparts Requiring Stimulus Analysis (e.g., Part A):**
-    - **Accuracy:**
-      - Does the response correctly reference details or themes from the stimulus?
-      - Does the interpretation of the stimulus align with its intended historical context?
-    - **Relevance:**
-      - Is the stimulus used effectively to address the question?
-      - Does the response integrate the stimulus seamlessly with broader historical knowledge?
-    - **Depth of Understanding:**
-      - Does the response demonstrate a nuanced understanding of how the stimulus relates to the historians' arguments?
-  
-  - **For Subparts Requiring Historical Events Not in Stimulus (e.g., Parts B and C):**
-    - **Originality:**
-      - Is the historical event or development referenced **not directly mentioned** in the provided excerpts?
-    - **Timeframe Adherence:**
-      - Does the referenced event fall within the specified timeframe (e.g., 1600-1700)?
-    - **Accuracy:**
-      - Is the referenced event historically accurate within the specified timeframe?
-      - Does the event accurately reflect the historians' interpretations?
-    - **Relevance and Support:**
-      - Does the event effectively support the specific historian’s argument as required by the question?
-      - Is the connection between the event and the historian’s argument clearly articulated and logically sound?
-    - **Depth of Explanation:**
-      - Does the response provide a thorough and detailed explanation of how the evidence supports the argument?
-      - Avoids vague or general statements; includes specific details and clear connections.
+Answer (A): Clearly and directly answers the question.
+Cite (C): Provides a specific, historically accurate, and relevant historical fact or evidence.
+Explain (E): Explains how the cited evidence supports the answer, demonstrating understanding of historical context or significance.
 
-#### **4. Provide Feedback for Each Subpart:**
+Grading Process:
 
-- **If the response earns the point:**
-  - **Explain why it is correct**, including specific references to the stimulus if required.
-  - **Highlight the alignment** between the student’s explanation and the historians' arguments.
+Analyze the Stimulus:
+- Identify key details and determine its relevance to the question.
 
-- **If the response does not earn the point:**
-  - **Explain what is missing, incorrect, or vague**.
-  - **For Parts B and C:**
-    - Specifically address if the historical event used is from the stimulus and instruct to use events not covered in the excerpts.
-    - **Emphasize Timeframe Adherence:** Point out if the evidence falls outside the specified period.
-  - **Provide constructive guidance** on how to improve the response, focusing on accuracy, relevance, and depth of analysis.
+Evaluate Each Subpart (A, B, C):
+- Answer: Does the response directly address the question?
+- Cite: Does the response include specific and accurate historical evidence relevant to the question?
+- Explain: Does the response clearly explain the significance or connection of the cited evidence to the answer?
 
-#### **5. Summarize the Total Score:**
+Assign Scores and Provide Feedback:
+- If 1 Point Awarded:
+  - Clearly explain why the response meets all ACE criteria, referencing specific elements of the response and stimulus.
+- If 0 Points Awarded:
+  - Specify which ACE criteria were not met (Answer, Cite, Explain).
+  - Provide constructive guidance on how to improve the response.
 
-- **Total Score:** Sum the points earned across all subparts (e.g., 0–3 for a 3-part SAQ).
-- **Strengths:** Highlight specific aspects of the student's responses that were well-executed, referencing specific parts of their responses.
-- **Areas for Improvement:** Suggest targeted ways to enhance their responses, focusing on accuracy, relevance, and depth of analysis.
-- **Originality Note:** Comment on the originality and appropriateness of the supporting evidence used in Parts B and C, ensuring they reference events not included in the excerpts.
+Output Format:
 
-### **Grading Criteria:**
+Stimulus Reference:
+- Briefly explain how the stimulus relates to the question and its relevance to the student's response.
 
-- **For Subparts Requiring the Stimulus:**
-    DO NOT APPLY ANY LENIENCY IN GRADING. BE STRICT but fair. 
-  - **Accuracy:**
-    - Correctly references details or themes from the stimulus.
-  - **Relevance:**
-    - Uses the stimulus to directly address the question.
-  - **Integration with Broader Knowledge:**
-    - Connects observations from the stimulus to broader historical themes or developments with depth and precision.
+Feedback for Each Subpart:
+- A: (Score: X/1)
+  Feedback: [Detailed feedback explaining why the response earned the point or why it did not.]
 
-- **For Subparts Requiring Historical Events Not in Stimulus (e.g., Parts B and C):**
-  - **Originality:**
-    - References historical events or developments **not mentioned** in the provided excerpts.
-  - **Timeframe Adherence:**
-    - References fall within the specified timeframe (e.g., 1600-1700).
-  - **Accuracy:**
-    - References are historically accurate and fall within the specified timeframe.
-    - Reflect the historians' interpretations accurately.
-  - **Relevance and Support:**
-    - Events effectively support the historian’s interpretation with clear and logical connections.
-  - **Depth of Explanation:**
-    - Provides thorough and detailed explanations connecting the evidence to the argument.
+- B: (Score: X/1)
+  Feedback: [Detailed feedback explaining why the response earned the point or why it did not.]
 
-- **General Criteria for All Subparts:**
-  - **Identify:** Names or states a correct, relevant historical fact.
-  - **Describe:** Provides specific details about a historical event or concept beyond isolated terms.
-  - **Explain:** Analyzes cause/effect, context, or significance with clear connections to the prompt and historians' arguments.
-  - **Compare:** Discusses similarities and/or differences explicitly, if required.
-  - **Analyze:** Breaks down the meaning, impact, or significance of the stimulus or broader topic with depth.
+- C: (Score: X/1)
+  Feedback: [Detailed feedback explaining why the response earned the point or why it did not.]
 
-### **Output Format for Grading:**
+Total Score and Summary:
+- Total Score: X/3
+- Strengths: Highlight specific aspects of the responses that were well-executed.
+- Areas for Improvement: Offer targeted suggestions for enhancing future responses.
+- Originality Note: Comment on the appropriateness and originality of the evidence used, ensuring parts B and C reference events not included in the stimulus if required.
 
-- **Stimulus Reference:**
-  - Provide a brief explanation of how the stimulus relates to the question.
-
-- **Feedback for Each Subpart:**
-
-  - **A: (Score: X/1)**  
-    *Feedback:* [Detailed feedback...]
-
-  - **B: (Score: X/1)**  
-    *Feedback:* [Detailed feedback...]
-
-  - **C: (Score: X/1)**  
-    *Feedback:* [Detailed feedback...]
-
-- **Total Score and Summary:**
-
-  - **Total Score:** X/Y (e.g., 2/3 for a 3-part question).
-  - **Strengths:** Highlight what the student did well, referencing specific parts of their responses.
-  - **Areas for Improvement:** Suggest specific ways to improve their response, focusing on accuracy, relevance, and depth of analysis.
-  - **Originality Note:** Comment on the originality and appropriateness of supporting evidence used in Parts B and C, ensuring they reference events not included in the excerpts.
-
-### **Additional Instructions:**
-
-- **Precision Over Presence:** Ensure that points are awarded based on the **quality and accuracy** of the response rather than merely the presence of relevant keywords or events.
-- **Alignment with Historians' Arguments:** Pay close attention to whether the student's explanations accurately reflect the specific arguments and interpretations of the historians in the excerpts.
-- **Avoid Over-Awarding Points:** Be stringent in evaluating the depth and correctness of the connections made by the student, especially in Parts A and C where nuanced understanding is crucial.
-- **Constructive Feedback:** Provide feedback that not only points out deficiencies but also guides the student on how to address them, enhancing their historical analysis skills.
-- **Strict Binary Scoring:** Only award a 1 if the response fully meets all criteria; otherwise, award a 0. Do not give partial credit under any circumstances.
-
-### **Examples of Feedback:**
-
+Additional Grading Instructions:
+- Precision Over Presence: Award points based on the quality and accuracy of the response, not merely the presence of keywords or events.
+- Alignment with Historians' Arguments: Ensure explanations reflect the specific arguments and interpretations relevant to the question.
+- Constructive Feedback: Provide feedback that guides the student on improving accuracy, relevance, and depth of analysis.
+- Strict Binary Scoring: Only assign 1 point if all ACE criteria are fully met; otherwise, assign 0 points.
 """)
 ch_prompt = PromptTemplate.from_template("""
 This is the student essay - {essay}
