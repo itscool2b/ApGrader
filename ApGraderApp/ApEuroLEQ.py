@@ -371,7 +371,7 @@ Output Format:
    - Evidence (0-2): Extracted score and explanation, e.g., "You put 2 but the evidence lacks connection to the thesis, so 1 point was awarded."
    - Analysis and Reasoning (0-2): Extracted score and explanation, e.g., "You put 1 but the reasoning was detailed and meets rubric criteria, so 2 points were awarded."
    - Fact-Checking Feedback: Highlight any factual errors and their impact on scoring, if applicable.
-
+    **these section scores when i give the examples with the quotes u have to adapt ur feedback to that if u make changes. Those are just templates dont actually print those out. Use if needed obviously.
 2. **Total Score (0-6)**:
    - Total Score: Sum the extracted scores explicitly provided in the generations. Reflect any changes here if scores were updated during review.
 
