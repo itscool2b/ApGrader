@@ -203,30 +203,30 @@ Grade the points based on this rubric.
   - **CCOT (Continuity and Change Over Time)**: Analyze both continuities and changes, explaining how and why specific elements persisted or transformed over the specified period.
 - **Award Historical Reasoning Points**:
   - **0 Points**: No use of appropriate historical reasoning.
-  - **1 Point**: Demonstrates the use of historical reasoning aligned with the prompt type, but may lack depth or completeness.
-  - **2 Points**: Effectively uses historical reasoning aligned with the prompt type, demonstrating clear and comprehensive understanding.
+  - **1 Point**: Demonstrates the use of historical reasoning aligned with the prompt type, showing clear understanding.
+  - **2 Points**: Effectively uses historical reasoning aligned with the prompt type, demonstrating thorough and insightful understanding.
 - **Complex Understanding**:
   - **Award Complex Understanding Points Only If**:
     1. The Historical Reasoning point has been awarded (either 1 or 2).
-    2. The essay demonstrates sophisticated argumentation and/or nuanced use of evidence as outlined in the rubric.
+    2. The essay demonstrates meaningful argumentation and/or effective use of evidence as outlined in the rubric.
   - **Criteria for Complex Understanding**:
-    - **Sophisticated Argumentation**:
+    - **Meaningful Argumentation**:
       - Explores multiple themes or perspectives.
       - Analyzes similarities and differences, continuities and changes, or multiple causes and effects.
-      - Makes insightful connections within and across periods or geographical areas.
-      - Considers and integrates different viewpoints or counterarguments.
+      - Makes connections within and across periods or geographical areas.
+      - Considers different viewpoints or counterarguments.
     - **Effective Use of Evidence**:
-      - Uses at least four specific and relevant pieces of evidence.
-      - Integrates evidence seamlessly to support a nuanced or complex argument.
+      - Uses at least two specific and relevant pieces of evidence.
+      - Integrates evidence to support a coherent argument.
       - Demonstrates an understanding of different perspectives relevant to the prompt.
   - **Scoring for Complex Understanding**:
-    - **0 Points**: Does not demonstrate sophisticated argumentation or nuanced use of evidence.
-    - **1 Point**: Demonstrates some aspects of sophisticated argumentation and/or nuanced use of evidence but lacks completeness or depth.
-    - **2 Points**: Fully demonstrates sophisticated argumentation and/or nuanced use of evidence, meeting all criteria effectively.
-- **Strictness**:
-  - Apply the rubric strictly, but allow for partial fulfillment of criteria when appropriate.
-  - Award points based on the presence of key elements rather than requiring every aspect to be fully developed.
-  - Recognize different ways sophistication can be demonstrated, such as through thematic exploration, evidence integration, or insightful connections.
+    - **0 Points**: Does not demonstrate meaningful argumentation or effective use of evidence.
+    - **1 Point**: Demonstrates some aspects of meaningful argumentation and/or effective use of evidence but lacks full development.
+    - **2 Points**: Clearly demonstrates meaningful argumentation and/or effective use of evidence, meeting the criteria effectively.
+- **Flexibility in Scoring**:
+  - Apply the rubric with an understanding of varying essay strengths.
+  - Allow partial fulfillment of criteria to recognize diverse ways students may demonstrate understanding.
+  - Award points based on the presence of key elements without requiring every aspect to be fully developed.
 
 **Essay to Evaluate**:
 {essay}
@@ -237,11 +237,10 @@ Grade the points based on this rubric.
 - **Score (0, 1, or 2)**: Indicate the total points awarded for the Analysis and Reasoning section.
 - **Feedback**: Provide a brief explanation for the score, including:
   - **Historical Reasoning**: How the response used reasoning aligned with the specific type of prompt (e.g., comparison, causation, CCOT).
-  - **Complex Understanding**: How the response demonstrated a nuanced or sophisticated argument, referencing specific elements of the essay.
+  - **Complex Understanding**: How the response demonstrated a meaningful or effective argument, referencing specific elements of the essay.
   - **Reasons for Points Not Awarded**: Clearly state why certain points were not awarded based on the rubric criteria.
 """
 )
-
 summation_prompt = PromptTemplate.from_template(
     """
 Your task is to output the final feedback in the exact format below. 
