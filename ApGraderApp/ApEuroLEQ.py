@@ -327,12 +327,14 @@ Focus on being supportive and informative. Your goal is to help the student lear
 
 
 reflection = PromptTemplate.from_template(
-    """
-You are a self-reflecting evaluator tasked with reviewing your grading for an AP U.S. History LEQ. Below are the inputs and outputs for grading. Your job is to verify the accuracy, consistency, and clarity of the feedback, and ensure the total score is calculated directly from the individual section scores provided in the generated outputs.
+ """
+You are a self-reflecting AP Grader tasked with reviewing your own grading outputs for an AP U.S. History LEQ. Your task is to ensure that the feedback and scores align with every aspect of the provided rubric. Be thorough but not overly strict. Your review must include the following:
 
 **Inputs**:
 - **Rubric**:
   {rubric}
+- **Prompt Type**:
+  {prompt_type}
 - **Student Essay**:
   {essay}
 
@@ -349,21 +351,44 @@ You are a self-reflecting evaluator tasked with reviewing your grading for an AP
   {factchecking_generation} (if any)
 
 **Your Task**:
-1. **Accurate Summation**:
-    - THE ESSAY IS OUT OF 6
-   - Calculate the total score by **extracting the explicit scores provided in each section** (e.g., "Thesis: 1," "Contextualization: 1," etc.).
-   - Add these scores **exactly as stated**, without any interpolation or assumptions.
+1. **Rubric Adherence**:
+   - Carefully review each section of the feedback (thesis, contextualization, evidence, analysis) to ensure it fully adheres to the rubric provided. Read every aspect of the rubric and confirm alignment.
+   - Cross-check the Prompt Type and ensure the evaluation aligns with its specific requirements (e.g., Comparison, Causation, CCOT).
 
-2. **Feedback Verification**:
-   - Review the feedback provided for each section. If the feedback contradicts the rubric or the score, revise it in the format: **"You put X but Y."**
-   - Ensure all feedback is actionable, clear, and aligned with the rubric.
+2. **Accurate Summation**:
+   - Extract the **exact scores** explicitly stated in each generation (e.g., Thesis: 1, Contextualization: 0).
+   - Add these scores directly to calculate the total score. **Do not interpolate or assume scores**; only use what is explicitly provided.
 
-3. **Changes**:
-   - Make changes only if something clearly stands out as incorrect (e.g., the score conflicts with the rubric or feedback).
-   - Explicitly note any changes, explaining why they were made, and include both the original and updated scores.
+3. **Feedback Verification**:
+   - Review each section’s feedback to ensure clarity and actionable suggestions.
+   - If any feedback is inconsistent with the rubric or contradicts the given score, rewrite it using the format: **"You put X but Y"**.
+   - Ensure the feedback clearly explains why points were awarded or not.
 
-4. **Final Output**:
-   - Follow the format below exactly.
+4. **Make Changes Only When Necessary**:
+   - If a score is clearly incorrect based on the rubric (e.g., feedback says the thesis meets criteria but gave 0), you may adjust it. Any changes must be explicitly noted in the output, explaining the reason.
+
+**Output Format**:
+1. **Section Scores**:
+   - **Thesis (0-1)**: {score explicitly stated, with explanation, e.g., "You put 0 but the thesis meets rubric criteria, so 1 point was awarded."}
+   - **Contextualization (0-1)**: {score explicitly stated, with explanation, e.g., "You put 1 but the context is vague, so 0 point was awarded."}
+   - **Evidence (0-2)**: {score explicitly stated, with explanation, e.g., "You put 2 but the evidence lacks support for the argument, so 1 point was awarded."}
+   - **Analysis and Reasoning (0-2)**: {score explicitly stated, with explanation, e.g., "You put 1 but the reasoning was detailed and meets rubric criteria, so 2 points were awarded."}
+   - **Fact-Checking Feedback**: {state any issues identified and whether they affected scoring.}
+
+2. **Total Score (0-6)**:
+   - Total Score: {accurately summed score, based only on the scores explicitly stated in each generation.}
+
+3. **Changes Made**:
+   - Specify any changes made to scores with a clear explanation. For example:
+     - **Thesis**: "You put 0 but the thesis meets rubric criteria, so 1 point was awarded."
+     - **Evidence**: "You put 2 but the evidence lacks sufficient connection to the argument, so 1 point was awarded."
+
+4. **Final Feedback Summary**:
+   - Provide feedback for each section in the format: **"You put X but Y."** For example:
+     - Thesis: "You put the thesis is unclear, but it addresses the prompt and meets rubric criteria."
+     - Evidence: "You put evidence supports the argument, but it does not fully address the required time frame."
+   - End with a brief summary of overall strengths and areas for improvement.
+
 """
 )
 
@@ -544,11 +569,11 @@ def self_reflection(state):
     factcheck = state['factchecking_generation']
     rubric = state['rubric']
     essay = state['student_essay']
-    
-    formatted_prompt = reflection.format(thesis_generation=thesis,contextualization_generation=contextualization,complexunderstanding_generation=complex,evidence_generation=evidence,rubric=rubric,essay=essay,factchecking_generation=factcheck)
+    ptype = state["prompt_type"]
+    formatted_prompt = reflection.format(prompt_type=ptype,thesis_generation=thesis,contextualization_generation=contextualization,complexunderstanding_generation=complex,evidence_generation=evidence,rubric=rubric,essay=essay,factchecking_generation=factcheck)
     response = llm.invoke(formatted_prompt)
     state['reflection'] = response.content.strip()
-
+    
     return state
 
 def final_node(state: dict) -> dict:
@@ -576,8 +601,8 @@ def final_node(state: dict) -> dict:
         final_reflection = state['reflection']
         final = f"\n\n this is the ai's final reflection of ur essay. the initial thought process is above, this is more refined and accurate. THIS IS IN BETA REFLECTION HERE - {final_reflection}"
         response = llm.invoke(formatted_prompt)
-        t = ' \n \nThis is the text that our Ai was able to extract from the image of your essay. If you feel the score is innacurate, please make sure that the Ai has accurately analyzed and extracted the text from the essay. If not, please make the needed edits to the extracted text and paste it into our text submission for accurate grading: \n \n '
-        full = response.content.strip() + t + student_essay + final
+        t = ' \n \nThis is the text that our Ai was able to extract from the image of your essay. If you feel the score is innacurate, please make sure that the Ai has accurately analyzed and extracted the text from the essay. If not, please make the needed edits to the extracted text and paste it into our text submission for accurate grading:  '
+        full =  t + student_essay + final + response.content.strip() 
 
         return full
         
@@ -613,10 +638,10 @@ def evaluateeuroleq(prompt: str, essay: str) -> str:
     state = analysis_grading_node(state)  
     state = fact_check_node(state)  
     state = self_reflection(state)
-    final = final_node(state)  
+    finals = final_node(state)  
 
     
-    return final
+    return finals
 
 def euro_leq_bulk(prompt, essay):
     
@@ -643,7 +668,7 @@ def euro_leq_bulk(prompt, essay):
     state = analysis_grading_node(state)  
     state = fact_check_node(state)  
     state = self_reflection(state)
-    final = final_node(state)  
+    finals = final_node(state)  
 
     
-    return final
+    return finals
