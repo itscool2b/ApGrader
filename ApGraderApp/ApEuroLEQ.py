@@ -16,11 +16,13 @@ from typing import List, Dict, Optional, Union, TypedDict, Any
 from langgraph.graph import END, StateGraph, START
 from langchain_cerebras import ChatCerebras
 from llamaapi import LlamaAPI
-load_dotenv()
-from langchain_experimental.llms import ChatLlamaAPI
 
-if "CEREBRAS_API_KEY" not in os.environ:
-    os.environ["CEREBRAS_API_KEY"] = getpass.getpass("Enter your Cerebras API key: ")
+
+#test omg
+load_dotenv()
+
+
+
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
