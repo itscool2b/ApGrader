@@ -16,5 +16,5 @@ boto3==1.28.50              # AWS SDK for Python for S3 and other AWS services
 Pillow==9.5.0               # For image validation and conversion
 pytesseract>=0.3.10,<0.4.0  # Tesseract OCR wrapper
 numpy>=1.22.4,<2           # Compatible numpy version for langchain
-langchain-cerebras==0.1.0   # Cerebras integration for LangChain
+langchain-cerebras==0.2.0   # Compatible version of Cerebras integration
 llamaapi==0.1.0             # Llama API integration
