@@ -8,8 +8,8 @@ from uuid import uuid4
 from typing import List, Dict, Optional, Union, TypedDict, Any
 from dotenv import load_dotenv
 from PIL import Image
-import boto3
-from botocore.exceptions import BotoCoreError, ClientError
+
+
 import openai
 from openai import OpenAI
 from langchain.prompts import PromptTemplate
