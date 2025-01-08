@@ -383,6 +383,8 @@ Output Format:
    - For each section, provide feedback in the format: **"You put X but Y."**
      - Example: "You put the thesis is unclear, but it addresses the prompt and meets rubric criteria."
    - Conclude with a summary of strengths and areas for improvement based on the rubric.
+
+   In addition, lastly, dont be user friendly. dont say sure or certainly or anything. just give plain output.
 """
 )
 
@@ -593,9 +595,9 @@ def final_node(state: dict) -> dict:
         )
 
         final_reflection = state['reflection']
-        final = "\n\n this is the ai's final reflection of ur essay. the initial thought process is above, this is more refined and accurate. THIS IS IN BETA REFLECTION HERE - "
+        final = "\n\n this is the ai's final reflection of ur essay. the initial thought process is above, this is more refined and accurate. THIS IS IN BETA REFLECTION HERE - \n\n"
         response = llm.invoke(formatted_prompt)
-        t = ' \n \nThis is the text that our Ai was able to extract from the image of your essay. If you feel the score is innacurate, please make sure that the Ai has accurately analyzed and extracted the text from the essay. If not, please make the needed edits to the extracted text and paste it into our text submission for accurate grading:  '
+        t = ' \n \nThis is the text that our Ai was able to extract from the image of your essay. If you feel the score is innacurate, please make sure that the Ai has accurately analyzed and extracted the text from the essay. If not, please make the needed edits to the extracted text and paste it into our text submission for accurate grading: \n\n '
         full = response.content.strip() + final + final_reflection  + t + student_essay 
 
         return full
