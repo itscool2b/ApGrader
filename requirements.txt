@@ -10,11 +10,22 @@ langchain-community==0.3.13 # Additional community-driven LangChain integrations
 langchain-core==0.3.28      # Core LangChain utilities
 langchain-openai==0.2.14    # LangChain OpenAI support
 langchain-pinecone==0.2.0   # LangChain Pinecone integration
+langchain-cerebras==0.2.0   # Cerebras integration for LangChain
 uvicorn==0.32.1             # ASGI server to run the application
 langgraph>=0.0.1            # StateGraph utility used for workflow definition
 boto3==1.28.50              # AWS SDK for Python for S3 and other AWS services
 Pillow==9.5.0               # For image validation and conversion
 pytesseract>=0.3.10,<0.4.0  # Tesseract OCR wrapper
-numpy>=1.22.4,<2           # Compatible numpy version for langchain
-langchain-cerebras==0.2.0   # Compatible version of Cerebras integration
 llamaapi==0.1.0             # Llama API integration
+numpy>=1.22.4,<2            # Compatible numpy version for langchain
+tiktoken==0.8.0             # Tokenizer for OpenAI models
+httpx-sse==0.4.0            # Server-sent events for HTTPX
+dataclasses-json==0.6.7     # JSON serialization for dataclasses
+pydantic-settings==2.7.1    # Settings management for Pydantic
+jsonpatch==1.33             # JSON patch support
+packaging==24.2             # Utilities for Python packaging
+aiohttp==3.9.5              # Async HTTP client
+click==8.1.8                # Command-line utility for Python
+h11==0.14.0                 # HTTP/1.1 implementation for Python
+s3transfer==0.6.2           # S3 transfer utility for boto3
+jmespath==1.0.1             # JSON queries for boto3
