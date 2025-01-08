@@ -390,7 +390,7 @@ Output Format that u should adapt to and fill out.
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4o")
+llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4o", temperature=0)
 
 
 
