@@ -327,68 +327,62 @@ Focus on being supportive and informative. Your goal is to help the student lear
 
 
 reflection = PromptTemplate.from_template(
- """
-You are a self-reflecting AP Grader tasked with reviewing your own grading outputs for an AP U.S. History LEQ. Your task is to ensure that the feedback and scores align with every aspect of the provided rubric. Be thorough but not overly strict. Your review must include the following:
+  """
+You are an AP Grader tasked with reflecting on your own grading outputs for an AP U.S. History LEQ. Your task is to extract the exact scores from the grading generations provided, ensure adherence to the rubric, and make changes only after thorough review. Your reflection must include:
 
-**Inputs**:
-- **Rubric**:
-  {rubric}
-- **Prompt Type**:
-  {prompt_type}
-- **Student Essay**:
-  {essay}
+Rubric:
+{rubric}
 
-**Generated Outputs**:
-- **Thesis Evaluation**:
-  {thesis_generation}
-- **Contextualization Evaluation**:
-  {contextualization_generation}
-- **Evidence Evaluation**:
-  {evidence_generation}
-- **Analysis and Reasoning Evaluation**:
-  {complexunderstanding_generation}
-- **Fact-Checking Feedback**:
-  {factchecking_generation} (if any)
+Prompt Type:
+{prompt_type}
 
-**Your Task**:
-1. **Rubric Adherence**:
-   - Carefully review each section of the feedback (thesis, contextualization, evidence, analysis) to ensure it fully adheres to the rubric provided. Read every aspect of the rubric and confirm alignment.
-   - Cross-check the Prompt Type and ensure the evaluation aligns with its specific requirements (e.g., Comparison, Causation, CCOT).
+Student Essay:
+{essay}
 
-2. **Accurate Summation**:
-   - Extract the **exact scores** explicitly stated in each generation (e.g., Thesis: 1, Contextualization: 0).
-   - Add these scores directly to calculate the total score. **Do not interpolate or assume scores**; only use what is explicitly provided.
+Generated Outputs:
+- Thesis Evaluation: {thesis_generation}
+- Contextualization Evaluation: {contextualization_generation}
+- Evidence Evaluation: {evidence_generation}
+- Analysis and Reasoning Evaluation: {complexunderstanding_generation}
+- Fact-Checking Feedback: {factchecking_generation} (if any)
+
+Your Task:
+1. **Extract Scores**:
+   - Each generation explicitly contains a score for its respective section. Extract these scores directly as they represent the grading decisions for each part.
+   - Do not interpolate or assume scores—use only the scores explicitly provided in each generation.
+
+2. **Ensure Rubric Adherence**:
+   - Carefully review the feedback and scores for each section to ensure alignment with every aspect of the rubric.
+   - Evaluate how well the feedback reflects the rubric for the prompt type (Comparison, Causation, or CCOT).
+   - If changes to the scores are necessary, make them only after thorough review. Clearly explain the reason for any changes.
 
 3. **Feedback Verification**:
-   - Review each section’s feedback to ensure clarity and actionable suggestions.
-   - If any feedback is inconsistent with the rubric or contradicts the given score, rewrite it using the format: **"You put X but Y"**.
-   - Ensure the feedback clearly explains why points were awarded or not.
+   - Check that feedback aligns with the score provided. If feedback contradicts the score, rewrite it using the format: **"You put X but Y."**
+   - Ensure feedback is clear, actionable, and helpful to the student.
 
-4. **Make Changes Only When Necessary**:
-   - If a score is clearly incorrect based on the rubric (e.g., feedback says the thesis meets criteria but gave 0), you may adjust it. Any changes must be explicitly noted in the output, explaining the reason.
+4. **Changes and Final Summation**:
+   - Specify any changes made to scores, including the original score, the new score, and the reason for the change.
+   - Accurately calculate the total score by summing the scores from each section (after changes, if any).
 
-**Output Format**:
+Output Format:
 1. **Section Scores**:
-   - **Thesis (0-1)**: {score explicitly stated, with explanation, e.g., "You put 0 but the thesis meets rubric criteria, so 1 point was awarded."}
-   - **Contextualization (0-1)**: {score explicitly stated, with explanation, e.g., "You put 1 but the context is vague, so 0 point was awarded."}
-   - **Evidence (0-2)**: {score explicitly stated, with explanation, e.g., "You put 2 but the evidence lacks support for the argument, so 1 point was awarded."}
-   - **Analysis and Reasoning (0-2)**: {score explicitly stated, with explanation, e.g., "You put 1 but the reasoning was detailed and meets rubric criteria, so 2 points were awarded."}
-   - **Fact-Checking Feedback**: {state any issues identified and whether they affected scoring.}
+   - Thesis (0-1): Extracted score and explanation, e.g., "You put 0 but the thesis meets rubric criteria, so 1 point was awarded."
+   - Contextualization (0-1): Extracted score and explanation, e.g., "You put 1 but the context is vague, so 0 point was awarded."
+   - Evidence (0-2): Extracted score and explanation, e.g., "You put 2 but the evidence lacks connection to the thesis, so 1 point was awarded."
+   - Analysis and Reasoning (0-2): Extracted score and explanation, e.g., "You put 1 but the reasoning was detailed and meets rubric criteria, so 2 points were awarded."
+   - Fact-Checking Feedback: Highlight any factual errors and their impact on scoring, if applicable.
 
 2. **Total Score (0-6)**:
-   - Total Score: {accurately summed score, based only on the scores explicitly stated in each generation.}
+   - Total Score: Sum the extracted scores explicitly provided in the generations. Reflect any changes here if scores were updated during review.
 
 3. **Changes Made**:
-   - Specify any changes made to scores with a clear explanation. For example:
-     - **Thesis**: "You put 0 but the thesis meets rubric criteria, so 1 point was awarded."
-     - **Evidence**: "You put 2 but the evidence lacks sufficient connection to the argument, so 1 point was awarded."
+   - Clearly specify any changes to scores, for example:
+     - Thesis: "You put 0 but the thesis meets rubric criteria, so 1 point was awarded."
 
 4. **Final Feedback Summary**:
-   - Provide feedback for each section in the format: **"You put X but Y."** For example:
-     - Thesis: "You put the thesis is unclear, but it addresses the prompt and meets rubric criteria."
-     - Evidence: "You put evidence supports the argument, but it does not fully address the required time frame."
-   - End with a brief summary of overall strengths and areas for improvement.
-
+   - For each section, provide feedback in the format: **"You put X but Y."**
+     - Example: "You put the thesis is unclear, but it addresses the prompt and meets rubric criteria."
+   - Conclude with a summary of strengths and areas for improvement based on the rubric.
 """
 )
 
