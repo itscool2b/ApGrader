@@ -92,7 +92,7 @@ def retriever(query: str, top_k: int = 100) -> List[Dict]:
 from typing import Any, Dict
 llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4o", temperature=0)
 
-case1= PromptTemplate.from_template(
+case1 = PromptTemplate.from_template(
 """You are an expert AP European History (ApEuro) Short Answer Question (SAQ) grader. Each SAQ consists of multiple subparts (A, B, C), each requiring a concise response.
 
 **SAQ Question:**
@@ -107,16 +107,18 @@ Each subpart (A, B, C) is evaluated individually. Assign a score of 0 or 1 point
 - **1 Point:** awarded when the response meets the following criteria.
   - **Answer:** Clearly and directly answers the question.
   - **Cite:** Provides at least one historically accurate piece of evidence relevant to the timeframe/context of the question.
+    - **Note:** A piece of evidence can include a specific event, policy, legal act, social movement, or accurate historical concept (e.g., "communism," "mercantilism") that is relevant to the timeframe and question.
+    - **Benefit of the Doubt Clause:** If the student references a broader historical concept accurately tied to the question, you may count it as “evidence,” provided they connect it to their argument.
+    - This still requires that the cited concept or event be **historically accurate** and contextually on-point (e.g., “communism after the Bolshevik Revolution” is valid; “communism in the American colonies” would not be).
   - **Explain:** Explains or expands how the evidence they cited supports their answer.
   
 - **0 Points:** Does not meet one or more of the ACE criteria.
 
 **Grading Process:**
-   
 1. **Evaluate Each Subpart (A, B, C):**
    - **Answer:** Does the response directly address the question?
-   - **Cite:** Does the reponse cite at least one piece of evidence that is historically accurate and relevant to the timeframe/context of the question?
-   - **Explain:** Does the the student expand/elaborate on the evidence they cited to better support their argument?
+   - **Cite:** Does the response cite at least one piece of evidence that is historically accurate and relevant to the timeframe/context of the question?
+   - **Explain:** Does the student expand/elaborate on the evidence they cited to better support their argument?
 
 2. **Assign Scores and Provide Feedback:**
    - If **1 Point Awarded:**
@@ -135,7 +137,7 @@ Feedback for Each Subpart:
   - Feedback [Detailed feedback explaining why the response earned the point or why it did not.]
 
 - C (Score: X/1)
-  - Feedback: [Detailed feedback explaining why the response earned the point or why it did not.]
+  - Feedback [Detailed feedback explaining why the response earned the point or why it did not.]
 
 Total Score and Summary
 - TOTAL SCORE: X/3
@@ -169,6 +171,9 @@ Each subpart (A, B, C) is evaluated individually. Assign a score of 0 or 1 point
 - **1 Point:** awarded when the response meets the following criteria.
   - **Answer:** Clearly and directly answers the question.
   - **Cite:** Provides at least one historically accurate piece of evidence relevant to the timeframe/context of the question.
+    - **Note:** A piece of evidence can include a specific event, policy, legal act, social movement, or accurate historical concept (e.g., "communism," "mercantilism") that is relevant to the timeframe and question.
+    - **Benefit of the Doubt Clause:** If the student references a broader historical concept accurately tied to the question, you may count it as “evidence,” provided they connect it to their argument.
+    - This still requires that the cited concept or event be historically accurate and contextually on-point (e.g., “communism after the Bolshevik Revolution” is valid; “communism in the American colonies” would not be).
   - **Explain:** Explains or expands how the evidence they cited supports their answer.
   
 - **0 Points:** Does not meet one or more of the ACE criteria.
@@ -179,8 +184,8 @@ Each subpart (A, B, C) is evaluated individually. Assign a score of 0 or 1 point
    
 2. **Evaluate Each Subpart (A, B, C):**
    - **Answer:** Does the response directly address the question?
-   - **Cite:** Does the reponse cite at least one piece of evidence that is historically accurate and relevant to the timeframe/context of the question?
-   - **Explain:** Does the the student expand/elaborate on the evidence they cited to better support their argument?
+   - **Cite:** Does the response cite at least one piece of evidence that is historically accurate and relevant to the timeframe/context of the question?
+   - **Explain:** Does the student expand/elaborate on the evidence they cited to better support their argument?
 
 3. **Assign Scores and Provide Feedback:**
    - If **1 Point Awarded:**
@@ -199,7 +204,7 @@ Feedback for Each Subpart:
   - Feedback [Detailed feedback explaining why the response earned the point or why it did not.]
 
 - C (Score: X/1)
-  - Feedback: [Detailed feedback explaining why the response earned the point or why it did not.]
+  - Feedback [Detailed feedback explaining why the response earned the point or why it did not.]
 
 Total Score and Summary
 - TOTAL SCORE: X/3
