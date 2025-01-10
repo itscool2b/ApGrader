@@ -593,6 +593,9 @@ def final_node(state: dict) -> dict:
           
         )
 
+        if isinstance(state['student_essay'], InMemoryUploadedFile):
+            state['student_essay'] = state['student_essay'].read().decode('utf-8')
+
         final_reflection = state['reflection']
         final = "\n\n this is the ai's final reflection of ur essay. the initial thought process is above, this is more refined and accurate. THIS IS IN BETA REFLECTION HERE - \n\n"
         response = llm.invoke(formatted_prompt)
