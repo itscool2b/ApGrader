@@ -268,37 +268,56 @@ async def bulk_grading_leq(request):
         prompt = request.POST.get('prompt', '').strip()
         if not prompt:
             return JsonResponse({'error': 'Missing "prompt" in request'}, status=400)
+
         files = request.FILES.getlist('images')
         if not files:
             return JsonResponse({'error': 'No files provided'}, status=400)
 
+       
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
             for file in files:
-                image = file
-                supported_mime_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]
-                if image.content_type not in supported_mime_types:
-                    return JsonResponse({'error': 'Unsupported image type.'}, status=400)
-                try:
-                    image_data = base64.b64encode(image.read()).decode('utf-8')
-                except Exception:
-                    return JsonResponse({'error': 'Failed to process image file.'}, status=500)
                 try:
                     
-                    response_text = await sync_to_async(euro_leq_bulk)(prompt, image_data)
-                    pdf_buffer = create_pdf(prompt, response_text)
+                    supported_mime_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]
+                    if file.content_type not in supported_mime_types:
+                        return JsonResponse({'error': f'Unsupported image type: {file.content_type}'}, status=400)
 
                     
-                    zip_file.writestr(f"{file.name}_response.pdf", pdf_buffer.read())
+                    try:
+                        image_data = base64.b64encode(file.read()).decode('utf-8')
+                    except Exception as e:
+                        logger.error(f"Error encoding image: {file.name}", exc_info=True)
+                        return JsonResponse({'error': f"Failed to process image file: {file.name}"}, status=500)
+
+                    
+                    try:
+                        response_text = await sync_to_async(euro_leq_bulk)(prompt, image_data)
+                    except Exception as e:
+                        logger.error(f"Error processing grading for file: {file.name}", exc_info=True)
+                        return JsonResponse({'error': 'Failed to process grading', 'details': str(e)}, status=500)
+
+                    
+                    try:
+                        pdf_buffer = create_pdf(prompt, response_text)
+                        zip_file.writestr(f"{file.name}_response.pdf", pdf_buffer.read())
+                    except Exception as e:
+                        logger.error(f"Error generating PDF for file: {file.name}", exc_info=True)
+                        return JsonResponse({'error': 'Failed to generate PDF', 'details': str(e)}, status=500)
 
                 except Exception as e:
-                    return JsonResponse({'error': 'Failed to process file', 'details': str(e)}, status=500)
+                    logger.error(f"Error processing file: {file.name}", exc_info=True)
+                    return JsonResponse({'error': f"An error occurred with file: {file.name}", 'details': str(e)}, status=500)
 
-       
+        
         zip_buffer.seek(0)
         response = HttpResponse(zip_buffer, content_type='application/zip')
         response['Content-Disposition'] = 'attachment; filename="responses.zip"'
         return response
+
+    except Exception as e:
+        logger.error("Unhandled error in bulk_grading_leq", exc_info=True)
+        return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
 
     except Exception as e:
         return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
@@ -334,9 +353,10 @@ async def euro_saq_bulk(request):
                 except Exception:
                     return JsonResponse({'error': 'Failed to process image file.'}, status=500)
                 try:
-                    response = await sync_to_async(euro_saq_bulk_grading)(questions, image_data, stim_data)
-                    file_name = f"{file.name}_response.pdf"
-                    zip_file.writestr(file_name, response)
+                    response_text = await sync_to_async(euro_saq_bulk_grading)(questions, image_data, stim_data)
+
+                    response = create_pdf(questions, response_text)
+                    zip_file.writestr(f"{file.name}_response.pdf", response.read())
                 except Exception as e:
                     return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
 
@@ -397,8 +417,9 @@ async def euro_dbq_bulk(request):
 
                     
                     response_text = await sync_to_async(evaluateeurodbqbulk)(prompt, essay_data, images)
-                    file_name = f"{essay.name}_response.pdf"
-                    zip_file.writestr(file_name, response_text)
+                    response = create_pdf(prompt, response_text)
+                    zip_file.writestr(f"{essay.name}_response.pdf", response.read())
+                   
                 except Exception as e:
                     return JsonResponse({
                         'error': f'Evaluation failed for {essay.name}',
@@ -461,8 +482,8 @@ async def apushdbqbulk(request):
 
                    
                     response_text = await sync_to_async(evaluate22)(prompt, essay_data, images)
-                    file_name = f"{essay.name}_response.pdf"
-                    zip_file.writestr(file_name, response_text)
+                    response = create_pdf(prompt, response_text)
+                    zip_file.writestr(f"{essay.name}_response.pdf", response.read())
                 except Exception as e:
                     return JsonResponse({
                         'error': f'Evaluation failed for {essay.name}',
@@ -558,9 +579,9 @@ async def apushleqbulk(request):
                     return JsonResponse({'error': 'Failed to process image file.'}, status=500)
                 try:
                     
-                    response = await sync_to_async(evaluate69)(prompt, image_data)
-                    file_name = f"{file.name}_response.pdf"
-                    zip_file.writestr(file_name, response)
+                    response_text = await sync_to_async(evaluate69)(prompt, image_data)
+                    response = create_pdf(prompt, response_text)
+                    zip_file.writestr(f"{file.name}_response.pdf", response.read())
                 except Exception as e:
                     return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
 
@@ -604,9 +625,9 @@ async def apushsaqbulk(request):
                 except Exception:
                     return JsonResponse({'error': 'Failed to process image file.'}, status=500)
                 try:
-                    response = await sync_to_async(evaluate11)(questions, image_data, stim_data)
-                    file_name = f"{file.name}_response.pdf"
-                    zip_file.writestr(file_name, response)
+                    response_text = await sync_to_async(evaluate11)(questions, image_data, stim_data)
+                    response = create_pdf(questions, response_text)
+                    zip_file.writestr(f"{file.name}_response.pdf", response.read())
                 except Exception as e:
                     return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
 
