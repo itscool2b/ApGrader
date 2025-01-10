@@ -36,10 +36,10 @@ from reportlab.lib import colors
 
 
 def create_pdf(prompt, response_text):
-    # Create a buffer for the PDF
+    
     pdf_buffer = io.BytesIO()
 
-    # Define document layout
+    
     doc = BaseDocTemplate(
         pdf_buffer,
         pagesize=letter,
@@ -49,7 +49,7 @@ def create_pdf(prompt, response_text):
         bottomMargin=72,
     )
 
-    # Define the main frame for content
+    
     frame = Frame(
         doc.leftMargin,
         doc.bottomMargin,
@@ -58,14 +58,14 @@ def create_pdf(prompt, response_text):
         id="content_frame",
     )
 
-    # Add a single page template
+    
     template = PageTemplate(id="template", frames=[frame])
     doc.addPageTemplates([template])
 
-    # Define styles
+   
     styles = getSampleStyleSheet()
 
-    # Custom styles
+    
     title_style = ParagraphStyle(
         name="Title",
         fontName="Helvetica-Bold",
@@ -88,7 +88,7 @@ def create_pdf(prompt, response_text):
         spaceAfter=10,
     )
 
-    # Define strings to bold
+    
     strings_to_bold = [
         "Thesis score",
         "contextualization score",
@@ -103,27 +103,28 @@ def create_pdf(prompt, response_text):
         "General Accuracy",
     ]
 
-    # Content list
+    
     content = []
 
-    # Center the title manually
     content.append(Paragraph('<font color="darkblue"><b>LEQ Grading Report</b></font>', title_style))
-    content.append(Spacer(1, 24))  # Add space after the title
+    content.append(Spacer(1, 24))  
 
-    # Add prompt section
+    
     content.append(Paragraph(f"<b>Prompt:</b> {prompt}", heading_style))
-    content.append(Spacer(1, 12))  # Add space after the prompt
+    content.append(Spacer(1, 12))  
 
-    # Add response section
+   
     content.append(Paragraph("<b>Response:</b>", heading_style))
 
-    # Format and add each line of the response
+  
     for line in response_text.split("\n"):
+       
         for target in strings_to_bold:
             line = line.replace(target, f"<b>{target}</b>")
+        
         content.append(Paragraph(line, body_style))
 
-    # Add space at the end of the response
+    
     content.append(Spacer(1, 20))
 
     # Build the PDF
