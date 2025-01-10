@@ -796,16 +796,16 @@ def textbulk(reuqest):
         submission_type = request.POST.get('submission_type', "").strip()
 
         #essay_type = request.POST.get('essay_type', "").strip()
-        if submission_type = 'apushleq':
+        if submission_type == 'apushleq':
             #prompt = request.POST.get('prompt', "").strip()
             #for essay_text in essays:
             pass
             #evaluate
-        if submission_type = 'apushsaq':
+        if submission_type == 'apushsaq':
             pass # evaluate1
-        if submission_type = 'apushdbq':
+        if submission_type == 'apushdbq':
             pass #evaluate2
-        if submission_type = 'apeuroleq':
+        if submission_type == 'apeuroleq':
             prompt = request.POST.get('prompt', '').strip()
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
@@ -818,9 +818,9 @@ def textbulk(reuqest):
             response['Content-Disposition'] = 'attachment; filename="responses.zip"'
             return response
              
-        if submission_type = 'apeurosaq':
+        if submission_type == 'apeurosaq':
             pass #evaluateeurosaq
-        if submission_type = 'apeurodbq':
+        if submission_type == 'apeurodbq':
             pass #evaluateeurodbq
 
         #for essay_text in essay_texts:
