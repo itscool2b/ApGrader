@@ -39,6 +39,7 @@ def create_pdf(prompt, response_text):
     
     pdf_buffer = io.BytesIO()
 
+    
     doc = BaseDocTemplate(
         pdf_buffer,
         pagesize=letter,
@@ -61,10 +62,10 @@ def create_pdf(prompt, response_text):
     template = PageTemplate(id="template", frames=[frame])
     doc.addPageTemplates([template])
 
-    
+   
     styles = getSampleStyleSheet()
 
-   
+    
     title_style = ParagraphStyle(
         name="Title",
         fontName="Helvetica-Bold",
@@ -105,7 +106,6 @@ def create_pdf(prompt, response_text):
     
     content = []
 
-   
     content.append(Paragraph('<font color="darkblue"><b>LEQ Grading Report</b></font>', title_style))
     content.append(Spacer(1, 24))  
 
@@ -113,26 +113,21 @@ def create_pdf(prompt, response_text):
     content.append(Paragraph(f"<b>Prompt:</b> {prompt}", heading_style))
     content.append(Spacer(1, 12))  
 
-    
+   
     content.append(Paragraph("<b>Response:</b>", heading_style))
 
-   
+  
     for line in response_text.split("\n"):
-        
+       
         for target in strings_to_bold:
-            lower_line = line.lower() 
-            lower_target = target.lower()  
-            if lower_target in lower_line:
-                
-                line = line.replace(target, f"<b>{target}</b>")
-                line = line.replace(target.lower(), f"<b>{target}</b>")
+            line = line.replace(target, f"<b>{target}</b>")
         
         content.append(Paragraph(line, body_style))
 
-   
+    
     content.append(Spacer(1, 20))
 
-
+    # Build the PDF
     doc.build(content)
     pdf_buffer.seek(0)
     return pdf_buffer
