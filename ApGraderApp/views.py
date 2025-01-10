@@ -24,6 +24,52 @@ from django.http import HttpResponse
 from .ApEuroDBQ import evaluateeurodbqbulk
 from reportlab.pdfgen import canvas
 
+
+
+
+
+
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import Paragraph, SimpleDocTemplate
+
+def create_pdf(prompt, response_text):
+    
+    pdf_buffer = io.BytesIO()
+
+   
+    doc = SimpleDocTemplate(
+        pdf_buffer,
+        pagesize=letter,
+        leftMargin=50,
+        rightMargin=50,
+        topMargin=50,
+        bottomMargin=50,
+    )
+
+    
+    styles = getSampleStyleSheet()
+    normal_style = styles["Normal"]
+
+    content = []
+    content.append(Paragraph(f"<b>LEQ Grading Response</b>", normal_style))
+    content.append(Paragraph(f"<b>Prompt:</b> {prompt}", normal_style))
+    content.append(Paragraph("<b>Response:</b>", normal_style))
+
+  
+    for line in response_text.split("\n"):
+        content.append(Paragraph(line, normal_style))
+
+
+    doc.build(content)
+    pdf_buffer.seek(0)
+    return pdf_buffer
+
+
+
+
+
 @csrf_exempt
 async def ApushLEQ(request):
     if request.method != "POST":
@@ -166,32 +212,20 @@ async def bulk_grading_leq(request):
                 try:
                     
                     response_text = await sync_to_async(euro_leq_bulk)(prompt, image_data)
-                    pdf_buffer = BytesIO()
-                    pdf = canvas.Canvas(pdf_buffer)
-                    pdf.drawString(100, 750, "LEQ Grading Response")
-                    pdf.drawString(100, 730, f"Prompt: {prompt}")
-                    pdf.drawString(100, 710, "Response:")
-                    text_lines = response_text.split('\n')
-                    y = 690
-                    for line in text_lines:
-                        if y < 50:  
-                            pdf.showPage()
-                            y = 750
-                        pdf.drawString(100, y, line)
-                        y -= 20
-                    pdf.save()
-                    
-                    
-                    pdf_buffer.seek(0)
-                    file_name = f"{file.name}_response.pdf"
-                    zip_file.writestr(file_name, pdf_buffer.getvalue())
-                except Exception as e:
-                    return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
+                    pdf_buffer = create_pdf(prompt, response_text)
 
+                    
+                    zip_file.writestr(f"{file.name}_response.pdf", pdf_buffer.read())
+
+                except Exception as e:
+                    return JsonResponse({'error': 'Failed to process file', 'details': str(e)}, status=500)
+
+       
         zip_buffer.seek(0)
         response = HttpResponse(zip_buffer, content_type='application/zip')
         response['Content-Disposition'] = 'attachment; filename="responses.zip"'
         return response
+
     except Exception as e:
         return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
                 
