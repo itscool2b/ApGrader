@@ -325,9 +325,11 @@ async def euro_saq_bulk(request):
                 except Exception:
                     return JsonResponse({'error': 'Failed to process image file.'}, status=500)
                 try:
-                    response = await sync_to_async(euro_saq_bulk_grading)(questions, image_data, stim_data)
-                    file_name = f"{file.name}_response.pdf"
-                    zip_file.writestr(file_name, response)
+                    response_text = await sync_to_async(euro_saq_bulk_grading)(questions, image_data, stim_data)
+                    pdf_buffer = create_pdf(questions, response_text)
+
+                    
+                    zip_file.writestr(f"{file.name}_response.pdf", pdf_buffer.read())
                 except Exception as e:
                     return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
 
@@ -388,8 +390,10 @@ async def euro_dbq_bulk(request):
 
                     
                     response_text = await sync_to_async(evaluateeurodbqbulk)(prompt, essay_data, images)
-                    file_name = f"{essay.name}_response.pdf"
-                    zip_file.writestr(file_name, response_text)
+                    pdf_buffer = create_pdf(prompt, response_text)
+
+                    
+                    zip_file.writestr(f"{essay.name}_response.pdf", pdf_buffer.read())
                 except Exception as e:
                     return JsonResponse({
                         'error': f'Evaluation failed for {essay.name}',
@@ -452,8 +456,10 @@ async def apushdbqbulk(request):
 
                    
                     response_text = await sync_to_async(evaluate22)(prompt, essay_data, images)
-                    file_name = f"{essay.name}_response.pdf"
-                    zip_file.writestr(file_name, response_text)
+                    pdf_buffer = create_pdf(prompt, response_text)
+
+                    
+                    zip_file.writestr(f"{essay.name}_response.pdf", pdf_buffer.read())
                 except Exception as e:
                     return JsonResponse({
                         'error': f'Evaluation failed for {essay.name}',
@@ -549,9 +555,11 @@ async def apushleqbulk(request):
                     return JsonResponse({'error': 'Failed to process image file.'}, status=500)
                 try:
                     
-                    response = await sync_to_async(evaluate69)(prompt, image_data)
-                    file_name = f"{file.name}_response.pdf"
-                    zip_file.writestr(file_name, response)
+                    response_text = await sync_to_async(evaluate69)(prompt, image_data)
+                    pdf_buffer = create_pdf(prompt, response_text)
+
+                    
+                    zip_file.writestr(f"{file.name}_response.pdf", pdf_buffer.read())
                 except Exception as e:
                     return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
 
@@ -595,9 +603,11 @@ async def apushsaqbulk(request):
                 except Exception:
                     return JsonResponse({'error': 'Failed to process image file.'}, status=500)
                 try:
-                    response = await sync_to_async(evaluate11)(questions, image_data, stim_data)
-                    file_name = f"{file.name}_response.pdf"
-                    zip_file.writestr(file_name, response)
+                    response_text = await sync_to_async(evaluate11)(questions, image_data, stim_data)
+                    pdf_buffer = create_pdf(questions, response_text)
+
+                    
+                    zip_file.writestr(f"{file.name}_response.pdf", pdf_buffer.read())
                 except Exception as e:
                     return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
 
