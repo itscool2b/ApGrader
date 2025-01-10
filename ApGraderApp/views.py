@@ -787,3 +787,41 @@ async def dbq_view(request):
 
     except Exception as e:
         return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
+
+def textbulk(reuqest):
+
+    if request.method == 'POST':
+
+        essays = request.FILES.getlist('essays')      
+        submission_type = request.POST.get('submission_type', "").strip()
+
+        #essay_type = request.POST.get('essay_type', "").strip()
+        if submission_type = 'apushleq':
+            #prompt = request.POST.get('prompt', "").strip()
+            #for essay_text in essays:
+            pass
+            #evaluate
+        if submission_type = 'apushsaq':
+            pass # evaluate1
+        if submission_type = 'apushdbq':
+            pass #evaluate2
+        if submission_type = 'apeuroleq':
+            prompt = request.POST.get('prompt', '').strip()
+            zip_buffer = io.BytesIO()
+            with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                for essay in essays:
+                    response_text = await sync_to_async(evaluateeuroleq)(prompt, essay)
+                    pdf_buffer = create_pdf(prompt,response_text)
+                    zip_file.writestr(f"{essay.name}_response.pdf", pdf_buffer.read())
+            zip_buffer.seek(0)
+            response = HttpResponse(zip_buffer, content_type='application/zip')
+            response['Content-Disposition'] = 'attachment; filename="responses.zip"'
+            return response
+             
+        if submission_type = 'apeurosaq':
+            pass #evaluateeurosaq
+        if submission_type = 'apeurodbq':
+            pass #evaluateeurodbq
+
+        #for essay_text in essay_texts:
+            #run function and return zip with pdfs
