@@ -597,7 +597,7 @@ def final_node(state: dict) -> dict:
         final = "\n\n this is the ai's final reflection of ur essay. the initial thought process is above, this is more refined and accurate. THIS IS IN BETA REFLECTION HERE - \n\n"
         response = llm.invoke(formatted_prompt)
         t = ' \n \nThis is the text that our Ai was able to extract from the image of your essay. If you feel the score is innacurate, please make sure that the Ai has accurately analyzed and extracted the text from the essay. If not, please make the needed edits to the extracted text and paste it into our text submission for accurate grading: \n\n '
-        full = response.content.strip() + final + final_reflection  + t + student_essay 
+        full = response.content.strip() + final + final_reflection  + t + state['student_essay']
 
         return full
         
