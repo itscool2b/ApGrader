@@ -788,7 +788,8 @@ async def dbq_view(request):
     except Exception as e:
         return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
 
-def textbulk(reuqest):
+@csrf_exempt
+async def textbulk(reuqest):
 
     if request.method == 'POST':
 
