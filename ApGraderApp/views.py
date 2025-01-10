@@ -28,29 +28,28 @@ from reportlab.pdfgen import canvas
 
 
 
+import io
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import Paragraph, Frame, PageTemplate, BaseDocTemplate
+from reportlab.platypus import Paragraph, Spacer, BaseDocTemplate, Frame, PageTemplate
 from reportlab.lib import colors
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import Paragraph, SimpleDocTemplate
+
 
 def create_pdf(prompt, response_text):
-    
+    # Create a buffer for the PDF
     pdf_buffer = io.BytesIO()
 
-   
+    # Define document layout
     doc = BaseDocTemplate(
         pdf_buffer,
         pagesize=letter,
-        leftMargin=50,
-        rightMargin=50,
-        topMargin=50,
-        bottomMargin=50,
+        leftMargin=72,
+        rightMargin=72,
+        topMargin=72,
+        bottomMargin=72,
     )
 
+    # Define the main frame for content
     frame = Frame(
         doc.leftMargin,
         doc.bottomMargin,
@@ -59,39 +58,75 @@ def create_pdf(prompt, response_text):
         id="content_frame",
     )
 
-    
+    # Add a single page template
     template = PageTemplate(id="template", frames=[frame])
     doc.addPageTemplates([template])
 
-    
+    # Define styles
     styles = getSampleStyleSheet()
-    normal_style = styles["Normal"]
-    heading_style = ParagraphStyle(
-        "Heading",
-        parent=normal_style,
+
+    # Custom styles
+    title_style = ParagraphStyle(
+        name="Title",
         fontName="Helvetica-Bold",
-        fontSize=14,
+        fontSize=24,
+        spaceAfter=20,
+        textColor=colors.darkblue,
+    )
+    heading_style = ParagraphStyle(
+        name="Heading",
+        fontName="Helvetica-Bold",
+        fontSize=16,
         spaceAfter=12,
         textColor=colors.darkblue,
     )
     body_style = ParagraphStyle(
-        "Body",
-        parent=normal_style,
+        name="Body",
+        fontName="Helvetica",
         fontSize=12,
-        leading=14,
+        leading=16,
+        spaceAfter=10,
     )
 
-    
-    content = []
-    content.append(Paragraph("<b>LEQ Grading Response</b>", heading_style))
-    content.append(Paragraph(f"<b>Prompt:</b> {prompt}", body_style))
-    content.append(Paragraph("<b>Response:</b>", body_style))
+    # Define strings to bold
+    strings_to_bold = [
+        "Thesis score",
+        "contextualization score",
+        "evidence score",
+        "complex understanding score",
+        "total summed up score",
+        "Thesis feedback",
+        "contextualization feedback",
+        "evidence feedback",
+        "complex understanding feedback",
+        "fact-checking feedback",
+        "General Accuracy",
+    ]
 
-    
+    # Content list
+    content = []
+
+    # Center the title manually
+    content.append(Paragraph('<font color="darkblue"><b>LEQ Grading Report</b></font>', title_style))
+    content.append(Spacer(1, 24))  # Add space after the title
+
+    # Add prompt section
+    content.append(Paragraph(f"<b>Prompt:</b> {prompt}", heading_style))
+    content.append(Spacer(1, 12))  # Add space after the prompt
+
+    # Add response section
+    content.append(Paragraph("<b>Response:</b>", heading_style))
+
+    # Format and add each line of the response
     for line in response_text.split("\n"):
+        for target in strings_to_bold:
+            line = line.replace(target, f"<b>{target}</b>")
         content.append(Paragraph(line, body_style))
 
-    
+    # Add space at the end of the response
+    content.append(Spacer(1, 20))
+
+    # Build the PDF
     doc.build(content)
     pdf_buffer.seek(0)
     return pdf_buffer
