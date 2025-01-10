@@ -22,6 +22,8 @@ from .ApEuroSAQ import euro_saq_bulk_grading
 import zipfile
 from django.http import HttpResponse
 from .ApEuroDBQ import evaluateeurodbqbulk
+from reportlab.pdfgen import canvas
+
 @csrf_exempt
 async def ApushLEQ(request):
     if request.method != "POST":
@@ -163,9 +165,26 @@ async def bulk_grading_leq(request):
                     return JsonResponse({'error': 'Failed to process image file.'}, status=500)
                 try:
                     
-                    response = await sync_to_async(euro_leq_bulk)(prompt, image_data)
+                    response_text = await sync_to_async(euro_leq_bulk)(prompt, image_data)
+                    pdf_buffer = BytesIO()
+                    pdf = canvas.Canvas(pdf_buffer)
+                    pdf.drawString(100, 750, "LEQ Grading Response")
+                    pdf.drawString(100, 730, f"Prompt: {prompt}")
+                    pdf.drawString(100, 710, "Response:")
+                    text_lines = response_text.split('\n')
+                    y = 690
+                    for line in text_lines:
+                        if y < 50:  
+                            pdf.showPage()
+                            y = 750
+                        pdf.drawString(100, y, line)
+                        y -= 20
+                    pdf.save()
+                    
+                    
+                    pdf_buffer.seek(0)
                     file_name = f"{file.name}_response.pdf"
-                    zip_file.writestr(file_name, response)
+                    zip_file.writestr(file_name, pdf_buffer.getvalue())
                 except Exception as e:
                     return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
 
@@ -175,7 +194,6 @@ async def bulk_grading_leq(request):
         return response
     except Exception as e:
         return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
-    
                 
 
 @csrf_exempt
