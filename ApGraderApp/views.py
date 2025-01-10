@@ -371,67 +371,58 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
 @csrf_exempt
-async def euro_dbq_bulk(request):
-    if request.method != "POST":
+async def bulk_grading_leq(request):
+    if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
     try:
-        prompt = request.POST.get("prompt", "").strip()
+        prompt = request.POST.get('prompt', '').strip()
         if not prompt:
             return JsonResponse({'error': 'Missing "prompt" in request'}, status=400)
 
-        images = []
-        for key in request.FILES:
-            if key.startswith('image_'):
-                image = request.FILES[key]
-                supported_mime_types = ["image/jpeg", "image/png", "image/webp"]
-                if image.content_type not in supported_mime_types:
-                    return JsonResponse({'error': f'Unsupported image type for {key}.'}, status=400)
-                try:
-                    image_data = base64.b64encode(image.read()).decode('utf-8')
-                    images.append(image_data)
-                except Exception as e:
-                    return JsonResponse({'error': f'Failed to process {key}: {str(e)}'}, status=500)
+        files = request.FILES.getlist('images')
+        if not files:
+            return JsonResponse({'error': 'No files provided'}, status=400)
 
-        essays = request.FILES.getlist('essays')
-        if not essays:
-            return JsonResponse({'error': 'No essays provided.'}, status=400)
-
-        
-        allowed_image_mime_types = ["image/jpeg", "image/png", "image/webp"]
-
-        for essay in essays:
-            if essay.content_type not in allowed_image_mime_types:
-                return JsonResponse({
-                    'error': f'Unsupported file type for essay "{essay.name}". '
-                             f'Allowed types: {allowed_image_mime_types}'
-                }, status=400)
-
+        # Prepare ZIP buffer
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-            for essay in essays:
+            for file in files:
                 try:
-                    essay_data = base64.b64encode(essay.read()).decode('utf-8')
-                    if not essay_data:
-                        return JsonResponse({'error': f'Empty or unreadable essay: {essay.name}'}, status=400)
+                    # Validate file type
+                    supported_mime_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]
+                    if file.content_type not in supported_mime_types:
+                        return JsonResponse({'error': f'Unsupported image type: {file.content_type}'}, status=400)
 
-                    
-                    response_text = await sync_to_async(evaluateeurodbqbulk)(prompt, essay_data, images)
-                    response = create_pdf(prompt, response_text)
-                    zip_file.writestr(f"{essay.name}_response.pdf", response.read())
-                   
+                    # Read and encode the image
+                    image_data = base64.b64encode(file.read()).decode('utf-8')
+
+                    # Get response text from grading function
+                    response_text = await sync_to_async(euro_leq_bulk)(prompt, image_data)
+
+                    # Generate the PDF
+                    pdf_buffer = create_pdf(prompt, response_text)
+
+                    # Ensure the PDF buffer is readable
+                    pdf_buffer.seek(0)
+
+                    # Write the PDF to the ZIP archive
+                    zip_file.writestr(f"{file.name}_response.pdf", pdf_buffer.read())
+
                 except Exception as e:
-                    return JsonResponse({
-                        'error': f'Evaluation failed for {essay.name}',
-                        'details': str(e)
-                    }, status=500)
+                    # Log the error for debugging
+                    logger.error(f"Error processing file: {file.name}", exc_info=True)
+                    return JsonResponse({'error': f"An error occurred with file: {file.name}", 'details': str(e)}, status=500)
 
+        # Finalize and return the ZIP file
         zip_buffer.seek(0)
         response = HttpResponse(zip_buffer, content_type='application/zip')
         response['Content-Disposition'] = 'attachment; filename="responses.zip"'
         return response
 
     except Exception as e:
+        # Log any unhandled error
+        logger.error("Unhandled error in bulk_grading_leq", exc_info=True)
         return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
 from .ApushDBQ import evaluate22
 @csrf_exempt
