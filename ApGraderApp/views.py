@@ -829,8 +829,8 @@ async def textbulk(request):
         # ---- APUSH SAQ ----
         if submission_type == 'apushsaq':
             try:
+        # Handle both JSON and multipart/form-data
                 if request.content_type == 'application/json':
-                    data = json.loads(request.body.decode('utf-8'))
                     prompt = data.get('questions', '').strip()
                     essays = data.get('essays', [])
                     stim_data = None
@@ -839,14 +839,15 @@ async def textbulk(request):
                     essays_str = request.POST.get('essays', '[]')
                     essays = json.loads(essays_str)
             
+            # Handle the uploaded image
                     image = request.FILES.get('image')
                     stim_data = base64.b64encode(image.read()).decode('utf-8') if image else None
                 else:
                     return JsonResponse({'error': 'Unsupported content type.'}, status=400)
-            except (json.JSONDecodeError, UnicodeDecodeError) as e:
+            except (UnicodeDecodeError, json.JSONDecodeError) as e:
                 return JsonResponse({'error': f'Invalid data format: {str(e)}'}, status=400)
 
-    # Process the essays and generate responses
+    # Create ZIP with PDF responses
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
                 for essay in essays:
