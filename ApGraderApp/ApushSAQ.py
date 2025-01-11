@@ -456,8 +456,11 @@ def summation_node(state):
         formatted_prompt = summation_prompt.format(generation=generation, factchecking=feedback,student_essay=s)
         response = llm.invoke(formatted_prompt)
         sum = response.content.strip()
+        from django.core.files.uploadedfile import InMemoryUploadedFile
+        if isinstance(state['student_essay'], InMemoryUploadedFile):
+            state['student_essay'] = state['student_essay'].read().decode('utf-8')
         t = ' \n \nThis is the text that our Ai was able to extract from the image of your essay. If you feel the score is innacurate, please make sure that the Ai has accurately analyzed and extracted the text from the essay. If not, please make the needed edits to the extracted text and paste it into our text submission for accurate grading: \n \n '
-        full = sum + t + s
+        full = sum + t + state['student_essay']
        
         return full
     except Exception as e:
