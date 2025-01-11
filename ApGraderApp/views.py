@@ -793,11 +793,12 @@ async def textbulk(request):
 
     if request.method == 'POST':
 
-        essays = request.FILES.getlist('essays')      
+         
         submission_type = request.POST.get('submission_type', "").strip()
 
         #essay_type = request.POST.get('essay_type', "").strip()
         if submission_type == 'apushleq':
+            essays = request.FILES.getlist('essays')     
             prompt = request.POST.get('prompt', '').strip()
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
