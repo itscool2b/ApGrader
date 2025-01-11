@@ -817,12 +817,12 @@ async def textbulk(request):
         if submission_type == 'apushsaq':
             essays = data.get('essays', [])
             prompt = data.get('questions', '').strip()
-            image = data.get('image')  # Handle image if included in JSON
-
+            image = request.POST.get('image')
+            stim_data = base64.b64encode(image.read()).decode('utf-8')
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
                 for essay in essays:
-                    response_text = await sync_to_async(evaluate1)(prompt, essay, image)
+                    response_text = await sync_to_async(evaluate1)(prompt, essay, stim_data)
                     pdf_buffer = create_pdf(prompt, response_text)
                     zip_file.writestr(f"{essay['name']}_response.pdf", pdf_buffer.read())
             zip_buffer.seek(0)
