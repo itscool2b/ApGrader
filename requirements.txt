@@ -24,3 +24,6 @@ langchain-community==0.3.13
 langgraph>=0.0.1 
 Pillow
 reportlab>=3.6.0
+djangorestframework
+psycopg2-binary
+gunicorn>=20.1.0
