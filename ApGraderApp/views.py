@@ -806,7 +806,7 @@ async def apeuroleqtextbulk(request):
                     
                     response_text = await sync_to_async(evaluateeuroleq)(prompt, essay_text)
                     pdf_buffer = create_pdf(prompt, response_text)
-                    zip_file.writestr(f"{essay_text.name}_response.pdf", pdf_buffer.read())
+                    zip_file.writestr(f"{essay_text['name']}_response.pdf", pdf_buffer.read())
 
             zip_buffer.seek(0)
             response = HttpResponse(zip_buffer, content_type='application/zip')
