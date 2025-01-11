@@ -817,7 +817,7 @@ async def textbulk(request):
         if submission_type == 'apushsaq':
             essays = data.get('essays', [])
             prompt = data.get('questions', '').strip()
-            image = request.FILES['image']
+            image = request.FILES.get('image', None)
             stim_data = base64.b64encode(image.read()).decode('utf-8')
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
@@ -881,7 +881,7 @@ async def textbulk(request):
         if submission_type == 'apeurosaq':
             essays = data.get('essays', [])
             prompt = data.get('questions', '').strip()
-            image = request.POST.get('image')
+            image = request.FILES.get('image', None)
             stim_data = base64.b64encode(image.read()).decode('utf-8')
 
             zip_buffer = io.BytesIO()
