@@ -818,7 +818,10 @@ async def textbulk(request):
             essays = data.get('essays', [])
             prompt = data.get('questions', '').strip()
             image = request.FILES.get('image', None)
-            stim_data = base64.b64encode(image.read()).decode('utf-8')
+            if image:
+                stim_data = base64.b64encode(image.read()).decode('utf-8')
+            else:
+                stim_data = None
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
                 for essay in essays:
