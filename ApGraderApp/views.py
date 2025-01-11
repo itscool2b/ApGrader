@@ -811,6 +811,7 @@ async def textbulk(request):
             return response
             #evaluate
         if submission_type == 'apushsaq':
+            essays = request.FILES.getlist('essays')
             try:
                 image = request.POST.get('image')
             except:
@@ -828,6 +829,7 @@ async def textbulk(request):
             return response
              # evaluate1
         if submission_type == 'apushdbq':
+            essays = request.FILES.getlist('essays')
             prompt = request.POST.get('prompt', '').strip()
             images = []
             for i in range(1, 8):
@@ -857,6 +859,7 @@ async def textbulk(request):
             return response
             #evaluate2
         if submission_type == 'apeuroleq':
+            essays = request.FILES.getlist('essays')
             prompt = request.POST.get('prompt', '').strip()
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
@@ -870,6 +873,7 @@ async def textbulk(request):
             return response
              
         if submission_type == 'apeurosaq':
+            essays = request.FILES.get('essays')
             try:
                 image = request.POST.get('image')
             except:
@@ -887,6 +891,7 @@ async def textbulk(request):
             return response
             #evaluateeurosaq
         if submission_type == 'apeurodbq':
+            essays = request.FILES.getlist('essays')
             prompt = request.POST.get('prompt', '').strip()
             images = []
             for i in range(1, 8):
