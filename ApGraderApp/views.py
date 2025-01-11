@@ -815,8 +815,12 @@ async def textbulk(request):
 
         # ---- APUSH SAQ ----
         if submission_type == 'apushsaq':
-            essays = data.get('essays', [])
-            prompt = data.get('questions', '').strip()
+            essay_json = request.POST.get('essays', '')
+            if essay_json:
+                essays = json.loads(essay_json)
+            else:
+                essays = []
+            prompt = request.POST.get('questions', '').strip()
             image = request.FILES.get('image', None)
             if image:
                 stim_data = base64.b64encode(image.read()).decode('utf-8')
