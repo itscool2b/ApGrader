@@ -581,34 +581,43 @@ def final_node(state: dict) -> dict:
         cont = state["contextualization_generation"]
         evidence = state["evidence_generation"]
         complexu = state["complexunderstanding_generation"]
-        ptype = state["prompt_type"]
         fact = state["factchecking_generation"]
         student_essay = state['student_essay']
+
+       
         formatted_prompt = summation_prompt.format(
             thesis_generation=thesis,
             contextualization_generation=cont,
             evidence_generation=evidence,
             complexunderstanding_generation=complexu,
             fact_checking_feedback=fact,
-          
         )
 
+        
+        response = llm.invoke(formatted_prompt) 
+
+        
         if isinstance(state['student_essay'], InMemoryUploadedFile):
             state['student_essay'] = state['student_essay'].read().decode('utf-8')
 
+        
+        response_content = response.content.strip() if isinstance(response.content, str) else str(response.content)
+
         final_reflection = state['reflection']
-        final = "\n\n this is the ai's final reflection of ur essay. the initial thought process is above, this is more refined and accurate. THIS IS IN BETA REFLECTION HERE - \n\n"
-        response = llm.invoke(formatted_prompt)
-        t = ' \n \nThis is the text that our Ai was able to extract from the image of your essay. If you feel the score is innacurate, please make sure that the Ai has accurately analyzed and extracted the text from the essay. If not, please make the needed edits to the extracted text and paste it into our text submission for accurate grading: \n\n '
-        full = response.content.strip() + final + final_reflection  
+        final = "\n\n This is the AI's final reflection of your essay. The initial thought process is above; this is more refined and accurate. THIS IS IN BETA REFLECTION HERE - \n\n"
+
+        t = '\n\nThis is the text that our AI extracted from your essay. If the score is inaccurate, please verify the extracted text. If incorrect, edit it and resubmit:\n\n'
+
+        
+        essay_text = str(state['student_essay'])
+
+        
+        full = response_content + final + final_reflection + t + essay_text
 
         return full
-        
-        
 
     except Exception as e:
         raise RuntimeError(f"Error in final_node: {e}")
-
 
 
 
