@@ -827,23 +827,30 @@ async def textbulk(request):
 
         # ---- APUSH SAQ ----
         if submission_type == 'apushsaq':
-            essay_json = request.POST.get('essays', '')
-            if essay_json:
-                essays = json.loads(essay_json)
-            else:
-                essays = []
             prompt = request.POST.get('questions', '').strip()
-            image = request.FILES.get('image', None)
+
+        
+            essays_str = request.POST.get('essays', '[]')
+            try:
+                essays = json.loads(essays_str)
+            except json.JSONDecodeError:
+                return JsonResponse({'error': 'Invalid JSON for essays.'}, status=400)
+
+        
+            image = request.FILES.get('image')
+            stim_data = None
             if image:
                 stim_data = base64.b64encode(image.read()).decode('utf-8')
-            else:
-                stim_data = None
+
+        
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
                 for essay in essays:
                     response_text = await sync_to_async(evaluate1)(prompt, essay, stim_data)
                     pdf_buffer = create_pdf(prompt, response_text)
-                    zip_file.writestr(f"{essay['name']}_response.pdf", pdf_buffer.read())
+                    pdf_name = f"{essay.get('name', 'Untitled')}_response.pdf"
+                    zip_file.writestr(pdf_name, pdf_buffer.read())
+
             zip_buffer.seek(0)
             response = HttpResponse(zip_buffer, content_type='application/zip')
             response['Content-Disposition'] = 'attachment; filename="responses.zip"'
