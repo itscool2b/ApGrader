@@ -790,35 +790,31 @@ async def dbq_view(request):
 
 @csrf_exempt
 async def apeuroleqtextbulk(request):
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Method not allowed'}, status=405)
-    try:
-        prompt = request.POST.get('prompt', '').strip()
-        if not prompt:
-            return JsonResponse({'error': 'Missing "prompt" in request'}, status=400)
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)  
+            submission_type = data.get('submission_type', '').strip()
+            prompt = data.get('prompt', '').strip()
+            essays = data.get('essays', [])
 
-        essays = request.FILES.getlist('essays')
+            if not submission_type or not prompt or not essays:
+                return JsonResponse({'error': 'Submission type, prompt, and essays are required.'}, status=400)
 
-        zip_buffer = io.BytesIO()
-        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-            for essay in essays:
-                
-                try:
+            zip_buffer = io.BytesIO()
+
+            with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                for index, essay_text in enumerate(essays, start=1):
                     
-                    response_text = await sync_to_async(evaluateeuroleq)(prompt, essay)
+                    response_text = await sync_to_async(evaluate)(prompt, essay_text)
                     pdf_buffer = create_pdf(prompt, response_text)
+                    zip_file.writestr(f"essay_{index}_response.pdf", pdf_buffer.read())
 
-                    
-                    zip_file.writestr(f"{essay.name}_response.pdf", pdf_buffer.read())
+            zip_buffer.seek(0)
+            response = HttpResponse(zip_buffer, content_type='application/zip')
+            response['Content-Disposition'] = 'attachment; filename="responses.zip"'
+            return response
 
-                except Exception as e:
-                    return JsonResponse({'error': 'Failed to process file', 'details': str(e)}, status=500)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON format.'}, status=400)
 
-       
-        zip_buffer.seek(0)
-        response = HttpResponse(zip_buffer, content_type='application/zip')
-        response['Content-Disposition'] = 'attachment; filename="responses.zip"'
-        return response
-
-    except Exception as e:
-        return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
+    return JsonResponse({'error': 'Invalid request method.'}, status=405)
