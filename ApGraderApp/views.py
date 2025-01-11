@@ -811,11 +811,15 @@ async def textbulk(request):
             return response
             #evaluate
         if submission_type == 'apushsaq':
+            try:
+                image = request.POST.get('image')
+            except:
+                image = None
             prompt = request.POST.get('questions', '').strip()
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
                 for essay in essays:
-                    response_text = await sync_to_async(evaluate1)(prompt, essay)
+                    response_text = await sync_to_async(evaluate1)(prompt, essay, image)
                     pdf_buffer = create_pdf(prompt,response_text)
                     zip_file.writestr(f"{essay.name}_response.pdf", pdf_buffer.read())
             zip_buffer.seek(0)
@@ -866,11 +870,15 @@ async def textbulk(request):
             return response
              
         if submission_type == 'apeurosaq':
+            try:
+                image = request.POST.get('image')
+            except:
+                image = None
             prompt = request.POST.get('questions', '').strip()
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
                 for essay in essays:
-                    response_text = await sync_to_async(evaluateeurosaq)(prompt, essay)
+                    response_text = await sync_to_async(evaluateeurosaq)(prompt, essay, image)
                     pdf_buffer = create_pdf(prompt,response_text)
                     zip_file.writestr(f"{essay.name}_response.pdf", pdf_buffer.read())
             zip_buffer.seek(0)
