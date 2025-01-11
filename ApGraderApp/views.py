@@ -803,11 +803,11 @@ async def apeuroleqtextbulk(request):
             zip_buffer = io.BytesIO()
 
             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-                for index, essay_text in enumerate(essays, start=1):
+                for essay_text in essays:
                     
                     response_text = await sync_to_async(evaluate)(prompt, essay_text)
                     pdf_buffer = create_pdf(prompt, response_text)
-                    zip_file.writestr(f"essay_{index}_response.pdf", pdf_buffer.read())
+                    zip_file.writestr(f"{essay_text.name}_response.pdf", pdf_buffer.read())
 
             zip_buffer.seek(0)
             response = HttpResponse(zip_buffer, content_type='application/zip')
