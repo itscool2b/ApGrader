@@ -596,25 +596,8 @@ def final_node(state: dict) -> dict:
         
         response = llm.invoke(formatted_prompt) 
 
-        
-        if isinstance(state['student_essay'], InMemoryUploadedFile):
-            state['student_essay'] = state['student_essay'].read().decode('utf-8')
-
-        
-        response_content = response.content.strip() if isinstance(response.content, str) else str(response.content)
-
-        final_reflection = state['reflection']
-        final = "\n\n This is the AI's final reflection of your essay. The initial thought process is above; this is more refined and accurate. THIS IS IN BETA REFLECTION HERE - \n\n"
-
-        t = '\n\nThis is the text that our AI extracted from your essay. If the score is inaccurate, please verify the extracted text. If incorrect, edit it and resubmit:\n\n'
-
-        
-        essay_text = str(state['student_essay'])
-
-        
-        full = response_content + final + final_reflection + t + essay_text
-
-        return full
+        state['summation'] = response.content.strip()
+        return state['summation']
 
     except Exception as e:
         raise RuntimeError(f"Error in final_node: {e}")
