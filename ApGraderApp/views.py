@@ -790,53 +790,52 @@ async def dbq_view(request):
 
 @csrf_exempt
 async def textbulk(request):
-
     if request.method == 'POST':
-
-         
-        submission_type = request.POST.get('submission_type', "").strip()
-
-        #essay_type = request.POST.get('essay_type', "").strip()
-        if submission_type == 'apushleq':
+        try:
+            # Load JSON data once
             data = json.loads(request.body)
-            essays = data.get('essays',[])
-            prompt = data.get('prompt','').strip()
+            submission_type = data.get('submission_type', '').strip()
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON data.'}, status=400)
+
+        # ---- APUSH LEQ ----
+        if submission_type == 'apushleq':
+            essays = data.get('essays', [])
+            prompt = data.get('prompt', '').strip()
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
                 for essay in essays:
                     response_text = await sync_to_async(evaluate)(prompt, essay)
-                    pdf_buffer = create_pdf(prompt,response_text)
+                    pdf_buffer = create_pdf(prompt, response_text)
                     zip_file.writestr(f"{essay['name']}_response.pdf", pdf_buffer.read())
             zip_buffer.seek(0)
             response = HttpResponse(zip_buffer, content_type='application/zip')
             response['Content-Disposition'] = 'attachment; filename="responses.zip"'
             return response
-            #evaluate
+
+        # ---- APUSH SAQ ----
         if submission_type == 'apushsaq':
-            data = json.loads(request.body)
-            essays = data.get('essays',[])
-            prompt = data.get('questions','').strip()
-            try:
-                image = request.POST.get('image')
-            except:
-                image = None
-            prompt = request.POST.get('questions', '').strip()
+            essays = data.get('essays', [])
+            prompt = data.get('questions', '').strip()
+            image = data.get('image')  # Handle image if included in JSON
+
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
                 for essay in essays:
                     response_text = await sync_to_async(evaluate1)(prompt, essay, image)
-                    pdf_buffer = create_pdf(prompt,response_text)
+                    pdf_buffer = create_pdf(prompt, response_text)
                     zip_file.writestr(f"{essay['name']}_response.pdf", pdf_buffer.read())
             zip_buffer.seek(0)
             response = HttpResponse(zip_buffer, content_type='application/zip')
             response['Content-Disposition'] = 'attachment; filename="responses.zip"'
             return response
-             # evaluate1
+
+        # ---- APUSH DBQ ----
         if submission_type == 'apushdbq':
-            data = json.loads(request.body)
-            essays = data.get('essays',[])
-            prompt = data.get('prompt','').strip()
+            essays = data.get('essays', [])
+            prompt = data.get('prompt', '').strip()
             images = []
+
             for i in range(1, 8):
                 image_key = f'image_{i}'
                 if image_key in request.FILES:
@@ -850,59 +849,57 @@ async def textbulk(request):
                     except Exception as e:
                         return JsonResponse({'error': f'Failed to process {image_key}: {str(e)}'}, status=500)
 
-        
             images = images[:7] + [None] * (7 - len(images))
+
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
                 for essay in essays:
                     response_text = await sync_to_async(evaluate2)(prompt, essay, images)
-                    pdf_buffer = create_pdf(prompt,response_text)
+                    pdf_buffer = create_pdf(prompt, response_text)
                     zip_file.writestr(f"{essay['name']}_response.pdf", pdf_buffer.read())
             zip_buffer.seek(0)
             response = HttpResponse(zip_buffer, content_type='application/zip')
             response['Content-Disposition'] = 'attachment; filename="responses.zip"'
             return response
-            #evaluate2
+
+        # ---- AP EURO LEQ ----
         if submission_type == 'apeuroleq':
-            data = json.loads(request.body)
-            essays = data.get('essays',[])
-            prompt = data.get('prompt','').strip()
+            essays = data.get('essays', [])
+            prompt = data.get('prompt', '').strip()
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
                 for essay in essays:
                     response_text = await sync_to_async(evaluateeuroleq)(prompt, essay)
-                    pdf_buffer = create_pdf(prompt,response_text)
+                    pdf_buffer = create_pdf(prompt, response_text)
                     zip_file.writestr(f"{essay['name']}_response.pdf", pdf_buffer.read())
             zip_buffer.seek(0)
             response = HttpResponse(zip_buffer, content_type='application/zip')
             response['Content-Disposition'] = 'attachment; filename="responses.zip"'
             return response
-             
+
+        # ---- AP EURO SAQ (Fixed) ----
         if submission_type == 'apeurosaq':
-            data = json.loads(request.body)
-            essays = data.get('essays',[])
-            prompt = data.get('questions','').strip()
-            try:
-                image = request.POST.get('image')
-            except:
-                image = None
-            prompt = request.POST.get('questions', '').strip()
+            essays = data.get('essays', [])
+            prompt = data.get('questions', '').strip()
+            image = data.get('image')  # Assuming image is in JSON
+
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
                 for essay in essays:
                     response_text = await sync_to_async(evaluateeurosaq)(prompt, essay, image)
-                    pdf_buffer = create_pdf(prompt,response_text)
+                    pdf_buffer = create_pdf(prompt, response_text)
                     zip_file.writestr(f"{essay['name']}_response.pdf", pdf_buffer.read())
             zip_buffer.seek(0)
             response = HttpResponse(zip_buffer, content_type='application/zip')
             response['Content-Disposition'] = 'attachment; filename="responses.zip"'
             return response
-            #evaluateeurosaq
+
+        # ---- AP EURO DBQ ----
         if submission_type == 'apeurodbq':
-            data = json.loads(request.body)
-            essays = data.get('essays',[])
-            prompt = data.get('prompt','').strip()
+            essays = data.get('essays', [])
+            prompt = data.get('prompt', '').strip()
             images = []
+
             for i in range(1, 8):
                 image_key = f'image_{i}'
                 if image_key in request.FILES:
@@ -916,19 +913,20 @@ async def textbulk(request):
                     except Exception as e:
                         return JsonResponse({'error': f'Failed to process {image_key}: {str(e)}'}, status=500)
 
-        
             images = images[:7] + [None] * (7 - len(images))
+
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
                 for essay in essays:
                     response_text = await sync_to_async(evaluateeurodbq)(prompt, essay, images)
-                    pdf_buffer = create_pdf(prompt,response_text)
+                    pdf_buffer = create_pdf(prompt, response_text)
                     zip_file.writestr(f"{essay['name']}_response.pdf", pdf_buffer.read())
             zip_buffer.seek(0)
             response = HttpResponse(zip_buffer, content_type='application/zip')
             response['Content-Disposition'] = 'attachment; filename="responses.zip"'
             return response
-            #evaluateeurodbq
 
-        #for essay_text in essay_texts:
-            #run function and return zip with pdfs
+        # ---- DEFAULT RESPONSE ----
+        return JsonResponse({'error': 'Invalid or missing submission_type.'}, status=400)
+
+    return JsonResponse({'error': 'Invalid request method. Only POST is allowed.'}, status=405)
