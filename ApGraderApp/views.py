@@ -828,22 +828,25 @@ async def textbulk(request):
 
         # ---- APUSH SAQ ----
         if submission_type == 'apushsaq':
-            prompt = request.POST.get('questions', '').strip()
-
-        
-            essays_str = request.POST.get('essays', '[]')
             try:
-                essays = json.loads(essays_str)
-            except json.JSONDecodeError:
-                return JsonResponse({'error': 'Invalid JSON for essays.'}, status=400)
+                if request.content_type == 'application/json':
+                    data = json.loads(request.body.decode('utf-8'))
+                    prompt = data.get('questions', '').strip()
+                    essays = data.get('essays', [])
+                    stim_data = None
+                elif 'multipart/form-data' in request.content_type:
+                    prompt = request.POST.get('questions', '').strip()
+                    essays_str = request.POST.get('essays', '[]')
+                    essays = json.loads(essays_str)
+            
+                    image = request.FILES.get('image')
+                    stim_data = base64.b64encode(image.read()).decode('utf-8') if image else None
+                else:
+                    return JsonResponse({'error': 'Unsupported content type.'}, status=400)
+            except (json.JSONDecodeError, UnicodeDecodeError) as e:
+                return JsonResponse({'error': f'Invalid data format: {str(e)}'}, status=400)
 
-        
-            image = request.FILES.get('image')
-            stim_data = None
-            if image:
-                stim_data = base64.b64encode(image.read()).decode('utf-8')
-
-        
+    # Process the essays and generate responses
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
                 for essay in essays:
@@ -856,6 +859,7 @@ async def textbulk(request):
             response = HttpResponse(zip_buffer, content_type='application/zip')
             response['Content-Disposition'] = 'attachment; filename="responses.zip"'
             return response
+
 
         # ---- APUSH DBQ ----
         if submission_type == 'apushdbq':
