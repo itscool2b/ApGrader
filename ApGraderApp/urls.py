@@ -14,6 +14,6 @@ urlpatterns = [
     path("ApushSAQbulk", views.apushsaqbulk, name='ApEuroSAQbulk'),
     path("ApushDBQbulk", views.apushdbqbulk, name='ApEuroDBQbulk'),
     path('ApEuroDBQbulk', views.euro_dbq_bulk, name='ApEuroDBQbulk'),
-    path('apeuroleqtextbulk', views.apeuroleqtextbulk, name='wihsjuwujshwusjw')
+    path('textbulk', views.textbulk, name='wihsjuwujshwusjw')
     
 ]
