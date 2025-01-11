@@ -804,7 +804,7 @@ async def apeuroleqtextbulk(request):
             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
                 for essay_text in essays:
                     
-                    response_text = await sync_to_async(evaluate)(prompt, essay_text)
+                    response_text = await sync_to_async(evaluateeuroleq)(prompt, essay_text)
                     pdf_buffer = create_pdf(prompt, response_text)
                     zip_file.writestr(f"{essay_text.name}_response.pdf", pdf_buffer.read())
 

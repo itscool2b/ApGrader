@@ -546,12 +546,8 @@ def final_node(state: dict) -> dict:
         
         response = llm.invoke(formatted_prompt)
 
-        from django.core.files.uploadedfile import InMemoryUploadedFile
-        if isinstance(state['student_essay'], InMemoryUploadedFile):
-            state['student_essay'] = state['student_essay'].read().decode('utf-8')
-        t = ' \n \nThis is the text that our Ai was able to extract from the image of your essay. If you feel the score is innacurate, please make sure that the Ai has accurately analyzed and extracted the text from the essay. If not, please make the needed edits to the extracted text and paste it into our text submission for accurate grading: \n \n '
-        full = response.content.strip() + t + state['student_essay']
-        return full
+        state['summation'] = response.content.strip()
+        return state['summation']
     except Exception as e:
         raise RuntimeError(f"Error in final_node: {e}")
 
