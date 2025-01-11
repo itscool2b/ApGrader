@@ -793,12 +793,11 @@ async def apeuroleqtextbulk(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)  
-            submission_type = data.get('submission_type', '').strip()
+            
             prompt = data.get('prompt', '').strip()
             essays = data.get('essays', [])
 
-            if not submission_type or not prompt or not essays:
-                return JsonResponse({'error': 'Submission type, prompt, and essays are required.'}, status=400)
+            
 
             zip_buffer = io.BytesIO()
 
