@@ -807,9 +807,10 @@ async def textbulk(request):
             # Load JSON data once
             data = json.loads(request.body)
             submission_type = data.get('submission_type', '').strip()
+            print(submission_type)
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON data.'}, status=400)
-
+            
         # ---- APUSH LEQ ----
         if submission_type == 'apushleq':
             essays = data.get('essays', [])
