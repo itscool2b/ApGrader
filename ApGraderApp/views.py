@@ -828,26 +828,53 @@ async def textbulk(request):
 
         # ---- APUSH SAQ ----
         if submission_type == 'apushsaq':
-            try:
-        # Handle both JSON and multipart/form-data
-                if request.content_type == 'application/json':
-                    prompt = data.get('questions', '').strip()
-                    essays = data.get('essays', [])
-                    stim_data = None
-                elif 'multipart/form-data' in request.content_type:
-                    prompt = request.POST.get('questions', '').strip()
-                    essays_str = request.POST.get('essays', '[]')
-                    essays = json.loads(essays_str)
-            
-            # Handle the uploaded image
-                    image = request.FILES.get('image')
-                    stim_data = base64.b64encode(image.read()).decode('utf-8') if image else None
-                else:
-                    return JsonResponse({'error': 'Unsupported content type.'}, status=400)
-            except (UnicodeDecodeError, json.JSONDecodeError) as e:
-                return JsonResponse({'error': f'Invalid data format: {str(e)}'}, status=400)
+            content_type = request.META.get('CONTENT_TYPE', '').lower()
 
-    # Create ZIP with PDF responses
+    # We'll store common variables so we can do the same zip logic after parsing
+            prompt = ""
+            essays = []
+            stim_data = None
+
+    # --------- A) JSON branch ---------
+            if 'application/json' in content_type:
+                try:
+                    data = json.loads(request.body)
+                except (json.JSONDecodeError, UnicodeDecodeError) as e:
+                    return JsonResponse({'error': f'Invalid JSON: {str(e)}'}, status=400)
+
+                prompt = data.get('questions', '').strip()
+                essays = data.get('essays', [])
+
+        # If you have a base64 image in JSON, parse it here. Otherwise, stim_data stays None.
+        # e.g.:
+        # image_b64 = data.get('image_b64')
+        # if image_b64:
+        #     stim_data = image_b64
+
+    # --------- B) multipart/form-data branch ---------
+            elif 'multipart/form-data' in content_type:
+                prompt = request.POST.get('questions', '').strip()
+        
+                essays_str = request.POST.get('essays', '[]')
+                try:
+                    essays = json.loads(essays_str)
+                except json.JSONDecodeError:
+                    return JsonResponse({'error': 'Invalid JSON for essays.'}, status=400)
+
+                uploaded_image = request.FILES.get('image')
+                if uploaded_image:
+                    stim_data = base64.b64encode(uploaded_image.read()).decode('utf-8')
+
+            else:
+             return JsonResponse({'error': f'Unsupported content type: {content_type}'}, status=400)
+
+    # --------- Validation ---------
+            if not prompt:
+                return JsonResponse({'error': 'Missing SAQ prompt/questions'}, status=400)
+            if not isinstance(essays, list):
+                return JsonResponse({'error': "'essays' must be a JSON array"}, status=400)
+
+    # --------- Do your ZIP logic ---------
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
                 for essay in essays:
