@@ -536,7 +536,7 @@ def evidence_grading_node(state: GraphState) -> GraphState:
     d5 = state["doc5_desc"]
     d6 = state["doc6_desc"]
     d7 = state["doc7_desc"] 
-
+    print(d1,d2,d3)
     essay = state["student_essay"]
     prompt_type = state["prompt_type"]
 
@@ -599,7 +599,7 @@ def summation_node(state):
 
     formatted_prompt = summation_prompt.format(student_essay=s,thesis_generation=thesis,contextualization_generation=context,evidence_beyond_generation=beyond,complexunderstanding_generation=complx,fact_checking_feedback=factcheck,evidence_generation=evidence)
     response = llm.invoke(formatted_prompt)
-
+    
     state['summation'] = response.content.strip()
     return state['summation']
     
