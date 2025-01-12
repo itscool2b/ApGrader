@@ -818,7 +818,7 @@ async def textbulk(request):
     data = {}
     submission_type = None
 
-    # Step 1: Distinguish JSON vs. form-data
+   
     if 'application/json' in content_type:
         try:
             data = json.loads(request.body)
@@ -838,7 +838,7 @@ async def textbulk(request):
 
     print(f"[DEBUG] Final submission_type='{submission_type}'")
 
-    # ------------------ APUSH LEQ ------------------
+    
     if submission_type == 'apushleq':
         essays = data.get('essays', [])
         prompt = data.get('prompt', '').strip()
@@ -859,7 +859,7 @@ async def textbulk(request):
         response['Content-Disposition'] = 'attachment; filename="responses.zip"'
         return response
 
-    # ------------------ APUSH SAQ ------------------
+   
     elif submission_type == 'apushsaq':
         prompt = ""
         essays = []
@@ -909,7 +909,7 @@ async def textbulk(request):
         response['Content-Disposition'] = 'attachment; filename="responses.zip"'
         return response
 
-    # ------------------ APUSH DBQ ------------------
+   
     elif submission_type == 'apushdbq':
         essays = data.get('essays', [])
         prompt = data.get('prompt', '').strip()
@@ -939,7 +939,7 @@ async def textbulk(request):
         response['Content-Disposition'] = 'attachment; filename="responses.zip"'
         return response
 
-    # ------------------ AP EURO LEQ ------------------
+   
     elif submission_type == 'apeuroleq':
         essays = data.get('essays', [])
         prompt = data.get('prompt', '').strip()
@@ -959,7 +959,7 @@ async def textbulk(request):
         response['Content-Disposition'] = 'attachment; filename="responses.zip"'
         return response
 
-    # ------------------ AP EURO SAQ ------------------
+    
     elif submission_type == 'apeurosaq':
         essays = data.get('essays', [])
         prompt = data.get('questions', '').strip()
@@ -987,7 +987,7 @@ async def textbulk(request):
         response['Content-Disposition'] = 'attachment; filename="responses.zip"'
         return response
 
-    # ------------------ AP EURO DBQ ------------------
+    
     elif submission_type == 'apeurodbq':
         essays = data.get('essays', [])
         prompt = data.get('prompt', '').strip()
@@ -1017,7 +1017,7 @@ async def textbulk(request):
         response['Content-Disposition'] = 'attachment; filename="responses.zip"'
         return response
 
-    # ------------------ DEFAULT / Unknown ------------------
+    
     else:
         print(f"[DEBUG] Unknown submission_type or none provided => '{submission_type}'")
         return JsonResponse({'error': 'Invalid or missing submission_type.'}, status=400)
