@@ -846,6 +846,22 @@ async def textbulk(request):
         zip_buffer.seek(0)
         return HttpResponse(zip_buffer, content_type='application/zip')
 
+    elif submission_type == 'apeuroleq':
+        if 'application/json' in content_type:
+            essays = data.get('essays', [])
+            prompt = data.get('prompt', '').strip()
+        else:
+            prompt = request.POST.get('prompt', '').strip()
+            essays = json.loads(request.POST.get('essays', '[]'))
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, 'w') as zip_file:
+            for essay in essays:
+                response_text = await sync_to_async(evaluateeuroleq)(prompt, essay)
+                pdf_buffer = create_pdf(prompt, response_text)
+                zip_file.writestr(f"{essay.get('name', 'Untitled')}_response.pdf", pdf_buffer.read())
+        zip_buffer.seek(0)
+        return HttpResponse(zip_buffer, content_type='application/zip')
+
     elif submission_type == 'apushsaq':
         prompt = ""
         essays = []
@@ -863,6 +879,28 @@ async def textbulk(request):
         with zipfile.ZipFile(zip_buffer, 'w') as zip_file:
             for essay in essays:
                 response_text = await sync_to_async(evaluate1)(prompt, essay, stim_data)
+                pdf_buffer = create_pdf(prompt, response_text)
+                zip_file.writestr(f"{essay.get('name', 'Untitled')}_response.pdf", pdf_buffer.read())
+        zip_buffer.seek(0)
+        return HttpResponse(zip_buffer, content_type='application/zip')
+
+    elif submission_type == 'apeurosaq':
+        prompt = ""
+        essays = []
+        stim_data = None
+        if 'application/json' in content_type:
+            prompt = data.get('questions', '').strip()
+            essays = data.get('essays', [])
+        else:
+            prompt = request.POST.get('questions', '').strip()
+            essays = json.loads(request.POST.get('essays', '[]'))
+            uploaded_image = request.FILES.get('image')
+            if uploaded_image:
+                stim_data = base64.b64encode(uploaded_image.read()).decode('utf-8')
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, 'w') as zip_file:
+            for essay in essays:
+                response_text = await sync_to_async(evaluateeurosaq)(prompt, essay, stim_data)
                 pdf_buffer = create_pdf(prompt, response_text)
                 zip_file.writestr(f"{essay.get('name', 'Untitled')}_response.pdf", pdf_buffer.read())
         zip_buffer.seek(0)
@@ -887,22 +925,6 @@ async def textbulk(request):
         with zipfile.ZipFile(zip_buffer, 'w') as zip_file:
             for essay in essays:
                 response_text = await sync_to_async(evaluate2)(prompt, essay, images)
-                pdf_buffer = create_pdf(prompt, response_text)
-                zip_file.writestr(f"{essay.get('name', 'Untitled')}_response.pdf", pdf_buffer.read())
-        zip_buffer.seek(0)
-        return HttpResponse(zip_buffer, content_type='application/zip')
-
-    elif submission_type == 'apeuroleq':
-        if 'application/json' in content_type:
-            essays = data.get('essays', [])
-            prompt = data.get('prompt', '').strip()
-        else:
-            prompt = request.POST.get('prompt', '').strip()
-            essays = json.loads(request.POST.get('essays', '[]'))
-        zip_buffer = io.BytesIO()
-        with zipfile.ZipFile(zip_buffer, 'w') as zip_file:
-            for essay in essays:
-                response_text = await sync_to_async(evaluateeuroleq)(prompt, essay)
                 pdf_buffer = create_pdf(prompt, response_text)
                 zip_file.writestr(f"{essay.get('name', 'Untitled')}_response.pdf", pdf_buffer.read())
         zip_buffer.seek(0)
