@@ -802,14 +802,9 @@ async def dbq_view(request):
 
 @csrf_exempt
 async def textbulk(request):
-    """
-    Handles multiple submission_type values for AP/Euro LEQs, SAQs, DBQs, etc.
-    Includes debug print statements to see what's happening.
-    """
     print("[DEBUG] textbulk endpoint called")
 
     if request.method != 'POST':
-        print("[DEBUG] Not a POST request")
         return JsonResponse({'error': 'Invalid request method. Only POST is allowed.'}, status=405)
 
     content_type = request.META.get('CONTENT_TYPE', '').lower()
@@ -818,7 +813,6 @@ async def textbulk(request):
     data = {}
     submission_type = None
 
-   
     if 'application/json' in content_type:
         try:
             data = json.loads(request.body)
@@ -827,197 +821,97 @@ async def textbulk(request):
         except (json.JSONDecodeError, UnicodeDecodeError) as e:
             print(f"[DEBUG] JSON decode error => {str(e)}")
             return JsonResponse({'error': f'Invalid JSON data: {str(e)}'}, status=400)
-
     elif 'multipart/form-data' in content_type:
         submission_type = request.POST.get('submission_type', '').strip()
         print(f"[DEBUG] multipart form => submission_type='{submission_type}'")
-
     else:
         print(f"[DEBUG] Unsupported content type => {content_type}")
         return JsonResponse({'error': f'Unsupported content type: {content_type}'}, status=400)
 
     print(f"[DEBUG] Final submission_type='{submission_type}'")
 
-    
     if submission_type == 'apushleq':
-        essays = data.get('essays', [])
-        prompt = data.get('prompt', '').strip()
-
-        print(f"[DEBUG] APUSH LEQ => prompt='{prompt[:50]}', #essays={len(essays)}")
-
+        if 'application/json' in content_type:
+            essays = data.get('essays', [])
+            prompt = data.get('prompt', '').strip()
+        else:
+            prompt = request.POST.get('prompt', '').strip()
+            essays = json.loads(request.POST.get('essays', '[]'))
         zip_buffer = io.BytesIO()
-        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        with zipfile.ZipFile(zip_buffer, 'w') as zip_file:
             for essay in essays:
                 response_text = await sync_to_async(evaluate)(prompt, essay)
-                print(f"[DEBUG] Writing LEQ PDF for '{essay.get('name', '')}' => text length={len(response_text)}")
                 pdf_buffer = create_pdf(prompt, response_text)
-                pdf_name = f"{essay.get('name', 'Untitled')}_response.pdf"
-                zip_file.writestr(pdf_name, pdf_buffer.read())
-
+                zip_file.writestr(f"{essay.get('name', 'Untitled')}_response.pdf", pdf_buffer.read())
         zip_buffer.seek(0)
-        response = HttpResponse(zip_buffer, content_type='application/zip')
-        response['Content-Disposition'] = 'attachment; filename="responses.zip"'
-        return response
+        return HttpResponse(zip_buffer, content_type='application/zip')
 
-   
     elif submission_type == 'apushsaq':
         prompt = ""
         essays = []
         stim_data = None
-
         if 'application/json' in content_type:
             prompt = data.get('questions', '').strip()
             essays = data.get('essays', [])
-            print(f"[DEBUG] APUSH SAQ (JSON) => prompt='{prompt}', #essays={len(essays)}")
         else:
-            # multipart/form-data
             prompt = request.POST.get('questions', '').strip()
-            essays_str = request.POST.get('essays', '[]')
-            try:
-                essays = json.loads(essays_str)
-            except json.JSONDecodeError:
-                print("[DEBUG] Invalid JSON for essays in SAQ multipart")
-                return JsonResponse({'error': 'Invalid JSON for essays.'}, status=400)
-
+            essays = json.loads(request.POST.get('essays', '[]'))
             uploaded_image = request.FILES.get('image')
             if uploaded_image:
                 stim_data = base64.b64encode(uploaded_image.read()).decode('utf-8')
-                print(f"[DEBUG] SAQ => found image with size={uploaded_image.size} bytes")
-            else:
-                print("[DEBUG] SAQ => No image found in multipart")
-
-            print(f"[DEBUG] APUSH SAQ (multipart) => prompt='{prompt}', #essays={len(essays)}")
-
-        if not prompt:
-            print("[DEBUG] Missing SAQ prompt/questions")
-            return JsonResponse({'error': 'Missing SAQ prompt/questions'}, status=400)
-        if not isinstance(essays, list):
-            print("[DEBUG] essays is not a list")
-            return JsonResponse({'error': "'essays' must be a JSON array"}, status=400)
-
         zip_buffer = io.BytesIO()
-        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        with zipfile.ZipFile(zip_buffer, 'w') as zip_file:
             for essay in essays:
                 response_text = await sync_to_async(evaluate1)(prompt, essay, stim_data)
-                print(f"[DEBUG] Writing SAQ PDF for '{essay.get('name', '')}' => text length={len(response_text)}")
                 pdf_buffer = create_pdf(prompt, response_text)
-                pdf_name = f"{essay.get('name', 'Untitled')}_response.pdf"
-                zip_file.writestr(pdf_name, pdf_buffer.read())
-
+                zip_file.writestr(f"{essay.get('name', 'Untitled')}_response.pdf", pdf_buffer.read())
         zip_buffer.seek(0)
-        response = HttpResponse(zip_buffer, content_type='application/zip')
-        response['Content-Disposition'] = 'attachment; filename="responses.zip"'
-        return response
+        return HttpResponse(zip_buffer, content_type='application/zip')
 
-   
     elif submission_type == 'apushdbq':
-        essays = data.get('essays', [])
-        prompt = data.get('prompt', '').strip()
-        print(f"[DEBUG] APUSH DBQ => prompt='{prompt}', #essays={len(essays)}")
+        prompt = ""
+        essays = []
         images = []
-
-        for i in range(1, 8):
-            image_key = f'image_{i}'
-            if image_key in request.FILES:
-                image_file = request.FILES[image_key]
-                print(f"[DEBUG] Found {image_key}, size={image_file.size}")
-                images.append(base64.b64encode(image_file.read()).decode('utf-8'))
-
-        images = images[:7] + [None] * (7 - len(images))
-
+        if 'application/json' in content_type:
+            prompt = data.get('prompt', '').strip()
+            essays = data.get('essays', [])
+        else:
+            prompt = request.POST.get('prompt', '').strip()
+            essays = json.loads(request.POST.get('essays', '[]'))
+            for i in range(1, 8):
+                image_key = f'image_{i}'
+                if image_key in request.FILES:
+                    image_file = request.FILES[image_key]
+                    images.append(base64.b64encode(image_file.read()).decode('utf-8'))
         zip_buffer = io.BytesIO()
-        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        with zipfile.ZipFile(zip_buffer, 'w') as zip_file:
             for essay in essays:
                 response_text = await sync_to_async(evaluate2)(prompt, essay, images)
-                print(f"[DEBUG] Writing DBQ PDF for '{essay.get('name', '')}' => text length={len(response_text)}")
                 pdf_buffer = create_pdf(prompt, response_text)
-                pdf_name = f"{essay.get('name', 'Untitled')}_response.pdf"
-                zip_file.writestr(pdf_name, pdf_buffer.read())
-
+                zip_file.writestr(f"{essay.get('name', 'Untitled')}_response.pdf", pdf_buffer.read())
         zip_buffer.seek(0)
-        response = HttpResponse(zip_buffer, content_type='application/zip')
-        response['Content-Disposition'] = 'attachment; filename="responses.zip"'
-        return response
+        return HttpResponse(zip_buffer, content_type='application/zip')
 
-   
-    elif submission_type == 'apeuroleq':
-        essays = data.get('essays', [])
-        prompt = data.get('prompt', '').strip()
-        print(f"[DEBUG] AP EURO LEQ => prompt='{prompt}', #essays={len(essays)}")
-
-        zip_buffer = io.BytesIO()
-        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-            for essay in essays:
-                response_text = await sync_to_async(evaluateeuroleq)(prompt, essay)
-                print(f"[DEBUG] Writing Euro LEQ PDF => text length={len(response_text)}")
-                pdf_buffer = create_pdf(prompt, response_text)
-                pdf_name = f"{essay.get('name', 'Untitled')}_response.pdf"
-                zip_file.writestr(pdf_name, pdf_buffer.read())
-
-        zip_buffer.seek(0)
-        response = HttpResponse(zip_buffer, content_type='application/zip')
-        response['Content-Disposition'] = 'attachment; filename="responses.zip"'
-        return response
-
-    
     elif submission_type == 'apeurosaq':
-        essays = data.get('essays', [])
-        prompt = data.get('questions', '').strip()
+        prompt = ""
+        essays = []
         stim_data = None
-        print(f"[DEBUG] AP EURO SAQ => prompt='{prompt}', #essays={len(essays)}")
-
-        uploaded_image = request.FILES.get('image', None)
-        if uploaded_image:
-            stim_data = base64.b64encode(uploaded_image.read()).decode('utf-8')
-            print(f"[DEBUG] Found apeurosaq image with size={uploaded_image.size} bytes")
+        if 'application/json' in content_type:
+            prompt = data.get('questions', '').strip()
+            essays = data.get('essays', [])
         else:
-            print("[DEBUG] No apeurosaq image found")
-
+            prompt = request.POST.get('questions', '').strip()
+            essays = json.loads(request.POST.get('essays', '[]'))
+            uploaded_image = request.FILES.get('image')
+            if uploaded_image:
+                stim_data = base64.b64encode(uploaded_image.read()).decode('utf-8')
         zip_buffer = io.BytesIO()
-        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        with zipfile.ZipFile(zip_buffer, 'w') as zip_file:
             for essay in essays:
                 response_text = await sync_to_async(evaluateeurosaq)(prompt, essay, stim_data)
-                print(f"[DEBUG] Writing Euro SAQ PDF => text length={len(response_text)}")
                 pdf_buffer = create_pdf(prompt, response_text)
-                pdf_name = f"{essay.get('name', 'Untitled')}_response.pdf"
-                zip_file.writestr(pdf_name, pdf_buffer.read())
-
+                zip_file.writestr(f"{essay.get('name', 'Untitled')}_response.pdf", pdf_buffer.read())
         zip_buffer.seek(0)
-        response = HttpResponse(zip_buffer, content_type='application/zip')
-        response['Content-Disposition'] = 'attachment; filename="responses.zip"'
-        return response
+        return HttpResponse(zip_buffer, content_type='application/zip')
 
-    
-    elif submission_type == 'apeurodbq':
-        essays = data.get('essays', [])
-        prompt = data.get('prompt', '').strip()
-        print(f"[DEBUG] AP EURO DBQ => prompt='{prompt}', #essays={len(essays)}")
-        images = []
-
-        for i in range(1, 8):
-            image_key = f'image_{i}'
-            if image_key in request.FILES:
-                image_file = request.FILES[image_key]
-                print(f"[DEBUG] Found {image_key}, size={image_file.size}")
-                images.append(base64.b64encode(image_file.read()).decode('utf-8'))
-
-        images = images[:7] + [None] * (7 - len(images))
-
-        zip_buffer = io.BytesIO()
-        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-            for essay in essays:
-                response_text = await sync_to_async(evaluateeurodbq)(prompt, essay, images)
-                print(f"[DEBUG] Writing Euro DBQ PDF => text length={len(response_text)}")
-                pdf_buffer = create_pdf(prompt, response_text)
-                pdf_name = f"{essay.get('name', 'Untitled')}_response.pdf"
-                zip_file.writestr(pdf_name, pdf_buffer.read())
-
-        zip_buffer.seek(0)
-        response = HttpResponse(zip_buffer, content_type='application/zip')
-        response['Content-Disposition'] = 'attachment; filename="responses.zip"'
-        return response
-
-    
-    else:
-        print(f"[DEBUG] Unknown submission_type or none provided => '{submission_type}'")
-        return JsonResponse({'error': 'Invalid or missing submission_type.'}, status=400)
+    return JsonResponse({'error': 'Invalid or missing submission_type.'}, status=400)
