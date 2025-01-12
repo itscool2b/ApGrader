@@ -177,7 +177,7 @@ async def ApushLEQ(request):
                 return JsonResponse({'error': 'Either "essay_file" or "essay_text" is required'}, status=400)
         
         try:
-            response = await sync_to_async(evaluate)(prompt, essay_text)
+            response = await sync_to_async(evaluate,thread_sensitive=True)(prompt, essay_text)
             logging.info(f"Evaluation successful: {response}")
         except ValueError as e:
             logger.error(f"Evaluation failed: {e}")
@@ -250,7 +250,7 @@ async def saq_view(request):
         
         try:
             
-            response = await sync_to_async(evaluate1)(questions, essay_text, image_data)
+            response = await sync_to_async(evaluate1,thread_sensitive=True)(questions, essay_text, image_data)
         except Exception as e:
             return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
 
@@ -288,7 +288,7 @@ async def bulk_grading_leq(request):
                     return JsonResponse({'error': 'Failed to process image file.'}, status=500)
                 try:
                     
-                    response_text = await sync_to_async(euro_leq_bulk)(prompt, image_data)
+                    response_text = await sync_to_async(euro_leq_bulk,thread_sensitive=True)(prompt, image_data)
                     pdf_buffer = create_pdf(prompt, response_text)
 
                     
@@ -337,7 +337,7 @@ async def euro_saq_bulk(request):
                 except Exception:
                     return JsonResponse({'error': 'Failed to process image file.'}, status=500)
                 try:
-                    response_text = await sync_to_async(euro_saq_bulk_grading)(questions, image_data, stim_data)
+                    response_text = await sync_to_async(euro_saq_bulk_grading,thread_sensitive=True)(questions, image_data, stim_data)
                     pdf_buffer = create_pdf(questions, response_text)
 
                     
@@ -401,7 +401,7 @@ async def euro_dbq_bulk(request):
                         return JsonResponse({'error': f'Empty or unreadable essay: {essay.name}'}, status=400)
 
                     
-                    response_text = await sync_to_async(evaluateeurodbqbulk)(prompt, essay_data, images)
+                    response_text = await sync_to_async(evaluateeurodbqbulk,thread_sensitive=True)(prompt, essay_data, images)
                     pdf_buffer = create_pdf(prompt, response_text)
 
                     
@@ -467,7 +467,7 @@ async def apushdbqbulk(request):
                         return JsonResponse({'error': f'Empty or unreadable essay: {essay.name}'}, status=400)
 
                    
-                    response_text = await sync_to_async(evaluate22)(prompt, essay_data, images)
+                    response_text = await sync_to_async(evaluate22,thread_sensitive=True)(prompt, essay_data, images)
                     pdf_buffer = create_pdf(prompt, response_text)
 
                     
@@ -516,7 +516,7 @@ async def ApEuroLEQ(request):
                 return JsonResponse({'error': 'Either "essay_file" or "essay_text" is required'}, status=400)
         
         try:
-            response = await sync_to_async(evaluateeuroleq)(prompt, essay_text)
+            response = await sync_to_async(evaluateeuroleq,thread_sensitive=True)(prompt, essay_text)
             logging.info(f"Evaluation successful: {response}")
         except ValueError as e:
             logger.error(f"Evaluation failed: {e}")
@@ -567,7 +567,7 @@ async def apushleqbulk(request):
                     return JsonResponse({'error': 'Failed to process image file.'}, status=500)
                 try:
                     
-                    response_text = await sync_to_async(evaluate69)(prompt, image_data)
+                    response_text = await sync_to_async(evaluate69,thread_sensitive=True)(prompt, image_data)
                     pdf_buffer = create_pdf(prompt, response_text)
 
                     
@@ -615,7 +615,7 @@ async def apushsaqbulk(request):
                 except Exception:
                     return JsonResponse({'error': 'Failed to process image file.'}, status=500)
                 try:
-                    response_text = await sync_to_async(evaluate11)(questions, image_data, stim_data)
+                    response_text = await sync_to_async(evaluate11,thread_sensitive=True)(questions, image_data, stim_data)
                     pdf_buffer = create_pdf(questions, response_text)
 
                     
@@ -679,7 +679,7 @@ async def eurosaq_view(request):
 
        
         try:
-            response = await sync_to_async(evaluateeurosaq)(questions, essay_text,image_data)
+            response = await sync_to_async(evaluateeurosaq,thread_sensitive=True)(questions, essay_text,image_data)
         except Exception as e:
             return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
 
@@ -736,7 +736,7 @@ async def eurodbq(request):
 
         
         try:
-            response = await sync_to_async(evaluateeurodbq)(prompt, essay_text, images)
+            response = await sync_to_async(evaluateeurodbq,thread_sensitive=True)(prompt, essay_text, images)
         except Exception as e:
             return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
 
@@ -791,7 +791,7 @@ async def dbq_view(request):
 
         
         try:
-            response = await sync_to_async(evaluate2)(prompt, essay_text, images)
+            response = await sync_to_async(evaluate2,thread_sensitive=True)(prompt, essay_text, images)
         except Exception as e:
             return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
 
@@ -840,7 +840,7 @@ async def textbulk(request):
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, 'w') as zip_file:
             for essay in essays:
-                response_text = await sync_to_async(evaluate)(prompt, essay)
+                response_text = await sync_to_async(evaluate,thread_sensitive=True)(prompt, essay)
                 pdf_buffer = create_pdf(prompt, response_text)
                 zip_file.writestr(f"{essay.get('name', 'Untitled')}_response.pdf", pdf_buffer.read())
         zip_buffer.seek(0)
@@ -856,7 +856,7 @@ async def textbulk(request):
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, 'w') as zip_file:
             for essay in essays:
-                response_text = await sync_to_async(evaluateeuroleq)(prompt, essay)
+                response_text = await sync_to_async(evaluateeuroleq,thread_sensitive=True)(prompt, essay)
                 pdf_buffer = create_pdf(prompt, response_text)
                 zip_file.writestr(f"{essay.get('name', 'Untitled')}_response.pdf", pdf_buffer.read())
         zip_buffer.seek(0)
@@ -878,7 +878,7 @@ async def textbulk(request):
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, 'w') as zip_file:
             for essay in essays:
-                response_text = await sync_to_async(evaluate1)(prompt, essay, stim_data)
+                response_text = await sync_to_async(evaluate1,thread_sensitive=True)(prompt, essay, stim_data)
                 pdf_buffer = create_pdf(prompt, response_text)
                 zip_file.writestr(f"{essay.get('name', 'Untitled')}_response.pdf", pdf_buffer.read())
         zip_buffer.seek(0)
@@ -900,7 +900,7 @@ async def textbulk(request):
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, 'w') as zip_file:
             for essay in essays:
-                response_text = await sync_to_async(evaluateeurosaq)(prompt, essay, stim_data)
+                response_text = await sync_to_async(evaluateeurosaq,thread_sensitive=True)(prompt, essay, stim_data)
                 pdf_buffer = create_pdf(prompt, response_text)
                 zip_file.writestr(f"{essay.get('name', 'Untitled')}_response.pdf", pdf_buffer.read())
         zip_buffer.seek(0)
@@ -924,7 +924,7 @@ async def textbulk(request):
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, 'w') as zip_file:
             for essay in essays:
-                response_text = await sync_to_async(evaluate2)(prompt, essay, images)
+                response_text = await sync_to_async(evaluate2,thread_sensitive=True)(prompt, essay, images)
                 pdf_buffer = create_pdf(prompt, response_text)
                 zip_file.writestr(f"{essay.get('name', 'Untitled')}_response.pdf", pdf_buffer.read())
         zip_buffer.seek(0)
@@ -948,7 +948,7 @@ async def textbulk(request):
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, 'w') as zip_file:
             for essay in essays:
-                response_text = await sync_to_async(evaluateeurodbq)(prompt, essay, images)
+                response_text = await sync_to_async(evaluateeurodbq,thread_sensitive=True)(prompt, essay, images)
                 pdf_buffer = create_pdf(prompt, response_text)
                 zip_file.writestr(f"{essay.get('name', 'Untitled')}_response.pdf", pdf_buffer.read())
         zip_buffer.seek(0)
