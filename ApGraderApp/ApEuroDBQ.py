@@ -596,7 +596,7 @@ def evidence_beyond_grading_node(state: GraphState) -> GraphState:
     d5 = state["doc5_desc"]
     d6 = state["doc6_desc"]
     d7 = state["doc7_desc"]
-
+    print(d1,d2)
     essay = state["student_essay"]
     prompt_type = state["prompt_type"]
 
