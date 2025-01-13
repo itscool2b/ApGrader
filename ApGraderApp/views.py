@@ -116,7 +116,7 @@ def create_pdf(prompt, response_text):
     content = []
 
     
-    content.append(Paragraph('<font color="darkblue"><b>LEQ Grading Report</b></font>', title_style))
+    content.append(Paragraph('<font color="darkblue"><b> Grading Report</b></font>', title_style))
     content.append(Spacer(1, 24))  
 
     
