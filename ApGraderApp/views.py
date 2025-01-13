@@ -111,6 +111,13 @@ def create_pdf(prompt, response_text):
         "complex understanding feedback",
         "fact-checking feedback",
         "General Accuracy",
+        'feedback',
+        'Contextualization feedback',
+        'Evidence feedback',
+        'Evidence beyond feedback',
+        'Complex understanding feedback',
+        'Overall feedback',
+        
     ]
 
     content = []
