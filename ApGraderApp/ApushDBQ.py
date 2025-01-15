@@ -805,10 +805,41 @@ Do not include any extra commentary or user-friendly language. Output the result
 )
 
 def isbs(state):
-    prompt = 'If this input is not related to an ap essay at all as in it is something completley not even related to an ap essay and if it is just a few random words or keys then just return the word bs. dont say anything else just bs. If it is related then say not. just the word not. here is the prompt and essay. again dont mistake it for a bad essay that doesnt answer a prompt. that is ok they will just retrive a low score. im saying if they justy spam words or keys or just some random stuff. prompt = {prompt} essay = {essay}. So to summarize if it is completley random then flag it and return the response format whcih i gave. But even if it is remotley related but relally bad it is going to get a low score but dont flag it. Also if its not related to Ap European history flag it. Even if it is an ap essay but its not for euro then flag it. Again if its just a bad prompt os essay leave it be, otherwise if it is completley another topic then flag it.'
-    prompt = prompt.format(prompt=state['prompt'],essay=state['student_essay'])
-    response = llm.invoke(prompt)
-    state['isbsquestion'] = response.content.strip()
+    prompt = """
+    Your task is to determine if the provided essay and prompt are valid AP European History (AP Euro) content.
+
+    **Instructions:**
+    - If the input is COMPLETELY random, nonsensical, or consists of unrelated words, symbols, or spam (e.g., keyboard mashing, random phrases with no structure), return ONLY the word **bs**.  
+    - If the essay is poorly written, incomplete, or off-topic but still resembles an essay or has any relation to AP history, DO NOT flag it. These should simply receive a low score but are still valid submissions.  
+    - If the content is an AP essay but for a different subject (e.g., APUSH, AP World), DO NOT flag it. Grade it as usual.  
+    - If the essay is empty or has no meaningful content, return **bs**.  
+    - For anything that is remotely related to AP European History or an essay format, even if it is bad, return ONLY the word **not**.
+
+    **Examples:**  
+    - Input: \"asldkjasd 1234 @!# random words\" → Output: **bs**  
+    - Input: \"Discuss how the French Revolution changed Europe. It was bad and good.\" → Output: **not**  
+    - Input: \"APUSH essay on the Civil War.\" → Output: **not**  
+
+    **Prompt:** {prompt}  
+    **Essay:** {essay}  
+
+    Respond ONLY with **bs** or **not**. Do not provide explanations.
+    """
+    
+    
+    formatted_prompt = prompt.format(prompt=state['prompt'], essay=state['student_essay'])
+    
+    
+    response = llm.invoke(formatted_prompt)
+    
+    
+    result = response.content.strip().lower()
+    
+    
+    if result not in ['bs', 'not']:
+        result = 'not'  
+
+    state['isbsquestion'] = result
     return state
 
 def self_reflection(state):
