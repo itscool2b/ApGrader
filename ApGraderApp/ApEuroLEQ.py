@@ -409,7 +409,7 @@ class GraphState(TypedDict):
     factchecking_generation: str
     reflection: str
     summation: str
-    
+    isbsquestion: str
 
 workflow = StateGraph(GraphState)
 
@@ -530,6 +530,11 @@ def evidence_grading_node(state: GraphState) -> GraphState:
     state["evidence_generation"] = response.content.strip()
     return state
 
+def isbs(state):
+    prompt = 'If this input is not related to an ap essay at all as in it is something completley not even related to an ap essay and if it is just a few random words or keys then just return the word bs. dont say anything else just bs. If it is related then say not. just the word not'
+    response = llm.invoke(prompt)
+    state['isbsquestion'] = response.content.strip()
+    return state
 
 def analysis_grading_node(state: GraphState) -> GraphState:
     rubric = state["rubric"]
@@ -622,9 +627,14 @@ def evaluateeuroleq(prompt: str, essay: str) -> str:
         "complexunderstanding_generation": None,
         "factchecking_generation": None,
         "summation": None,
-        "rubric": []
+        "rubric": [],
+        'isbs': None
     }
 
+    state = isbs(state)
+    if state['isbsquestion'] == 'bs':
+        return 'input is not related to essay please submitt a better response please.'
+    
     state = fetch_rubric_node(state)
     state = classify_prompt_node(state)  
     state = thesis_grading_node(state)  
@@ -651,9 +661,12 @@ def euro_leq_bulk(prompt, essay):
         "complexunderstanding_generation": None,
         "factchecking_generation": None,
         "summation": None,
-        "rubric": []
+        "rubric": [],
+        'isbs': None
     }
-
+    state = isbs(state)
+    if state['isbsquestion'] == 'bs':
+        return 'input is not related to essay please submitt a better response please.'
     state = essay_vision_node(state)
     state = fetch_rubric_node(state)
     state = classify_prompt_node(state)  
