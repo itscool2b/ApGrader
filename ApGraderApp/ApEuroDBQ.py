@@ -67,7 +67,7 @@ llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4o", temperature=0)
 
 classification_prompt = PromptTemplate.from_template(
     """
-        You are a highly accurate and strict teaching assistant for an AP European History class. Your task is to read the LEQ prompt provided by a student and determine which of the three main APUSH LEQ types it falls under:
+        You are a highly accurate and strict teaching assistant for an AP European History class. Your task is to read the dbq prompt provided by a student and determine which of the three main APUSH dbq types it falls under:
         
 Comparison: The prompt asks the student to compare and/or contrast historical developments, events, policies, or societies.
 Causation: The prompt asks the student to explain causes and/or effects of historical events or developments.
@@ -75,7 +75,7 @@ Continuity and Change Over Time (CCOT): The prompt asks the student to analyze w
 
         Instructions:
         
-Read the provided LEQ prompt carefully.
+Read the provided dbq prompt carefully.
 Identify whether the prompt is a Comparison, Causation, or CCOT prompt.
 Respond with only one of the three exact words: "Comparison", "Causation", or "CCOT". Do not include any additional text, explanations, or characters. Should be one word
 
@@ -403,6 +403,192 @@ Example Structure for Your Feedback:
 Identified Mistake: "In your essay, you stated that [incorrect information]. However, according to [chapter/topic], the correct information is [correct information]."
 General Accuracy: "Overall, your essay is accurate in its portrayal of [topic], but keep an eye on [specific areas]."
 Focus on being supportive and informative. Your goal is to help the student learn and improve their historical understanding without penalizing them for mistakes.""")
+
+
+
+
+reflection = PromptTemplate.from_template(
+  """
+You are an AP Grader tasked with reflecting on your own grading outputs for an AP U.S. History DBQ. Your task is to extract the exact scores from the grading generations provided, ensure adherence to the rubric, and make changes only after thorough review. Your reflection must include:
+
+Rubric:
+{rubric}
+
+Prompt Type:
+{prompt_type}
+
+Student Essay:
+{essay}
+
+Generated Outputs:
+
+Evidence beyond: {beyond}
+
+Thesis Evaluation: {thesis_generation}
+
+Contextualization Evaluation: {contextualization_generation}
+
+Evidence Evaluation: {evidence_generation}
+
+Analysis and Reasoning Evaluation: {complexunderstanding_generation}
+
+Fact-Checking Feedback: {factchecking_generation} (if any)
+
+Your Task:
+
+Extract Scores:
+
+Each generation explicitly contains a score for its respective section. Extract these scores directly as they represent the grading decisions for each part.
+
+Clearly state the points awarded for each section and ensure this information is fully incorporated into the feedback.
+
+Do not interpolate or assume scores—use only the scores explicitly provided in each generation.
+
+Ensure Rubric Adherence:
+
+Carefully review the feedback and scores for each section to ensure alignment with every aspect of the rubric.
+
+Evaluate how well the feedback reflects the rubric for the prompt type (Comparison, Causation, or CCOT).
+
+If changes to the scores are necessary, make them only after thorough review. Clearly explain the reason for any changes.
+
+Feedback Verification and Enhancement:
+
+Check that feedback aligns with the score provided. If feedback contradicts the score, rewrite it using the format: "You put X but Y."
+
+Provide detailed, constructive, and actionable feedback explaining exactly why the student earned or lost points and how they could improve.
+
+For each section, only provide feedback if the student did not earn full points. For sections with full points, do not provide feedback.
+
+For sections where points were lost, follow the format: "You put X and earned Y because Z. However, you could have said W to fully meet the rubric criteria."
+
+Changes and Final Summation:
+
+Specify any changes made to scores, including the original score, the new score, and the reason for the change.
+
+Accurately calculate the total score by summing the scores from each section (after changes, if any).
+
+Output Format:
+
+Section Scores:
+
+Thesis (0-1): Extracted score and explanation
+
+Feedback: Provide feedback only if less than full points were earned.
+
+Contextualization (0-1): Extracted score and explanation
+
+Feedback: Provide feedback only if less than full points were earned.
+
+Evidence (0-2): Extracted score and explanation
+
+First Evidence Point: Yes/No
+
+Feedback: Provide feedback only if the point was not earned.
+
+Second Evidence Point: Yes/No
+
+Feedback: Provide feedback only if the point was not earned.
+
+Analysis and Reasoning (0-2): Extracted score and explanation
+
+Feedback: Provide feedback only if less than full points were earned.
+
+Fact-Checking Feedback: Highlight any factual errors and their impact on scoring, if applicable. Provide constructive corrections in the format:
+
+"You stated X, but the correct information is Y because Z."
+
+Total Score (0-6):
+
+Total Score: Sum the extracted scores explicitly provided in the generations. Reflect any changes here if scores were updated during review.
+
+Changes Made:
+
+Clearly specify any changes to scores, for example:
+
+Thesis: "You put 0 but the thesis meets rubric criteria, so 1 point was awarded."
+
+Evidence: "You put 1 but failed to connect evidence to the argument, so the score was changed to 0."
+
+Final Feedback Summary:
+
+For each section where points were lost, provide feedback in the format: "You put X and earned Y because Z. However, you could have said W to earn the point."
+
+Do not provide feedback for sections where full points were earned.
+
+Be constructive and specific in guiding the student on how to improve.
+
+Conclude with a summary of strengths and areas for improvement based on the rubric. Highlight exactly how the student can improve in future essays.
+
+Example Output:
+
+Section Scores:
+
+Thesis (0-1): 0
+
+Feedback: "You put a vague thesis statement and earned 0 because it lacked a clear argument. However, you could have stated a specific historical argument to fully meet the rubric criteria."
+
+Contextualization (0-1): 1
+
+No feedback necessary.
+
+Evidence (0-2): 1
+
+First Evidence Point: Yes
+
+Second Evidence Point: No
+
+Feedback: "You mentioned evidence but failed to connect it to the thesis. You could have explained how it supports your argument."
+
+Analysis and Reasoning (0-2): 1
+
+Feedback: "You put basic analysis and earned 1 because it addressed the prompt. However, deeper reasoning and exploring counterarguments would have earned 2."
+
+Total Score (0-6): 3/6
+
+Changes Made:
+
+Thesis: "You put 0 but after review, the thesis partially meets criteria, so 1 point was awarded."
+
+Final Feedback Summary:
+
+Strengths: Clear contextualization and use of basic evidence.
+
+Areas for Improvement: Strengthen the thesis with a clearer argument, provide more specific evidence, and deepen analysis by considering different perspectives.
+
+Do not include any extra commentary or user-friendly language. Output the results exactly as specified.
+
+
+"""
+)
+
+def isbs(state):
+    prompt = 'If this input is not related to an ap essay at all as in it is something completley not even related to an ap essay and if it is just a few random words or keys then just return the word bs. dont say anything else just bs. If it is related then say not. just the word not. here is the prompt and essay. again dont mistake it for a bad essay that doesnt answer a prompt. that is ok they will just retrive a low score. im saying if they justy spam words or keys or just some random stuff. prompt = {prompt} essay = {essay}. So to summarize if it is completley random then flag it and return the response format whcih i gave. But even if it is remotley related but relally bad it is going to get a low score but dont flag it. Also if its not related to Ap European history flag it. Even if it is an ap essay but its not for euro then flag it. Again if its just a bad prompt os essay leave it be, otherwise if it is completley another topic then flag it.'
+    prompt = prompt.format(prompt=state['prompt'],essay=state['student_essay'])
+    response = llm.invoke(prompt)
+    state['isbsquestion'] = response.content.strip()
+    return state
+
+def self_reflection(state):
+    thesis = state['thesis_generation']
+    contextualization = state['contextualization_generation']
+    complex = state['complexunderstanding_generation']
+    evidence = state['evidence_generation']
+    factcheck = state['factchecking_generation']
+    beyond = state['evidence_beyond_generation']
+    rubric = state['rubric']
+    essay = state['student_essay']
+    ptype = state["prompt_type"]
+    formatted_prompt = reflection.format(beyond=beyond,prompt_type=ptype,thesis_generation=thesis,contextualization_generation=contextualization,complexunderstanding_generation=complex,evidence_generation=evidence,rubric=rubric,essay=essay,factchecking_generation=factcheck)
+    response = llm.invoke(formatted_prompt)
+    state['reflection'] = response.content.strip()
+    
+    return state
+
+
+
+
+
 class GraphState(TypedDict):
     rubric: List[dict]
     prompt: str
@@ -430,6 +616,8 @@ class GraphState(TypedDict):
     doc6_desc: str
     doc7_desc: str
     summation: str
+    isbsquestion: str
+    reflection: str
 
 
 
@@ -640,9 +828,9 @@ def summation_node(state):
     s = state['student_essay']
     formatted_prompt = summation_prompt.format(thesis_generation=thesis,contextualization_generation=context,evidence_beyond_generation=beyond,complexunderstanding_generation=complx,fact_checking_feedback=factcheck,evidence_generation=evidence)
     response = llm.invoke(formatted_prompt)
-
+    concatenated = '\n\n This is further feedback (in beta) - \n\n'
     state['summation'] = response.content.strip()
-    return state['summation']
+    return state['summation'] + concatenated + state['reflection']
     
 
 
@@ -689,9 +877,14 @@ def evaluateeurodbq(prompt: str, essay: str, images: List[Optional[str]] = None)
         "doc6_desc": None,
         "doc7_desc": None,
         "summation": None,
+        'isbsquestion': None,
+        'reflection': None
     }
 
     try:
+        state = isbs(state)
+        if state['isbsquestion'] == 'bs':
+            return 'give a valid essay pls'
         state = retrieve_rubric_node(state)
         state = classify_prompt_node(state)
         state = vision_node(state)
@@ -751,9 +944,14 @@ def evaluateeurodbqbulk(prompt: str, essay, images: List[Optional[str]] = None) 
         "doc6_desc": None,
         "doc7_desc": None,
         "summation": None,
+        'isbsquestion': None,
+        'reflection': None
     }
 
     try:
+        state = isbs(state)
+        if state['isbsquestion'] == 'bs':
+            return 'give a valid essay pls'
         state = retrieve_rubric_node(state)
         state = essay_vision_node(state)
         state = classify_prompt_node(state)
