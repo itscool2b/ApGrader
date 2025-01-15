@@ -306,8 +306,9 @@ class Graphstate(TypedDict):
     summation: str
     image: Optional[Union[str, bytes]]
     stimulus_description: str
-
+    isbsquestion: str
     student_essay_image: Optional[Union[str, bytes]]
+    reflection: str
 
 
 def essay_vision_node(state):
@@ -452,18 +453,148 @@ def summation_node(state):
     try:
         generation = state["case1_generation"] or state["case2_generation"]
         feedback = state.get("factchecking_generation", "")
-        
+        reflection = state['reflection']
         if not feedback:
             raise ValueError("Fact-checking feedback is missing.")
         s = state['student_essay']
         formatted_prompt = summation_prompt.format(generation=generation, factchecking=feedback,student_essay=s)
         response = llm.invoke(formatted_prompt)
-
+        concatenate = '\n\n this is a further breakdown. BETA - this is what you can do better \n\n'
         state['summation'] = response.content.strip()
-        return state['summation']
+        return state['summation'] + concatenate + reflection
     except Exception as e:
         raise RuntimeError(f"Error in final_node: {e}")
 
+reflection = PromptTemplate.from_template("""
+You are an AP Grader tasked with reflecting on your own grading outputs for an AP European History SAQ (Short Answer Question). Your task is to extract the exact scores from the grading generations provided, ensure adherence to the appropriate rubric, and make changes only after thorough review. Your reflection must include:
+
+Questions:
+{questions}
+
+Stimulus (if applicable):
+{stimulus_description}
+
+Student Essay:
+{essay}
+
+Generated Outputs:
+
+Case 1 Evaluation: {case1_generation}
+
+Case 2 Evaluation: {case2_generation}
+
+Fact-Checking Feedback: {factchecking_generation} (if any)
+
+Instructions:
+
+Rubric Selection:
+
+If case1_generation is provided, use the following rubric for grading:
+
+Answer: Clearly and directly answers the question.
+
+Cite: Provides at least one historically accurate piece of evidence relevant to the timeframe/context.
+
+Explain: Explains how the evidence supports their answer.
+
+Scoring: Assign 0 or 1 point for each subpart (A, B, C). Award 1 point only if all ACE criteria are met.
+
+If case2_generation is provided, use the following rubric, integrating the stimulus:
+
+Analyze the Stimulus: Identify and incorporate relevant details.
+
+Answer: Directly answers the question.
+
+Cite: Provides accurate evidence related to the timeframe/context.
+
+Explain: Expands on how the evidence supports their answer.
+
+Scoring: Assign 0 or 1 point for each subpart (A, B, C). Award 1 point only if all ACE criteria are met.
+
+Stimulus Consideration:
+
+If stimulus_description is None, disregard the stimulus in the evaluation.
+
+Extract Scores:
+
+Extract the explicit scores for each case evaluation directly from the generated outputs.
+
+Do not interpolate or assume scores—use only the scores explicitly provided.
+
+Ensure Rubric Adherence:
+
+Carefully review the feedback and scores for each section to ensure alignment with every aspect of the rubric.
+
+If changes to the scores are necessary, make them only after thorough review. Clearly explain the reason for any changes.
+
+Feedback Verification and Enhancement:
+
+Provide detailed, constructive, and actionable feedback explaining why the student earned or lost points and how they could improve.
+
+Follow this format for each case where points were lost: "You put X and earned Y because Z. However, you could have said W to fully meet the rubric criteria."
+
+Do not provide feedback for sections where full points were earned.
+
+Changes and Final Summation:
+
+Specify any changes made to scores, including the original score, the new score, and the reason for the change.
+
+Output Format:
+
+Section Scores:
+
+Case 1 (0-3): Extracted score and explanation (if provided)
+
+Feedback: Provide feedback only if less than full points were earned.
+
+Case 2 (0-3): Extracted score and explanation (if provided)
+
+Feedback: Provide feedback only if less than full points were earned.
+
+Fact-Checking Feedback: Highlight any factual errors and their impact on scoring, if applicable. Provide constructive corrections in the format:
+
+"You stated X, but the correct information is Y because Z."
+
+Total Score (0-6):
+
+Total Score: Sum the extracted scores explicitly provided in the generations. Reflect any changes here if scores were updated during review.
+
+Changes Made:
+
+Clearly specify any changes to scores, for example:
+
+Case 1: "You put 2 but failed to fully answer the question, so the score was changed to 1."
+
+Final Feedback Summary:
+
+For each section where points were lost, provide feedback in the format: "You put X and earned Y because Z. However, you could have said W to earn the point."
+
+Do not provide feedback for sections where full points were earned.
+
+Be constructive and specific in guiding the student on how to improve.
+
+Conclude with a summary of strengths and areas for improvement based on the rubric. Highlight exactly how the student can improve in future responses.
+
+Do not include any extra commentary or user-friendly language. Output the results exactly as specified.
+
+
+
+""")
+
+def self_reflection(state):
+    essay = state['student_essay']
+    questions = state['questions']
+    factchecking_generation = state['factchecking_generation']
+    if state['case1_generation']:
+        formatted_prompt = reflection.format(questions=questions,essay=essay, case1_generation=state['case1_generation'], case2_generation=None,factchecking_generation=factchecking_generation, stimulus_description=None)
+        response = llm.invoke(formatted_prompt)
+        state['reflection'] = response.content.strip()
+        return state
+    stim = state['stimulus_description']
+    formatted_prompt = reflection.format(questions=questions,essay=essay, case1_generation=None, case2_generation=state['case2_generation'],factchecking_generation=factchecking_generation,stimulus_description=stim)
+    response = llm.invoke(formatted_prompt)
+    state['reflection'] = response.content.strip()
+    return state
 
 workflow = StateGraph(Graphstate)
 workflow.add_node("vision_node", vision_node)
@@ -493,11 +624,16 @@ def evaluateeurosaq(questions: str, essay: str, image: Optional[Union[str, bytes
         "summation": None,
         "image": image,
         "stimulus_description": None,
+        'isbsquestion': None,
+        'reflection': None
     }
     state = vision_node(state)
+    if state['isbsquestion'] == 'bs':
+        return 'give a real response pls'
     state = chapters(state)
     state = grading_node(state)
     state = factchecking_node(state)
+    state = self_reflection(state)
     state = summation_node(state)
     
     return state
@@ -514,12 +650,18 @@ def euro_saq_bulk_grading(questions, essay, stim):
         "summation": None,
         "image": stim,
         "stimulus_description": None,
+        'isbsquestion': None,
+        'reflection': None
     }
+    state = isbs(state)
+    if state['isbsquestion'] == 'bs':
+        return 'give a real response pls'
     state = essay_vision_node(state)
     state = vision_node(state)
     state = chapters(state)
     state = grading_node(state)
     state = factchecking_node(state)
+    state = self_reflection(state)
     state = summation_node(state)
     
     return state
