@@ -309,30 +309,29 @@ class Graphstate(TypedDict):
     reflection: str
     isbsquestion: str
 
-def essay_vision_node(state):
+def essay_vision_node(state, max_retries=3):
+    image_data = state.get('student_essay_image')
+    if not image_data:
+        state["student_essay_image"] = None
+        return state
 
-    try:
-        image_data = state.get('student_essay_image')
-        if not image_data:
-            state["student_essay_image"] = None
-            return state
+    if not image_data.startswith("data:"):
+        image_data = f"data:image/jpeg;base64,{image_data}"
 
-        if not image_data.startswith("data:"):
-            image_data = f"data:image/jpeg;base64,{image_data}"  
-
+    for _ in range(max_retries):
         response = client.chat.completions.create(
-            model="gpt-4o",  
+            model="gpt-4o",
             messages=[
                 {
                     "role": "user",
                     "content": [
                         {
                             "type": "text",
-                            "text": "Extract the text from the provided essay while ensuring it is grammatically correct, well-structured, and easy to read. Fix any spelling or typographical errors but do not alter the meaning, tone, or intent of the original content. Group ideas logically to improve flow, but preserve the original structure as much as possible. Avoid including irrelevant page numbers, headings, or formatting instructions unless they are part of the essay's content. Pay special attention to preserving references to documents (e.g., '(Doc 7)', '(Doc 5)'), ensuring they are included exactly as written and placed correctly in the text.  Group ideas logically to improve flow, but do not omit or rephrase any document referencesOutput the text only with nothing else.",
+                            "text": "Extract the text from the provided essay while ensuring it is grammatically correct, well-structured, and easy to read. Fix any spelling or typographical errors but do not alter the meaning, tone, or intent of the original content. If you can't recognize the image, respond exactly with: 'I can't recognize this image.'",
                         },
                         {
                             "type": "image_url",
-                            "image_url": {"url": image_data},  
+                            "image_url": {"url": image_data},
                         },
                     ],
                 }
@@ -341,14 +340,13 @@ def essay_vision_node(state):
             temperature=0,
         )
 
-        
         essay = response.choices[0].message.content
-        state["student_essay"] = essay
-        print(essay)
-        return state
+        if essay != "I can't recognize this image.":
+            state["student_essay"] = essay
+            return state
 
-    except Exception as e:
-        raise ValueError(f"Error in vision_node: {e}")
+    state["student_essay"] = None
+    return state
 
 def chapters(state):
     try:
@@ -701,6 +699,8 @@ def evaluate11(questions: str, essay, image: Optional[Union[str, bytes]]) -> str
         'reflection': None
     }
     state = essay_vision_node(state)
+    if state['student_essay'] == None:
+            return 'we tried mutliple times to recognize your essay. You can try resubmitting but we have tried out best. Sorry'
     state = isbs(state)
     if state['isbsquestion'] == 'bs':
         return 'submitt a valid response pls'
