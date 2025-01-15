@@ -33,10 +33,10 @@ from reportlab.pdfgen import canvas
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
-from reportlab.platypus import BaseDocTemplate, PageTemplate, Frame, Paragraph, Spacer, Table, TableStyle
+from reportlab.platypus import BaseDocTemplate, PageTemplate, Frame, Paragraph, Spacer, Table, TableStyle, Image
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.pdfgen import canvas
 from reportlab.lib.units import inch
+import io
 
 def create_pdf(prompt, response_text):
     pdf_buffer = io.BytesIO()
@@ -56,7 +56,7 @@ def create_pdf(prompt, response_text):
         doc.width,
         doc.height,
         id="content_frame",
-        showBoundary=1,
+        showBoundary=0,
     )
 
     template = PageTemplate(id="template", frames=[frame])
@@ -67,10 +67,21 @@ def create_pdf(prompt, response_text):
     title_style = ParagraphStyle(
         name="Title",
         fontName="Helvetica-Bold",
-        fontSize=24,
+        fontSize=28,
         alignment=1,
-        spaceAfter=24,
-        textColor=colors.darkblue,
+        spaceAfter=30,
+        textColor=colors.HexColor("#1A1A1A"),
+        underlineWidth=1.5,
+        underlineColor=colors.HexColor("#D4AF37"),
+    )
+
+    subtitle_style = ParagraphStyle(
+        name="Subtitle",
+        fontName="Helvetica-Oblique",
+        fontSize=14,
+        alignment=1,
+        spaceAfter=20,
+        textColor=colors.HexColor("#555555"),
     )
 
     heading_style = ParagraphStyle(
@@ -78,45 +89,56 @@ def create_pdf(prompt, response_text):
         fontName="Helvetica-Bold",
         fontSize=16,
         alignment=0,
-        spaceAfter=16,
-        textColor=colors.black,
+        spaceAfter=14,
+        textColor=colors.HexColor("#1A1A1A"),
     )
 
     body_style = ParagraphStyle(
         name="Body",
         fontName="Helvetica",
         fontSize=12,
-        alignment=0,
-        leading=16,
+        alignment=4,
+        leading=18,
         spaceAfter=12,
     )
 
-    border_table = Table(
-        [[Paragraph("Grading Report", title_style)]],
-        colWidths=[doc.width],
+    footer_style = ParagraphStyle(
+        name="Footer",
+        fontName="Helvetica-Oblique",
+        fontSize=10,
+        alignment=1,
+        textColor=colors.HexColor("#555555"),
     )
-    border_table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), colors.lightgrey),
-        ("BOX", (0, 0), (-1, -1), 2, colors.darkblue),
-        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-        ("TOPPADDING", (0, 0), (-1, -1), 12),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
-    ]))
 
     strings_to_bold = [
-        "Thesis score", "contextualization score", "evidence score",
-        "complex understanding score", "total summed up score",
-        "Thesis feedback", "contextualization feedback",
-        "evidence feedback", "complex understanding feedback",
-        "fact-checking feedback", "General Accuracy", 'feedback',
+        "Thesis score", "Contextualization score", "Evidence score",
+        "Complex understanding score", "Total summed up score",
+        "Thesis feedback", "Contextualization feedback",
+        "Evidence feedback", "Complex understanding feedback",
+        "Fact-checking feedback", "General Accuracy", 'Feedback',
         'Contextualization feedback', 'Evidence feedback',
         'Evidence beyond feedback', 'Complex understanding feedback',
         'Overall feedback',
     ]
 
     content = []
-    content.append(border_table)
-    content.append(Spacer(1, 24))
+
+    banner = Table(
+        [[Paragraph("GRADING REPORT", title_style)]],
+        colWidths=[doc.width],
+    )
+    banner.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#F4F4F4")),
+        ("BOX", (0, 0), (-1, -1), 2, colors.HexColor("#D4AF37")),
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("TOPPADDING", (0, 0), (-1, -1), 20),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 20),
+    ]))
+
+    content.append(banner)
+    content.append(Spacer(1, 10))
+    content.append(Paragraph("AP Essay Evaluation", subtitle_style))
+    content.append(Spacer(1, 20))
 
     content.append(Paragraph(f"<b>Prompt:</b> {prompt}", heading_style))
     content.append(Spacer(1, 12))
@@ -128,11 +150,35 @@ def create_pdf(prompt, response_text):
             line = line.replace(target, f"<b>{target}</b>")
         content.append(Paragraph(line, body_style))
 
-    content.append(Spacer(1, 20))
+    content.append(Spacer(1, 24))
+
+    summary_table_data = [
+        ["Overall Performance", ""],
+        ["Strengths", ""],
+        ["Areas for Improvement", ""]
+    ]
+
+    summary_table = Table(summary_table_data, colWidths=[2.5 * inch, 4.5 * inch])
+    summary_table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#D4AF37")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, -1), "Helvetica-Bold"),
+        ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#D4AF37")),
+        ("BACKGROUND", (0, 1), (-1, -1), colors.HexColor("#F4F4F4")),
+        ("TOPPADDING", (0, 0), (-1, -1), 8),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+    ]))
+
+    content.append(summary_table)
+    content.append(Spacer(1, 30))
+
+    content.append(Paragraph("Generated by the Advanced Grading System", footer_style))
 
     doc.build(content)
     pdf_buffer.seek(0)
     return pdf_buffer
+
 
 
 
