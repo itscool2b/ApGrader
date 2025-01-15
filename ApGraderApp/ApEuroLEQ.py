@@ -753,7 +753,7 @@ def evaluateeuroleq(prompt: str, essay: str) -> str:
         "factchecking_generation": None,
         "summation": None,
         "rubric": [],
-        'isbs': None
+        'isbsquestion': None
     }
 
     state = isbs(state)
@@ -787,7 +787,7 @@ def euro_leq_bulk(prompt, essay):
         "factchecking_generation": None,
         "summation": None,
         "rubric": [],
-        'isbs': None
+        'isbsquestion': None
     }
     state = essay_vision_node(state)
     if state['student_essay'] == None:
