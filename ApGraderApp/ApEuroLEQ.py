@@ -622,7 +622,7 @@ def evidence_grading_node(state: GraphState) -> GraphState:
     return state
 
 def isbs(state):
-    prompt = 'If this input is not related to an ap essay at all as in it is something completley not even related to an ap essay and if it is just a few random words or keys then just return the word bs. dont say anything else just bs. If it is related then say not. just the word not. here is the prompt and essay. again dont mistake it for a bad essay that doesnt answer a prompt. that is ok they will just retrive a low score. im saying if they justy spam words or keys or just some random stuff. prompt = {prompt} essay = {essay}'
+    prompt = 'If this input is not related to an ap essay at all as in it is something completley not even related to an ap essay and if it is just a few random words or keys then just return the word bs. dont say anything else just bs. If it is related then say not. just the word not. here is the prompt and essay. again dont mistake it for a bad essay that doesnt answer a prompt. that is ok they will just retrive a low score. im saying if they justy spam words or keys or just some random stuff. prompt = {prompt} essay = {essay}. So to summarize if it is completley random then flag it and return the response format whcih i gave. But even if it is remotley related but relally bad it is going to get a low score but dont flag it.'
     prompt = prompt.format(prompt=state['prompt'],essay=state['student_essay'])
     response = llm.invoke(prompt)
     state['isbsquestion'] = response.content.strip()
