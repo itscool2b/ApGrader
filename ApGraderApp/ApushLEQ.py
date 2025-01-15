@@ -834,6 +834,7 @@ def evaluate(prompt: str, essay: str) -> str:
     state = evidence_grading_node(state)  
     state = analysis_grading_node(state)  
     state = fact_check_node(state)  
+    state = self_reflection(state)
     state = final_node(state)  
 
     
@@ -873,6 +874,7 @@ def evaluate69(prompt: str, essay) -> str:
     state = evidence_grading_node(state)  
     state = analysis_grading_node(state)  
     state = fact_check_node(state)  
+    state = self_reflection(state)
     state = final_node(state)  
 
     

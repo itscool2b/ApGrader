@@ -680,6 +680,7 @@ def evaluate1(questions: str, essay: str, image: Optional[Union[str, bytes]]) ->
     state = chapters(state)
     state = grading_node(state)
     state = factchecking_node(state)
+    state = self_reflection(state)
     state = summation_node(state)
     
     return state
@@ -707,6 +708,7 @@ def evaluate11(questions: str, essay, image: Optional[Union[str, bytes]]) -> str
     state = chapters(state)
     state = grading_node(state)
     state = factchecking_node(state)
+    state = self_reflection(state)
     state = summation_node(state)
     
     return state

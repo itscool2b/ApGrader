@@ -950,7 +950,7 @@ def evaluate2(prompt: str, essay: str, images: List[Optional[str]] = None) -> st
         state = evidence_beyond_grading_node(state)
         state = complex_understanding_grading_node(state)
         state = factchecking_node(state)
-        
+        state = self_reflection(state)
         state = summation_node(state)
     except Exception as e:
         raise ValueError(f"An error occurred during evaluation: {e}")
@@ -1018,7 +1018,7 @@ def evaluate22(prompt: str, essay, images: List[Optional[str]] = None) -> str:
         state = evidence_beyond_grading_node(state)
         state = complex_understanding_grading_node(state)
         state = factchecking_node(state)
-        
+        state = self_reflection(state)
         state = summation_node(state)
     except Exception as e:
         raise ValueError(f"An error occurred during evaluation: {e}")
