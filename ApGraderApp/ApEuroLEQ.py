@@ -339,51 +339,142 @@ Student Essay:
 {essay}
 
 Generated Outputs:
-- Thesis Evaluation: {thesis_generation}
-- Contextualization Evaluation: {contextualization_generation}
-- Evidence Evaluation: {evidence_generation}
-- Analysis and Reasoning Evaluation: {complexunderstanding_generation}
-- Fact-Checking Feedback: {factchecking_generation} (if any)
+
+Thesis Evaluation: {thesis_generation}
+
+Contextualization Evaluation: {contextualization_generation}
+
+Evidence Evaluation: {evidence_generation}
+
+Analysis and Reasoning Evaluation: {complexunderstanding_generation}
+
+Fact-Checking Feedback: {factchecking_generation} (if any)
 
 Your Task:
-1. **Extract Scores**:
-   - Each generation explicitly contains a score for its respective section. Extract these scores directly as they represent the grading decisions for each part.
-   - Do not interpolate or assume scores—use only the scores explicitly provided in each generation.
 
-2. **Ensure Rubric Adherence**:
-   - Carefully review the feedback and scores for each section to ensure alignment with every aspect of the rubric.
-   - Evaluate how well the feedback reflects the rubric for the prompt type (Comparison, Causation, or CCOT).
-   - If changes to the scores are necessary, make them only after thorough review. Clearly explain the reason for any changes.
+Extract Scores:
 
-3. **Feedback Verification**:
-   - Check that feedback aligns with the score provided. If feedback contradicts the score, rewrite it using the format: **"You put X but Y."**
-   - Ensure feedback is clear, actionable, and helpful to the student.
+Each generation explicitly contains a score for its respective section. Extract these scores directly as they represent the grading decisions for each part.
 
-4. **Changes and Final Summation**:
-   - Specify any changes made to scores, including the original score, the new score, and the reason for the change.
-   - Accurately calculate the total score by summing the scores from each section (after changes, if any).
+Clearly state the points awarded for each section and ensure this information is fully incorporated into the feedback.
 
-Output Format that u should adapt to and fill out.
-1. **Section Scores**:
-   - Thesis (0-1): Extracted score and explanation - 
-   - Contextualization (0-1): Extracted score and explanation - 
-   - Evidence (0-2): Extracted score and explanation - 
-   - Analysis and Reasoning (0-2): Extracted score and explanation - 
-   - Fact-Checking Feedback: Highlight any factual errors and their impact on scoring, if applicable.
-    
-2. **Total Score (0-6)**:
-   - Total Score: Sum the extracted scores explicitly provided in the generations. Reflect any changes here if scores were updated during review.
+Do not interpolate or assume scores—use only the scores explicitly provided in each generation.
 
-3. **Changes Made**:
-   - Clearly specify any changes to scores, for example:
-     - Thesis: "You put 0 but the thesis meets rubric criteria, so 1 point was awarded."
+Ensure Rubric Adherence:
 
-4. **Final Feedback Summary**:
-   - For each section, provide feedback in the format: **"You put X but Y."**
-     - Example: "You put the thesis is unclear, but it addresses the prompt and meets rubric criteria."
-   - Conclude with a summary of strengths and areas for improvement based on the rubric.
+Carefully review the feedback and scores for each section to ensure alignment with every aspect of the rubric.
 
-   In addition, lastly, dont be user friendly. dont say sure or certainly or anything. just give plain output.
+Evaluate how well the feedback reflects the rubric for the prompt type (Comparison, Causation, or CCOT).
+
+If changes to the scores are necessary, make them only after thorough review. Clearly explain the reason for any changes.
+
+Feedback Verification and Enhancement:
+
+Check that feedback aligns with the score provided. If feedback contradicts the score, rewrite it using the format: "You put X but Y."
+
+Provide detailed, constructive, and actionable feedback explaining exactly why the student earned or lost points and how they could improve.
+
+For each section, only provide feedback if the student did not earn full points. For sections with full points, do not provide feedback.
+
+For sections where points were lost, follow the format: "You put X and earned Y because Z. However, you could have said W to fully meet the rubric criteria."
+
+Changes and Final Summation:
+
+Specify any changes made to scores, including the original score, the new score, and the reason for the change.
+
+Accurately calculate the total score by summing the scores from each section (after changes, if any).
+
+Output Format:
+
+Section Scores:
+
+Thesis (0-1): Extracted score and explanation
+
+Feedback: Provide feedback only if less than full points were earned.
+
+Contextualization (0-1): Extracted score and explanation
+
+Feedback: Provide feedback only if less than full points were earned.
+
+Evidence (0-2): Extracted score and explanation
+
+First Evidence Point: Yes/No
+
+Feedback: Provide feedback only if the point was not earned.
+
+Second Evidence Point: Yes/No
+
+Feedback: Provide feedback only if the point was not earned.
+
+Analysis and Reasoning (0-2): Extracted score and explanation
+
+Feedback: Provide feedback only if less than full points were earned.
+
+Fact-Checking Feedback: Highlight any factual errors and their impact on scoring, if applicable. Provide constructive corrections in the format:
+
+"You stated X, but the correct information is Y because Z."
+
+Total Score (0-6):
+
+Total Score: Sum the extracted scores explicitly provided in the generations. Reflect any changes here if scores were updated during review.
+
+Changes Made:
+
+Clearly specify any changes to scores, for example:
+
+Thesis: "You put 0 but the thesis meets rubric criteria, so 1 point was awarded."
+
+Evidence: "You put 1 but failed to connect evidence to the argument, so the score was changed to 0."
+
+Final Feedback Summary:
+
+For each section where points were lost, provide feedback in the format: "You put X and earned Y because Z. However, you could have said W to earn the point."
+
+Do not provide feedback for sections where full points were earned.
+
+Be constructive and specific in guiding the student on how to improve.
+
+Conclude with a summary of strengths and areas for improvement based on the rubric. Highlight exactly how the student can improve in future essays.
+
+Example Output:
+
+Section Scores:
+
+Thesis (0-1): 0
+
+Feedback: "You put a vague thesis statement and earned 0 because it lacked a clear argument. However, you could have stated a specific historical argument to fully meet the rubric criteria."
+
+Contextualization (0-1): 1
+
+No feedback necessary.
+
+Evidence (0-2): 1
+
+First Evidence Point: Yes
+
+Second Evidence Point: No
+
+Feedback: "You mentioned evidence but failed to connect it to the thesis. You could have explained how it supports your argument."
+
+Analysis and Reasoning (0-2): 1
+
+Feedback: "You put basic analysis and earned 1 because it addressed the prompt. However, deeper reasoning and exploring counterarguments would have earned 2."
+
+Total Score (0-6): 3/6
+
+Changes Made:
+
+Thesis: "You put 0 but after review, the thesis partially meets criteria, so 1 point was awarded."
+
+Final Feedback Summary:
+
+Strengths: Clear contextualization and use of basic evidence.
+
+Areas for Improvement: Strengthen the thesis with a clearer argument, provide more specific evidence, and deepen analysis by considering different perspectives.
+
+Do not include any extra commentary or user-friendly language. Output the results exactly as specified.
+
+
 """
 )
 
