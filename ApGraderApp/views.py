@@ -31,24 +31,16 @@ from reportlab.pdfgen import canvas
 
 
 
-import io
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
-from reportlab.platypus import (
-    BaseDocTemplate,
-    PageTemplate,
-    Frame,
-    Paragraph,
-    Spacer
-)
+from reportlab.platypus import BaseDocTemplate, PageTemplate, Frame, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import inch
 
 def create_pdf(prompt, response_text):
     pdf_buffer = io.BytesIO()
 
-    
     doc = BaseDocTemplate(
         pdf_buffer,
         pagesize=letter,
@@ -58,95 +50,86 @@ def create_pdf(prompt, response_text):
         bottomMargin=72,
     )
 
-   
     frame = Frame(
         doc.leftMargin,
         doc.bottomMargin,
         doc.width,
         doc.height,
         id="content_frame",
+        showBoundary=1,
     )
 
-    
     template = PageTemplate(id="template", frames=[frame])
     doc.addPageTemplates([template])
 
-    
     styles = getSampleStyleSheet()
 
     title_style = ParagraphStyle(
         name="Title",
-        fontName="Times-Bold",
-        fontSize=20,           
-        leading=26,           
-        spaceAfter=24,         
+        fontName="Helvetica-Bold",
+        fontSize=24,
+        alignment=1,
+        spaceAfter=24,
         textColor=colors.darkblue,
-    )
-    heading_style = ParagraphStyle(
-        name="Heading",
-        fontName="Times-Bold",
-        fontSize=14,
-        leading=18,
-        spaceAfter=12,
-        textColor=colors.darkblue,
-    )
-    body_style = ParagraphStyle(
-        name="Body",
-        fontName="Times-Roman",
-        fontSize=12,
-        leading=16,            
-        spaceAfter=10,         
     )
 
-    
+    heading_style = ParagraphStyle(
+        name="Heading",
+        fontName="Helvetica-Bold",
+        fontSize=16,
+        alignment=0,
+        spaceAfter=16,
+        textColor=colors.black,
+    )
+
+    body_style = ParagraphStyle(
+        name="Body",
+        fontName="Helvetica",
+        fontSize=12,
+        alignment=0,
+        leading=16,
+        spaceAfter=12,
+    )
+
+    border_table = Table(
+        [[Paragraph("Grading Report", title_style)]],
+        colWidths=[doc.width],
+    )
+    border_table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), colors.lightgrey),
+        ("BOX", (0, 0), (-1, -1), 2, colors.darkblue),
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("TOPPADDING", (0, 0), (-1, -1), 12),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
+    ]))
+
     strings_to_bold = [
-        "Thesis score",
-        "contextualization score",
-        "evidence score",
-        "complex understanding score",
-        "total summed up score",
-        "Thesis feedback",
-        "contextualization feedback",
-        "evidence feedback",
-        "complex understanding feedback",
-        "fact-checking feedback",
-        "General Accuracy",
-        'feedback',
-        'Contextualization feedback',
-        'Evidence feedback',
-        'Evidence beyond feedback',
-        'Complex understanding feedback',
+        "Thesis score", "contextualization score", "evidence score",
+        "complex understanding score", "total summed up score",
+        "Thesis feedback", "contextualization feedback",
+        "evidence feedback", "complex understanding feedback",
+        "fact-checking feedback", "General Accuracy", 'feedback',
+        'Contextualization feedback', 'Evidence feedback',
+        'Evidence beyond feedback', 'Complex understanding feedback',
         'Overall feedback',
-        
     ]
 
     content = []
+    content.append(border_table)
+    content.append(Spacer(1, 24))
 
-    
-    content.append(Paragraph('<font color="darkblue"><b> Grading Report</b></font>', title_style))
-    content.append(Spacer(1, 24))  
-
-    
     content.append(Paragraph(f"<b>Prompt:</b> {prompt}", heading_style))
     content.append(Spacer(1, 12))
-
-    
     content.append(Paragraph("<b>Response:</b>", heading_style))
     content.append(Spacer(1, 12))
 
-   
     for line in response_text.split("\n"):
-
         for target in strings_to_bold:
             line = line.replace(target, f"<b>{target}</b>")
-        
-        
         content.append(Paragraph(line, body_style))
 
-    
     content.append(Spacer(1, 20))
 
-    
     doc.build(content)
     pdf_buffer.seek(0)
     return pdf_buffer
