@@ -26,8 +26,8 @@ load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-api_key = os.getenv("CEREBRAS_API_KEY")
-llm = ChatCerebras(model="llama-3.3-70b", api_key=api_key, temperature=0, max_tokens=None,)
+#api_key = os.getenv("CEREBRAS_API_KEY")
+#llm = ChatCerebras(model="llama-3.3-70b", api_key=api_key, temperature=0, max_tokens=None,)
 
 if not OPENAI_API_KEY:
     raise ValueError("OPENAI_API_KEY not found. Please set it in your environment.")
@@ -480,7 +480,7 @@ Do not include any extra commentary or user-friendly language. Output the result
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-#llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4o", temperature=0)
+llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4o", temperature=0)
 
 
 
