@@ -67,7 +67,7 @@ llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4o", temperature=0)
 
 classification_prompt = PromptTemplate.from_template(
     """
-        You are a highly accurate and strict teaching assistant for an AP European History class. Your task is to read the dbq prompt provided by a student and determine which of the three main APUSH dbq types it falls under:
+        You are a highly accurate and strict teaching assistant for an AP European History class. Your task is to read the DBQ prompt provided by a student and determine which of the three main APUSH DBQ types it falls under:
         
 Comparison: The prompt asks the student to compare and/or contrast historical developments, events, policies, or societies.
 Causation: The prompt asks the student to explain causes and/or effects of historical events or developments.
@@ -75,7 +75,7 @@ Continuity and Change Over Time (CCOT): The prompt asks the student to analyze w
 
         Instructions:
         
-Read the provided dbq prompt carefully.
+Read the provided DBQ prompt carefully.
 Identify whether the prompt is a Comparison, Causation, or CCOT prompt.
 Respond with only one of the three exact words: "Comparison", "Causation", or "CCOT". Do not include any additional text, explanations, or characters. Should be one word
 
@@ -94,8 +94,7 @@ Refer to the rubric and grade the thesis accordingly based on the rubric.
 
 Evaluation Standards:
 Ignore grammar and spelling errors as long as the meaning is clear.
-Award 1 point if the thesis meets the rubric criteria, even if it is not perfectly worded or explicitly labeled.
-Recognize minimally defensible theses that establish a line of reasoning, even if they are embedded in the introduction or conclusion.
+Award 1 point only if the thesis meets all the rubric criteria, but it does not need to be perfectly worded or explictly labled.
 Focus on whether the thesis responds to the prompt and establishes a line of reasoning, rather than penalizing for lack of sophistication or minor flaws.
 Follow the rubric, be strict but fair. Only award point if the thesis aligns with the rubrics requierments.
 
@@ -122,7 +121,7 @@ Evaluation Standards:
 Ignore grammar and spelling errors as long as the meaning is clear.
 Award 1 point only if the contextualization meets all rubric criteria.
 Do not award partial credit for incomplete or vague contextualization.
-Be strict and apply no leniency.
+Be strict and apply no leniency, if you are not sure if the student deserves the point, do not reward any points.
 Contextualization must describe a broader historical event, development, or process relevant to the topic. However, apply leniency when grading for the time frame of the contextualization.
 A single phrase or reference does not qualify as contextualization.
 
@@ -172,6 +171,8 @@ Analyze each document.
    - Review each document description (Doc 1 to Doc 7) to determine how accurately and effectively they are described in the essay. 
    - Assess whether the student has explained the content of each document in their own words and related it to the prompt.
    - Identify which documents are used to support the argument and how they contribute to the thesis.
+   - If there is any doubt on weather or not the student deserves a point, do not reward point. 
+   - Refer back to the documents whenever the student quotes a document/doc to analyze the connections.
    
 DBQ Evidence Rubric:
 {rubric}
@@ -199,7 +200,7 @@ DBQ Evidence Rubric:
 - **Overall Feedback**: Provide a summary of the strengths and areas for improvement."""
 )
 evidence_beyond_prompt = PromptTemplate.from_template(
-    """You are an AP European history (ApEuro) DBQ grader. Your task is to evaluate the "Evidence Beyond the Documents" point of a student's essay based on the provided rubric. Follow the instructions carefully to ensure accurate and consistent grading.
+    """You are an AP European History (ApEuro) DBQ grader. Your task is to evaluate the "Evidence Beyond the Documents" point of a student's essay based on the provided rubric. Follow the instructions carefully to ensure accurate and consistent grading.
     
 **Document Descriptions and analysis'**:
 Here is the descriptions and analysis of each doc.
@@ -378,6 +379,7 @@ Complex understanding feedback -
 Fact-checking feedback - (Include only if exists; summarize any content mistakes and corrections.)
 Overall feedback - 
 Be thorough with the feed back, explain why they earned or lost the point in each section. Again this data has been given to u above before.
+
 """
 )
 
@@ -403,7 +405,6 @@ Example Structure for Your Feedback:
 Identified Mistake: "In your essay, you stated that [incorrect information]. However, according to [chapter/topic], the correct information is [correct information]."
 General Accuracy: "Overall, your essay is accurate in its portrayal of [topic], but keep an eye on [specific areas]."
 Focus on being supportive and informative. Your goal is to help the student learn and improve their historical understanding without penalizing them for mistakes.""")
-
 
 
 
