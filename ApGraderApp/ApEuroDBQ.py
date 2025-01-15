@@ -917,9 +917,7 @@ def evaluateeurodbq(prompt: str, essay: str, images: List[Optional[str]] = None)
     }
 
     try:
-        state = isbs(state)
-        if state['isbsquestion'] == 'bs':
-            return 'give a valid essay pls'
+        
         state = retrieve_rubric_node(state)
         state = classify_prompt_node(state)
         state = vision_node(state)
@@ -987,9 +985,7 @@ def evaluateeurodbqbulk(prompt: str, essay, images: List[Optional[str]] = None) 
         state = essay_vision_node(state)
         if state['student_essay'] == None:
             return 'we tried mutliple times to recognize your essay. You can try resubmitting but we have tried out best. Sorry'
-        state = isbs(state)
-        if state['isbsquestion'] == 'bs':
-            return 'give a valid essay pls'
+        
         state = retrieve_rubric_node(state)
         
         state = classify_prompt_node(state)

@@ -936,9 +936,7 @@ def evaluate2(prompt: str, essay: str, images: List[Optional[str]] = None) -> st
     }
 
     try:
-        state = isbs(state)
-        if state['isbsquestion'] == 'bs':
-            return 'give a valid essay pls'
+        
         state = classify_prompt_node(state)
         state = vision_node(state)
         state = retrieve_rubric_node(state)
@@ -1006,9 +1004,7 @@ def evaluate22(prompt: str, essay, images: List[Optional[str]] = None) -> str:
         state = essay_vision_node(state)
         if state['student_essay'] == None:
             return 'we tried mutliple times to recognize your essay. You can try resubmitting but we have tried out best. Sorry'
-        state = isbs(state)
-        if state['isbsquestion'] == 'bs':
-            return 'give a valid essay pls'
+        
         
         state = classify_prompt_node(state)
         state = vision_node(state)

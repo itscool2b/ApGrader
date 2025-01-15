@@ -756,9 +756,7 @@ def evaluateeuroleq(prompt: str, essay: str) -> str:
         'isbsquestion': None
     }
 
-    state = isbs(state)
-    if state['isbsquestion'] == 'bs':
-        return 'input is not related to essay please submitt a better response please.'
+    
     
     state = fetch_rubric_node(state)
     state = classify_prompt_node(state)  
@@ -792,9 +790,7 @@ def euro_leq_bulk(prompt, essay):
     state = essay_vision_node(state)
     if state['student_essay'] == None:
             return 'we tried mutliple times to recognize your essay. You can try resubmitting but we have tried out best. Sorry'
-    state = isbs(state)
-    if state['isbsquestion'] == 'bs':
-        return 'input is not related to essay please submitt a better response please.'
+    
     
     state = fetch_rubric_node(state)
     state = classify_prompt_node(state)  

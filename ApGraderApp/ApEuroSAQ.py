@@ -668,9 +668,7 @@ def evaluateeurosaq(questions: str, essay: str, image: Optional[Union[str, bytes
         'isbsquestion': None,
         'reflection': None
     }
-    state = isbs(state)
-    if state['isbsquestion'] == 'bs':
-        return 'give a real response pls'
+    
     state = vision_node(state)
     
     state = chapters(state)
@@ -699,9 +697,6 @@ def euro_saq_bulk_grading(questions, essay, stim):
     state = essay_vision_node(state)
     if state['student_essay'] == None:
             return 'we tried mutliple times to recognize your essay. You can try resubmitting but we have tried out best. Sorry'
-    state = isbs(state)
-    if state['isbsquestion'] == 'bs':
-        return 'give a real response pls'
     
     state = vision_node(state)
     state = chapters(state)

@@ -671,9 +671,7 @@ def evaluate1(questions: str, essay: str, image: Optional[Union[str, bytes]]) ->
         'isbsquestion': None,
         'reflection': None
     }
-    state = isbs(state)
-    if state['isbsquestion'] == 'bs':
-        return 'submitt a valid response pls'
+    
     state = vision_node(state)
     state = chapters(state)
     state = grading_node(state)
@@ -701,9 +699,7 @@ def evaluate11(questions: str, essay, image: Optional[Union[str, bytes]]) -> str
     state = essay_vision_node(state)
     if state['student_essay'] == None:
             return 'we tried mutliple times to recognize your essay. You can try resubmitting but we have tried out best. Sorry'
-    state = isbs(state)
-    if state['isbsquestion'] == 'bs':
-        return 'submitt a valid response pls'
+    
     
     state = vision_node(state)
     state = chapters(state)
