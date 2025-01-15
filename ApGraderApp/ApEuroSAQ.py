@@ -343,10 +343,14 @@ def isbs(state):
     result = response.content.strip().lower()
     
     
-    if result not in ['bs', 'not']:
-        result = 'not'  
+    if "bs" in result:
+        result = "bs"
+    elif "not" in result:
+        result = "not"
+    else:
+        result = "not"
 
-    state['isbsquestion'] = result
+    state["isbsquestion"] = result
     return state
 
 def essay_vision_node(state):
@@ -499,7 +503,8 @@ def summation_node(state):
         response = llm.invoke(formatted_prompt)
         concatenate = '\n\n this is a further breakdown. BETA - this is what you can do better \n\n'
         state['summation'] = response.content.strip()
-        return state['summation'] + concatenate + reflection
+        final_output = f"{state['summation']}{concatenate}{state['reflection']}"
+        return final_output
     except Exception as e:
         raise RuntimeError(f"Error in final_node: {e}")
 

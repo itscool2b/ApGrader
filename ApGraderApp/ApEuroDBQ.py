@@ -595,10 +595,14 @@ def isbs(state):
     result = response.content.strip().lower()
     
     
-    if result not in ['bs', 'not']:
-        result = 'not'  
+    if "bs" in result:
+        result = "bs"
+    elif "not" in result:
+        result = "not"
+    else:
+        result = "not"
 
-    state['isbsquestion'] = result
+    state["isbsquestion"] = result
     return state
 
 def self_reflection(state):
@@ -862,7 +866,8 @@ def summation_node(state):
     response = llm.invoke(formatted_prompt)
     concatenated = '\n\n This is further feedback (in beta) - \n\n'
     state['summation'] = response.content.strip()
-    return state['summation'] + concatenated + state['reflection']
+    final_output = f"{state['summation']}{concatenated}{state['reflection']}"
+    return final_output
     
 
 
