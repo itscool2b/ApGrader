@@ -579,7 +579,7 @@ def essay_vision_node(state, max_retries=3):
                     "content": [
                         {
                             "type": "text",
-                            "text": "Extract the text from the provided essay while ensuring it is grammatically correct, well-structured, and easy to read. Fix any spelling or typographical errors but do not alter the meaning, tone, or intent of the original content. If you can't recognize the image, respond exactly with: 'I can't recognize this image.'",
+                            "text": "Extract the text from the provided essay while ensuring it is grammatically correct, well-structured, and easy to read. Fix any spelling or typographical errors but do not alter the meaning, tone, or intent of the original content. If you can't recognize the image, respond exactly with: 'I can't recognize this image.' But obviously try your hardest. Your absolute hardest to do the task at hand.",
                         },
                         {
                             "type": "image_url",
