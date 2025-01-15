@@ -986,11 +986,12 @@ def evaluateeurodbqbulk(prompt: str, essay, images: List[Optional[str]] = None) 
     }
 
     try:
+        state = essay_vision_node(state)
         state = isbs(state)
         if state['isbsquestion'] == 'bs':
             return 'give a valid essay pls'
         state = retrieve_rubric_node(state)
-        state = essay_vision_node(state)
+        
         state = classify_prompt_node(state)
         state = vision_node(state)
         state = thesis_grading_node(state)

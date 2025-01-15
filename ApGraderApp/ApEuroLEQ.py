@@ -792,10 +792,11 @@ def euro_leq_bulk(prompt, essay):
         "rubric": [],
         'isbs': None
     }
+    state = essay_vision_node(state)
     state = isbs(state)
     if state['isbsquestion'] == 'bs':
         return 'input is not related to essay please submitt a better response please.'
-    state = essay_vision_node(state)
+    
     state = fetch_rubric_node(state)
     state = classify_prompt_node(state)  
     state = thesis_grading_node(state)  

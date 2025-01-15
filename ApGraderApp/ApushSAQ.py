@@ -700,10 +700,11 @@ def evaluate11(questions: str, essay, image: Optional[Union[str, bytes]]) -> str
         'isbsquestion': None,
         'reflection': None
     }
+    state = essay_vision_node(state)
     state = isbs(state)
     if state['isbsquestion'] == 'bs':
         return 'submitt a valid response pls'
-    state = essay_vision_node(state)
+    
     state = vision_node(state)
     state = chapters(state)
     state = grading_node(state)

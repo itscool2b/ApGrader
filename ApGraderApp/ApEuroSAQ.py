@@ -698,10 +698,11 @@ def euro_saq_bulk_grading(questions, essay, stim):
         'isbsquestion': None,
         'reflection': None
     }
+    state = essay_vision_node(state)
     state = isbs(state)
     if state['isbsquestion'] == 'bs':
         return 'give a real response pls'
-    state = essay_vision_node(state)
+    
     state = vision_node(state)
     state = chapters(state)
     state = grading_node(state)

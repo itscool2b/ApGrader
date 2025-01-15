@@ -1005,10 +1005,11 @@ def evaluate22(prompt: str, essay, images: List[Optional[str]] = None) -> str:
     }
 
     try:
+        state = essay_vision_node(state)
         state = isbs(state)
         if state['isbsquestion'] == 'bs':
             return 'give a valid essay pls'
-        state = essay_vision_node(state)
+        
         state = classify_prompt_node(state)
         state = vision_node(state)
         state = retrieve_rubric_node(state)
