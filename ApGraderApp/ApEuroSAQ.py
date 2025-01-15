@@ -634,9 +634,10 @@ def evaluateeurosaq(questions: str, essay: str, image: Optional[Union[str, bytes
         'isbsquestion': None,
         'reflection': None
     }
-    state = vision_node(state)
     if state['isbsquestion'] == 'bs':
         return 'give a real response pls'
+    state = vision_node(state)
+    
     state = chapters(state)
     state = grading_node(state)
     state = factchecking_node(state)
