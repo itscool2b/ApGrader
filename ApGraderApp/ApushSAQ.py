@@ -25,7 +25,7 @@ if not OPENAI_API_KEY:
     raise ValueError("OPENAI_API_KEY not found. Please set it in your environment.")
 
 openai.api_key = OPENAI_API_KEY
-client = OpenAI(api_key=OPENAI_API_KEY)
+client = OpenAI(api_key=OPENAI_API_KEY,max_retries=5)
 
 
 

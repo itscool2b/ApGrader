@@ -34,7 +34,7 @@ if not OPENAI_API_KEY:
 
 
 openai.api_key = OPENAI_API_KEY
-client = OpenAI(api_key=OPENAI_API_KEY)
+client = OpenAI(api_key=OPENAI_API_KEY),max_retries=5
 
 index = get_index()
 

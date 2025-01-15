@@ -20,7 +20,7 @@ from ApGraderApp.p import pc, setup_index, get_index
 OPENAI_API_KEY = os.getenv('OPENAI_APi_KEY')
 
 openai.api_key = OPENAI_API_KEY
-client = OpenAI(api_key=OPENAI_API_KEY)
+client = OpenAI(api_key=OPENAI_API_KEY,max_retries=5)
 
 index = get_index()
 
