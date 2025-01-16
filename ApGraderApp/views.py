@@ -205,12 +205,9 @@ async def ApushLEQ(request):
         pdf_buffer = create_pdf(prompt, response)
 
         
-        return await sync_to_async(FileResponse)(
-            pdf_buffer,
-            as_attachment=True,
-            filename="evaluation_report.pdf",
-            content_type="application/pdf"
-        )
+        response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename="evaluation_report.pdf"'
+        return response
 
     except Exception as e:
         logger.error(f"Error in process endpoint: {e}")
@@ -279,12 +276,9 @@ async def saq_view(request):
         pdf_buffer = create_pdf(questions, response)
 
         
-        return await sync_to_async(FileResponse)(
-            pdf_buffer,
-            as_attachment=True,
-            filename="evaluation_report.pdf",
-            content_type="application/pdf"
-        )
+        response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename="evaluation_report.pdf"'
+        return response
 
     except Exception as e:
         return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
@@ -555,13 +549,9 @@ async def ApEuroLEQ(request):
         pdf_buffer = create_pdf(prompt, response)
 
         
-        return await sync_to_async(FileResponse)(
-            pdf_buffer,
-            as_attachment=True,
-            filename="evaluation_report.pdf",
-            content_type="application/pdf"
-        )
-        
+        response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename="evaluation_report.pdf"'
+        return response
         
 
     except Exception as e:
@@ -722,12 +712,9 @@ async def eurosaq_view(request):
         pdf_buffer = create_pdf(questions, response)
 
         
-        return await sync_to_async(FileResponse)(
-            pdf_buffer,
-            as_attachment=True,
-            filename="evaluation_report.pdf",
-            content_type="application/pdf"
-        )
+        response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename="evaluation_report.pdf"'
+        return response
 
     except Exception as e:
         return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
@@ -786,12 +773,9 @@ async def eurodbq(request):
         pdf_buffer = create_pdf(prompt, response)
 
         
-        return await sync_to_async(FileResponse)(
-            pdf_buffer,
-            as_attachment=True,
-            filename="evaluation_report.pdf",
-            content_type="application/pdf"
-        )
+        response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename="evaluation_report.pdf"'
+        return response
 
     except Exception as e:
         return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
@@ -849,12 +833,9 @@ async def dbq_view(request):
         pdf_buffer = create_pdf(prompt, response)
 
         
-        return await sync_to_async(FileResponse)(
-            pdf_buffer,
-            as_attachment=True,
-            filename="evaluation_report.pdf",
-            content_type="application/pdf"
-        )
+        response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename="evaluation_report.pdf"'
+        return response
 
     except Exception as e:
         return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
