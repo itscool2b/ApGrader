@@ -23,7 +23,7 @@ import zipfile
 from django.http import HttpResponse
 from .ApEuroDBQ import evaluateeurodbqbulk
 from reportlab.pdfgen import canvas
-
+from django.http import FileResponse
 
 
 
@@ -202,11 +202,15 @@ async def ApushLEQ(request):
             return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
 
         
-        return JsonResponse({
-            "response": {
-                "output": response
-            }
-        }, status=200)
+        pdf_buffer = create_pdf(prompt, response)
+
+        
+        return FileResponse(
+            pdf_buffer,
+            as_attachment=True,
+            filename="evaluation_report.pdf",
+            content_type="application/pdf"
+        )
 
     except Exception as e:
         logger.error(f"Error in process endpoint: {e}")
@@ -272,7 +276,15 @@ async def saq_view(request):
         except Exception as e:
             return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
 
-        return JsonResponse({"response": {"output": response}}, status=200)
+        pdf_buffer = create_pdf(questions, response)
+
+        
+        return FileResponse(
+            pdf_buffer,
+            as_attachment=True,
+            filename="evaluation_report.pdf",
+            content_type="application/pdf"
+        )
 
     except Exception as e:
         return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
@@ -540,12 +552,17 @@ async def ApEuroLEQ(request):
             logger.error(f"Evaluation failed: {e}")
             return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
 
+        pdf_buffer = create_pdf(prompt, response)
+
         
-        return JsonResponse({
-            "response": {
-                "output": response
-            }
-        }, status=200)
+        return FileResponse(
+            pdf_buffer,
+            as_attachment=True,
+            filename="evaluation_report.pdf",
+            content_type="application/pdf"
+        )
+        
+        
 
     except Exception as e:
         logger.error(f"Error in process endpoint: {e}")
@@ -702,7 +719,15 @@ async def eurosaq_view(request):
             return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
 
         
-        return JsonResponse({"response": {"output": response}}, status=200)
+        pdf_buffer = create_pdf(questions, response)
+
+        
+        return FileResponse(
+            pdf_buffer,
+            as_attachment=True,
+            filename="evaluation_report.pdf",
+            content_type="application/pdf"
+        )
 
     except Exception as e:
         return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
@@ -758,7 +783,15 @@ async def eurodbq(request):
         except Exception as e:
             return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
 
-        return JsonResponse({"response": {"output": response}}, status=200)
+        pdf_buffer = create_pdf(prompt, response)
+
+        
+        return FileResponse(
+            pdf_buffer,
+            as_attachment=True,
+            filename="evaluation_report.pdf",
+            content_type="application/pdf"
+        )
 
     except Exception as e:
         return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
@@ -813,7 +846,15 @@ async def dbq_view(request):
         except Exception as e:
             return JsonResponse({'error': 'Evaluation failed', 'details': str(e)}, status=500)
 
-        return JsonResponse({"response": {"output": response}}, status=200)
+        pdf_buffer = create_pdf(prompt, response)
+
+        
+        return FileResponse(
+            pdf_buffer,
+            as_attachment=True,
+            filename="evaluation_report.pdf",
+            content_type="application/pdf"
+        )
 
     except Exception as e:
         return JsonResponse({'error': 'Internal Server Error', 'details': str(e)}, status=500)
