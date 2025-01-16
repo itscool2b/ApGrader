@@ -731,7 +731,7 @@ def final_node(state: dict) -> dict:
 
         concatenated = '\n\n this is a further breakdown. BETA - this is what you can do better \n\n'
         state['summation'] = response.content.strip()
-        if state['student_essay_image'] != None:
+        if state['student_essay_image'] is not None:
             final_output = f"{state['summation']}{concatenated}{state['reflection']}\n\n This the essay we extracted. if it is not accurate or if it is missing words, our apologies. We suggest you type in the missing partts and submit through the text submission for the best accuracy. {state['student_essay']}"
             return final_output
         final_output = f"{state['summation']}{concatenated}{state['reflection']}"
