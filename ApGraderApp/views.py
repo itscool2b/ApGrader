@@ -205,7 +205,7 @@ async def ApushLEQ(request):
         pdf_buffer = create_pdf(prompt, response)
 
         
-        return FileResponse(
+        return await sync_to_async(FileResponse)(
             pdf_buffer,
             as_attachment=True,
             filename="evaluation_report.pdf",
@@ -279,7 +279,7 @@ async def saq_view(request):
         pdf_buffer = create_pdf(questions, response)
 
         
-        return FileResponse(
+        return await sync_to_async(FileResponse)(
             pdf_buffer,
             as_attachment=True,
             filename="evaluation_report.pdf",
@@ -555,7 +555,7 @@ async def ApEuroLEQ(request):
         pdf_buffer = create_pdf(prompt, response)
 
         
-        return FileResponse(
+        return await sync_to_async(FileResponse)(
             pdf_buffer,
             as_attachment=True,
             filename="evaluation_report.pdf",
@@ -722,7 +722,7 @@ async def eurosaq_view(request):
         pdf_buffer = create_pdf(questions, response)
 
         
-        return FileResponse(
+        return await sync_to_async(FileResponse)(
             pdf_buffer,
             as_attachment=True,
             filename="evaluation_report.pdf",
@@ -786,7 +786,7 @@ async def eurodbq(request):
         pdf_buffer = create_pdf(prompt, response)
 
         
-        return FileResponse(
+        return await sync_to_async(FileResponse)(
             pdf_buffer,
             as_attachment=True,
             filename="evaluation_report.pdf",
@@ -849,7 +849,7 @@ async def dbq_view(request):
         pdf_buffer = create_pdf(prompt, response)
 
         
-        return FileResponse(
+        return await sync_to_async(FileResponse)(
             pdf_buffer,
             as_attachment=True,
             filename="evaluation_report.pdf",
