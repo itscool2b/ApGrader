@@ -734,13 +734,13 @@ Second Evidence Point: Yes/No
 
 Feedback: Provide feedback only if the point was not earned.
 
+Evidence Beyond (0-1): Extracted score and explanation
+
+Feedback: Provide feedback only if the point was not earned.
+
 Analysis and Reasoning (0-2): Extracted score and explanation
 
 Feedback: Provide feedback only if less than full points were earned.
-
-Fact-Checking Feedback: Highlight any factual errors and their impact on scoring, if applicable. Provide constructive corrections in the format:
-
-"You stated X, but the correct information is Y because Z."
 
 Total Score (0-6):
 
@@ -763,42 +763,6 @@ Do not provide feedback for sections where full points were earned.
 Be constructive and specific in guiding the student on how to improve.
 
 Conclude with a summary of strengths and areas for improvement based on the rubric. Highlight exactly how the student can improve in future essays.
-
-Example Output:
-
-Section Scores:
-
-Thesis (0-1): 0
-
-Feedback: "You put a vague thesis statement and earned 0 because it lacked a clear argument. However, you could have stated a specific historical argument to fully meet the rubric criteria."
-
-Contextualization (0-1): 1
-
-No feedback necessary.
-
-Evidence (0-2): 1
-
-First Evidence Point: Yes
-
-Second Evidence Point: No
-
-Feedback: "You mentioned evidence but failed to connect it to the thesis. You could have explained how it supports your argument."
-
-Analysis and Reasoning (0-2): 1
-
-Feedback: "You put basic analysis and earned 1 because it addressed the prompt. However, deeper reasoning and exploring counterarguments would have earned 2."
-
-Total Score (0-6): 3/6
-
-Changes Made:
-
-Thesis: "You put 0 but after review, the thesis partially meets criteria, so 1 point was awarded."
-
-Final Feedback Summary:
-
-Strengths: Clear contextualization and use of basic evidence.
-
-Areas for Improvement: Strengthen the thesis with a clearer argument, provide more specific evidence, and deepen analysis by considering different perspectives.
 
 Do not include any extra commentary or user-friendly language. Output the results exactly as specified.
 
